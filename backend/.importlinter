@@ -33,6 +33,7 @@ source_modules =
     concilia.demo
 forbidden_modules =
     concilia.api
+    concilia.worker
 
 [importlinter:contract:module-layers]
 name = AR-02 Layers inside each business module
