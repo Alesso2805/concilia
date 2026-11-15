@@ -3,6 +3,7 @@ import pytest
 from tests.architecture.rules import (
     Rule,
     cross_module_access,
+    log_events_are_literals,
     no_background_tasks,
     no_float_money,
     no_wall_clock,
@@ -16,6 +17,7 @@ RULES: dict[str, Rule] = {
     "AR-05": no_wall_clock,
     "AR-06": no_float_money,
     "AR-07": no_background_tasks,
+    "AR-08": log_events_are_literals,
 }
 
 VIOLATIONS = [
@@ -36,6 +38,10 @@ VIOLATIONS = [
     ("AR-06", "concilia.reporting.application.panel", "class R:\n    open_balance: float"),
     ("AR-07", "concilia.identity.api.routes", "from fastapi import BackgroundTasks"),
     ("AR-07", "concilia.api", "import asyncio\nasyncio.create_task(job())"),
+    ("AR-08", "concilia.imports.application.run", 'log.info(f"parsed {name}")'),
+    ("AR-08", "concilia.imports.application.run", 'logger.warning("row %s", row)'),
+    ("AR-08", "concilia.imports.application.run", "log.bind(job_id=j).error(message)"),
+    ("AR-08", "concilia.imports.infrastructure.repo", "import logging"),
 ]
 
 ALLOWED = [
@@ -52,6 +58,8 @@ ALLOWED = [
     ),
     ("AR-06", "concilia.shared.infrastructure.http", "TIMEOUT_SECONDS: float = 30.0"),
     ("AR-07", "concilia.worker", "import asyncio\nasyncio.create_task(job())"),
+    ("AR-08", "concilia.imports.application.run", 'log.info("rows_parsed", row_count=n)'),
+    ("AR-08", "concilia.shared.infrastructure.logging", "import logging"),
 ]
 
 
