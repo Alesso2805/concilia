@@ -8,7 +8,9 @@ from fastapi.routing import APIRoute
 from pydantic import BaseModel
 
 from concilia.audit.infrastructure.sql import SqlAuditRecorder
+from concilia.identity.api.registration import registration_router
 from concilia.identity.api.sessions import WebSecurity, session_routers
+from concilia.identity.application.registration import RegistrationService
 from concilia.identity.application.sessions import LoginPolicy, SessionService
 from concilia.identity.infrastructure.passwords import Argon2PasswordHasher
 from concilia.identity.infrastructure.sql import SqlIdentityTransactions, SqlRateLimiter
@@ -54,9 +56,11 @@ def create_app(settings: ApiSettings | None = None, clock: Clock | None = None) 
         """Report that the API process is up."""
         return HealthResponse(status="ok")
 
+    transactions = SqlIdentityTransactions(engine, SqlAuditRecorder)
+    hasher = Argon2PasswordHasher()
     sessions = SessionService(
-        SqlIdentityTransactions(engine, SqlAuditRecorder),
-        Argon2PasswordHasher(),
+        transactions,
+        hasher,
         SqlRateLimiter(engine),
         clock,
         policy=LoginPolicy(
@@ -72,4 +76,11 @@ def create_app(settings: ApiSettings | None = None, clock: Clock | None = None) 
     )
     app.include_router(routers.public)
     app.include_router(routers.app, dependencies=[Depends(routers.authenticate)])
+    app.include_router(
+        registration_router(
+            RegistrationService(transactions, hasher, clock),
+            enabled=settings.registration_enabled,
+        ),
+        dependencies=[Depends(routers.require_same_origin)],
+    )
     return app

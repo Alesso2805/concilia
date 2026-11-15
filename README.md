@@ -22,6 +22,14 @@ make trust-ca  # copies Caddy's root certificate and adds it to your OS trust st
 
 It uses `certutil` on Windows (a confirmation dialog appears), `security` on macOS and `update-ca-certificates` on Debian-based Linux. Until you run it, everything works, but the browser shows a certificate warning. The certificate lives in the `caddy_data` volume; if you delete that volume, run `make trust-ca` again.
 
+To create a real organization and its first admin (open registration is off by default, `CONCILIA_REGISTRATION_ENABLED=false`):
+
+```sh
+make create-org NAME="Comercial Andina" EMAIL=ana@example.com DISPLAY_NAME="Ana Torres"
+```
+
+It asks for the admin password and runs as the database owner role, like migrations.
+
 `make down` stops everything and keeps the data. Local passwords have development defaults in `docker-compose.yml`; any real deployment must override them with environment variables (`POSTGRES_PASSWORD`, `CONCILIA_OWNER_PASSWORD`, `CONCILIA_APP_PASSWORD`, `CONCILIA_WORKER_PASSWORD`, `CONCILIA_BACKUP_PASSWORD`).
 
 ## Development
