@@ -62,9 +62,31 @@ jobs:
       - run: npm run build
       - run: npm audit --audit-level=high
 
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: docker compose up --build --detach
+      - name: API answers through Caddy over HTTPS
+        run: curl --fail --silent --insecure --retry 30 --retry-all-errors --retry-delay 2 https://localhost/api/health
+      - name: Caddy serves the Angular app
+        run: curl --fail --silent --insecure --output /dev/null https://localhost/
+      - name: Worker processes the scheduled cleanup job
+        run: |
+          for _ in $(seq 30); do
+            status=$(docker compose exec -T db psql -U postgres -d concilia -Atc "SELECT status FROM jobs WHERE kind = 'cleanup' LIMIT 1")
+            [ "$status" = "done" ] && exit 0
+            sleep 2
+          done
+          exit 1
+      - if: failure()
+        run: docker compose logs
+      - if: always()
+        run: docker compose down --volumes
+
   ci:
     if: always()
-    needs: [backend, frontend]
+    needs: [backend, frontend, compose]
     runs-on: ubuntu-latest
     steps:
       - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
