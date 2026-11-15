@@ -41,6 +41,10 @@ services:
     <<: *backend
     environment:
       CONCILIA_DATABASE_URL: postgresql+asyncpg://concilia_app:${CONCILIA_APP_PASSWORD:-app-local}@db:5432/concilia
+      CONCILIA_PUBLIC_ORIGIN: https://${SITE_ADDRESS:-localhost}
+      CONCILIA_CSRF_SECRET: ${CONCILIA_CSRF_SECRET:-local-csrf-secret}
+      CONCILIA_RATE_LIMIT_SECRET: ${CONCILIA_RATE_LIMIT_SECRET:-local-rate-limit-secret}
+      CONCILIA_REGISTRATION_ENABLED: ${CONCILIA_REGISTRATION_ENABLED:-false}
 
   worker:
     <<: *backend
