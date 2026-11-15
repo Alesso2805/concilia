@@ -1,0 +1,81 @@
+tables:
+  alembic_version:
+    rls: none
+    privileges:
+      concilia_backup: [SELECT]
+
+  users:
+    rls: none
+    privileges:
+      concilia_app: [INSERT, SELECT]
+      concilia_backup: [SELECT]
+    column_privileges:
+      concilia_app:
+        UPDATE: [display_name, password_hash]
+      concilia_worker:
+        SELECT: [display_name, id]
+
+  sessions:
+    rls: none
+    privileges:
+      concilia_app: [DELETE, INSERT, SELECT, UPDATE]
+      concilia_backup: [SELECT]
+
+  rate_limits:
+    rls: none
+    privileges:
+      concilia_app: [DELETE, INSERT, SELECT, UPDATE]
+      concilia_backup: [SELECT]
+
+  organizations:
+    rls: organization_root
+    privileges:
+      concilia_app: [INSERT, SELECT]
+      concilia_worker: [INSERT, SELECT]
+      concilia_backup: [SELECT]
+    column_privileges:
+      concilia_app:
+        UPDATE: [detraction_rates_bp, name, tolerance_bp, tolerance_min_cents]
+      concilia_worker:
+        UPDATE: [detraction_rates_bp, name, tolerance_bp, tolerance_min_cents]
+
+  memberships:
+    rls: organization
+    privileges:
+      concilia_app: [INSERT, SELECT]
+      concilia_worker: [INSERT, SELECT]
+      concilia_backup: [SELECT]
+    column_privileges:
+      concilia_app:
+        UPDATE: [removed_at]
+      concilia_worker:
+        UPDATE: [removed_at]
+
+  member_roles:
+    rls: organization
+    privileges:
+      concilia_app: [DELETE, INSERT, SELECT]
+      concilia_worker: [DELETE, INSERT, SELECT]
+      concilia_backup: [SELECT]
+
+  audit_events:
+    rls: organization
+    privileges:
+      concilia_app: [INSERT, SELECT]
+      concilia_worker: [INSERT, SELECT]
+      concilia_backup: [SELECT]
+
+  jobs:
+    rls: jobs
+    privileges:
+      concilia_app: [INSERT, SELECT]
+      concilia_worker: [INSERT, SELECT]
+      concilia_backup: [SELECT]
+    column_privileges:
+      concilia_worker:
+        UPDATE: [attempts, error_code, finished_at, locked_at, progress, run_after, status]
+
+functions:
+  app_cleanup:
+    security_definer: true
+    execute: [concilia_worker]

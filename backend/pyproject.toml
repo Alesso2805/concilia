@@ -5,7 +5,11 @@ description = "Bank reconciliation backoffice with maker-checker approval and an
 license = "MIT"
 requires-python = ">=3.14,<3.15"
 dependencies = [
+    "alembic>=1.20",
+    "asyncpg>=0.32",
     "fastapi>=0.163.1",
+    "pydantic-settings>=2.16",
+    "sqlalchemy[asyncio]>=2.1.8",
     "structlog>=26.1",
     "tzdata>=2025.2",
 ]
@@ -18,8 +22,11 @@ dev = [
     "mypy>=2.4",
     "pip-audit>=2.10",
     "pytest>=9.2",
+    "pyyaml>=6.0.3",
     "ruff>=0.17.5",
+    "testcontainers[postgres]>=4.15",
     "time-machine>=3.6",
+    "types-pyyaml>=6.0",
 ]
 
 [build-system]
@@ -56,7 +63,8 @@ select = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "S603"]
+"tests/**" = ["S101", "S105", "S106", "S603", "S608"]
+"migrations/versions/**" = ["N999"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["concilia", "tests"]
@@ -67,9 +75,12 @@ ban-relative-imports = "all"
 [tool.mypy]
 strict = true
 python_version = "3.14"
-files = ["src", "tests"]
+files = ["src", "tests", "migrations/env.py"]
 mypy_path = ["src", "."]
 explicit_package_bases = true
+
+[tool.alembic]
+script_location = "%(here)s/migrations"
 
 [tool.pytest.ini_options]
 addopts = ["-ra", "--strict-markers", "--strict-config", "--import-mode=importlib"]
