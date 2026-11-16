@@ -19,6 +19,9 @@ RLS_TABLES = (
     "invitations",
     "bank_accounts",
     "import_profiles",
+    "import_files",
+    "import_rows",
+    "bank_movements",
     "audit_events",
     "jobs",
 )
@@ -38,6 +41,8 @@ async def _create_tenant(owner_engine: AsyncEngine, name: str) -> Tenant:
         "name": name,
         "email": f"{tenant.user_id}@example.test",
         "account": uuid7(),
+        "profile": uuid7(),
+        "file": uuid7(),
         "now": NOW,
     }
     async with owner_engine.begin() as connection:
@@ -59,7 +64,20 @@ async def _create_tenant(owner_engine: AsyncEngine, name: str) -> Tenant:
                VALUES (:account, :org, 'BCP', 'PEN', 'Principal', '1234', :now)""",
             """INSERT INTO import_profiles (id, organization_id, kind, bank_account_id, name,
                                             config, created_at)
-               VALUES (gen_random_uuid(), :org, 'bank_statement', :account, 'BCP', '{}', :now)""",
+               VALUES (:profile, :org, 'bank_statement', :account, 'BCP', '{}', :now)""",
+            """INSERT INTO import_files (id, organization_id, kind, bank_account_id,
+                                         import_profile_id, profile_snapshot, filename, sha256,
+                                         size_bytes, content, status, created_by, created_at)
+               VALUES (:file, :org, 'bank_statement', :account, :profile, '{}', 'enero.csv',
+                       repeat('a', 64), 3, 'abc', 'previewed', :user, :now)""",
+            """INSERT INTO import_rows (id, organization_id, import_file_id, row_number, parsed,
+                                        status)
+               VALUES (gen_random_uuid(), :org, :file, 2, '{}', 'ok')""",
+            """INSERT INTO bank_movements (id, organization_id, bank_account_id, import_file_id,
+                                           booked_on, amount_cents, description, description_norm,
+                                           fingerprint, doc_refs, created_at)
+               VALUES (gen_random_uuid(), :org, :account, :file, '2027-01-05', 100, 'PAGO',
+                       'PAGO', repeat('b', 64), '{}', :now)""",
             """INSERT INTO audit_events (id, organization_id, actor_user_id, action, entity, at)
                VALUES (gen_random_uuid(), :org, :user, 'test.created', 'organization', :now)""",
             """INSERT INTO jobs (id, organization_id, kind, run_after, created_at)

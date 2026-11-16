@@ -101,6 +101,37 @@ tables:
       concilia_worker:
         UPDATE: [archived_at, config, name]
 
+  import_files:
+    rls: organization
+    privileges:
+      concilia_app: [INSERT, SELECT]
+      concilia_worker: [INSERT, SELECT]
+      concilia_backup: [SELECT]
+    column_privileges:
+      concilia_app:
+        UPDATE: [confirmed_at, discarded_at, error_code, row_count, status, void_reason, voided_at]
+      concilia_worker:
+        UPDATE: [confirmed_at, discarded_at, error_code, row_count, status, void_reason, voided_at]
+
+  import_rows:
+    rls: organization
+    privileges:
+      concilia_app: [DELETE, INSERT, SELECT]
+      concilia_worker: [DELETE, INSERT, SELECT]
+      concilia_backup: [SELECT]
+
+  bank_movements:
+    rls: organization
+    privileges:
+      concilia_app: [INSERT, SELECT]
+      concilia_worker: [INSERT, SELECT]
+      concilia_backup: [SELECT]
+    column_privileges:
+      concilia_app:
+        UPDATE: [voided_at]
+      concilia_worker:
+        UPDATE: [voided_at]
+
   period_events:
     rls: organization
     privileges:
