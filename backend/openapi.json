@@ -133,6 +133,53 @@
         "title": "BankAccountView",
         "type": "object"
       },
+      "BatchRequestBody": {
+        "properties": {
+          "action": {
+            "enum": [
+              "confirm",
+              "approve"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "bank_account_id": {
+            "format": "uuid",
+            "title": "Bank Account Id",
+            "type": "string"
+          },
+          "period": {
+            "format": "date",
+            "title": "Period",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "bank_account_id",
+          "period"
+        ],
+        "title": "BatchRequestBody",
+        "type": "object"
+      },
+      "BatchView": {
+        "properties": {
+          "decided": {
+            "title": "Decided",
+            "type": "integer"
+          },
+          "skipped": {
+            "title": "Skipped",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "decided",
+          "skipped"
+        ],
+        "title": "BatchView",
+        "type": "object"
+      },
       "Body_upload_import": {
         "properties": {
           "file": {
@@ -4881,6 +4928,48 @@
           }
         },
         "summary": "Create Manual Match",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/app/matches/batch": {
+      "post": {
+        "description": "Confirm (analysts) every proposal, or approve (reviewers) every confirmed match,\nscored 100 in one account and month (`period` is its first day). Approvals the reviewer\nmay not give under four eyes are counted in `skipped` for someone else. Repeating it\ndecides nothing new.",
+        "operationId": "decide_batch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide Batch",
         "tags": [
           "inbox"
         ]

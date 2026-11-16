@@ -1,16 +1,22 @@
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from typing import Protocol
 from uuid import UUID, uuid7
 
 from concilia.audit.application.recorder import AuditAction, AuditEvent, AuditRecorder
-from concilia.matching.application.runs import NotAllowedError, NotFoundError
+from concilia.matching.application.runs import (
+    InvalidPeriodError,
+    NotAllowedError,
+    NotFoundError,
+)
 from concilia.matching.domain.decisions import (
     Action,
     DecisionError,
     DecisionRequest,
+    FourEyesError,
     MatchState,
+    WrongStateError,
     check_decision,
 )
 from concilia.matching.domain.model import DifferenceReason
@@ -38,6 +44,16 @@ AUDIT_ACTIONS = {
 }
 
 
+BATCH_FROM = {Action.CONFIRM: "proposed", Action.APPROVE: "confirmed"}
+BATCH_SCORE = 100
+
+
+@dataclass(frozen=True)
+class BatchResult:
+    decided: int
+    skipped: int
+
+
 @dataclass(frozen=True)
 class StoredDecision:
     id: UUID
@@ -60,6 +76,10 @@ class DecisionStore(Protocol):
     async def find_decision(self, decision_id: UUID) -> StoredDecision | None: ...
 
     async def insert_decision(self, organization_id: UUID, decision: StoredDecision) -> None: ...
+
+    async def batch_candidates(
+        self, bank_account_id: UUID, period: date, status: str
+    ) -> list[UUID]: ...
 
 
 class DecisionTransactions(Protocol):
@@ -121,6 +141,39 @@ class MatchDecisionService:
                 create=create,
                 same_content=same_content,
             )
+
+    async def decide_batch(
+        self, principal: Principal, bank_account_id: UUID, period: date, action: Action
+    ) -> BatchResult:
+        """Confirm every proposal, or approve every confirmed match, scored 100 in one account and
+        month. An approval the reviewer may not give (four eyes) is left for someone else."""
+        organization_id = principal.organization_id
+        if organization_id is None:
+            raise NotAllowedError
+        if action not in BATCH_FROM:
+            raise WrongStateError
+        if period.day != 1:
+            raise InvalidPeriodError
+        now = self._clock.now()
+        decided = skipped = 0
+        async with self._transactions.organization(organization_id) as store:
+            await store.lock_organization(organization_id)
+            candidates = await store.batch_candidates(bank_account_id, period, BATCH_FROM[action])
+            for match_id in candidates:
+                try:
+                    await self.apply(
+                        store,
+                        organization_id,
+                        match_id,
+                        DecisionRequest(action),
+                        actor=principal.user_id,
+                        roles=principal.roles,
+                        now=now,
+                    )
+                    decided += 1
+                except FourEyesError:
+                    skipped += 1
+        return BatchResult(decided, skipped)
 
     async def apply(
         self,

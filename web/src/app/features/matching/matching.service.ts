@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { Api } from '../../api/api';
 import {
+  decideBatch,
   decideMatch,
   getEngineRun,
   getInboxCounts,
@@ -13,6 +14,7 @@ import {
   listMatches,
   requestEngineRun,
 } from '../../api/functions';
+import { BatchView } from '../../api/models/batch-view';
 import { CountsView } from '../../api/models/counts-view';
 import { CreditPageView } from '../../api/models/credit-page-view';
 import { DecisionRequestBody } from '../../api/models/decision-request-body';
@@ -140,6 +142,14 @@ export class MatchingService {
   decide(matchId: string, decision: Decision): Promise<RecordedDecisionView> {
     return firstValueFrom(
       this.api.invoke(decideMatch, { match_id: matchId, body: { id: newId(), ...decision } }),
+    );
+  }
+
+  decideBatch(month: Month, action: 'confirm' | 'approve'): Promise<BatchView> {
+    return firstValueFrom(
+      this.api.invoke(decideBatch, {
+        body: { action, bank_account_id: month.accountId, period: month.period },
+      }),
     );
   }
 

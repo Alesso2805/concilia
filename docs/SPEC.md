@@ -215,7 +215,7 @@ Un cobro anulado (`cancelled_at`) no es candidato. Ningún saldo disponible pued
 | Confirmada | `reject` (con motivo) | Rechazada | `reviewer` distinto de quien la creó y de quien la confirmó |
 | Aprobada | `revert` (con motivo) | Revertida | `reviewer` distinto de quien la creó y de quien la confirmó, solo si todos sus períodos están abiertos |
 
-Descartada, rechazada y revertida son finales; sus abonos y cobros quedan libres. Las coincidencias de puntaje 100 se pueden confirmar en lote y aprobar en lote, siempre con dos personas distintas. Una coincidencia pertenece a los períodos de todos sus abonos; si cualquiera está cerrado, no admite acciones.
+Descartada, rechazada y revertida son finales; sus abonos y cobros quedan libres. Las coincidencias de puntaje 100 se pueden confirmar en lote y aprobar en lote, siempre con dos personas distintas. El lote abarca una cuenta y un mes; la aprobación en lote deja para otra persona las que el revisor creó o confirmó, y la acción no lleva id del cliente porque repetirla no decide nada nuevo. Una coincidencia pertenece a los períodos de todos sus abonos; si cualquiera está cerrado, no admite acciones.
 
 **Períodos.** Un período es un mes calendario por cuenta bancaria, según la fecha del movimiento. Está abierto hasta que un revisor lo cierra, y solo se cierra si no quedan coincidencias propuestas ni confirmadas con abonos de ese período. Cerrar y reabrir alternan; reabrir exige motivo. En un período cerrado no se registran acciones, no se corre el motor y no se importan movimientos.
 

@@ -50,6 +50,17 @@ import {
 const PAGE_SIZE = 25;
 const RULES = Object.keys(RULE_LABELS) as Rule[];
 
+function batchNotice(action: 'confirm' | 'approve', decided: number, skipped: number): string {
+  const one = decided === 1;
+  const verb =
+    action === 'confirm' ? (one ? 'confirmó' : 'confirmaron') : one ? 'aprobó' : 'aprobaron';
+  const left =
+    skipped === 0
+      ? ''
+      : ` ${skipped === 1 ? 'Una queda' : `${skipped} quedan`} para otra persona porque tú las creaste o confirmaste.`;
+  return `Se ${verb} ${decided} ${one ? 'coincidencia' : 'coincidencias'}.${left}`;
+}
+
 type Loaded = { tab: 'free'; view: CreditPageView } | { tab: MatchTab; view: MatchPageView };
 
 @Component({
@@ -122,6 +133,20 @@ export class InboxPage implements OnInit {
       !this.closed() &&
       !this.running(),
   );
+  protected readonly batch = computed(() => {
+    const roles = this.session.roles();
+    if (this.closed() || this.running()) {
+      return null;
+    }
+    if (this.tab() === 'proposed' && roles.has('analyst')) {
+      return { action: 'confirm' as const, label: 'Confirmar todas las de puntaje 100' };
+    }
+    if (this.tab() === 'confirmed' && roles.has('reviewer')) {
+      return { action: 'approve' as const, label: 'Aprobar todas las de puntaje 100' };
+    }
+    return null;
+  });
+  protected readonly batching = signal(false);
   protected readonly length = computed(() =>
     keysetLength(this.pageIndex(), PAGE_SIZE, this.page()?.view.has_next ?? false),
   );
@@ -247,6 +272,25 @@ export class InboxPage implements OnInit {
       .afterClosed();
     if (await firstValueFrom(closed)) {
       await this.refresh();
+    }
+  }
+
+  protected async decideBatch(action: 'confirm' | 'approve'): Promise<void> {
+    const month = this.month();
+    if (!month) {
+      return;
+    }
+    this.batching.set(true);
+    this.notice.set(null);
+    this.error.set(null);
+    try {
+      const result = await this.matching.decideBatch(month, action);
+      this.notice.set(batchNotice(action, result.decided, result.skipped));
+      await this.refresh();
+    } catch (error) {
+      this.error.set(matchingErrorMessage(error));
+    } finally {
+      this.batching.set(false);
     }
   }
 

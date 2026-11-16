@@ -6,6 +6,8 @@ export type { AcceptInvitationRequest } from './models/accept-invitation-request
 export type { AccountRequest } from './models/account-request';
 export type { ApplicationBody } from './models/application-body';
 export type { BankAccountView } from './models/bank-account-view';
+export type { BatchRequestBody } from './models/batch-request-body';
+export type { BatchView } from './models/batch-view';
 export type { BodyUploadImport } from './models/body-upload-import';
 export type { CancelRequest } from './models/cancel-request';
 export type { ChooseOrganizationRequest } from './models/choose-organization-request';
