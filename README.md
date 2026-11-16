@@ -136,6 +136,8 @@ E2E_EMAIL=ana@example.com E2E_PASSWORD='…' make e2e
 
 They check accessibility, the security headers and cookies, and fail on any Content Security Policy violation.
 
+`e2e/full-flow.spec.ts` walks the whole monthly cycle with two demo users: an analyst imports the third month, runs the engine, confirms and asks the AI; a reviewer approves, reads the panel, exports to Excel and checks the audit log. `cd web && npm run e2e:video` records that story slowly, at 1280×800, under `web/test-results/`, as raw material for a walkthrough video.
+
 ## Declared limits
 
 - Concilia does not connect to banks or accounting systems; it works with the CSV and Excel files you upload.
