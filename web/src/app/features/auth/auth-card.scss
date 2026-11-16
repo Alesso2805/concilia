@@ -30,6 +30,21 @@
   justify-content: flex-end;
 }
 
+.auth__demo {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+.auth__demo-title {
+  margin: 0 0 4px;
+  font: var(--mat-sys-title-medium);
+}
+
+.auth__hint {
+  color: var(--mat-sys-on-surface-variant);
+}
+
 .organizations {
   display: grid;
   gap: 8px;

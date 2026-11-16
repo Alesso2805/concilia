@@ -19,6 +19,10 @@ export type { ArchiveImportProfile$Params as ArchiveImportProfile$Params } from 
 export { archiveImportProfile as archiveImportProfile } from './fn/banking/archive-import-profile';
 export type { ListImportTemplates$Params as ListImportTemplates$Params } from './fn/banking/list-import-templates';
 export { listImportTemplates as listImportTemplates } from './fn/banking/list-import-templates';
+export type { SwitchDemoRole$Params as SwitchDemoRole$Params } from './fn/demo/switch-demo-role';
+export { switchDemoRole as switchDemoRole } from './fn/demo/switch-demo-role';
+export type { CreateDemo$Params as CreateDemo$Params } from './fn/demo/create-demo';
+export { createDemo as createDemo } from './fn/demo/create-demo';
 export type { RequestEngineRun$Params as RequestEngineRun$Params } from './fn/matching/request-engine-run';
 export { requestEngineRun as requestEngineRun } from './fn/matching/request-engine-run';
 export type { GetEngineRun$Params as GetEngineRun$Params } from './fn/matching/get-engine-run';
@@ -81,7 +85,5 @@ export type { CancelReceivable$Params as CancelReceivable$Params } from './fn/re
 export { cancelReceivable as cancelReceivable } from './fn/receivables/cancel-receivable';
 export type { GetHealth$Params as GetHealth$Params } from './fn/health/get-health';
 export { getHealth as getHealth } from './fn/health/get-health';
-export type { CreateDemo$Params as CreateDemo$Params } from './fn/demo/create-demo';
-export { createDemo as createDemo } from './fn/demo/create-demo';
 export type { Register$Params as Register$Params } from './fn/registration/register';
 export { register as register } from './fn/registration/register';

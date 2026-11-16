@@ -11,11 +11,14 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { map } from 'rxjs';
 
 import { LOGIN_PATH, ORGANIZATION_PICKER_PATH } from '../session/paths';
+import { Role, roleLabel } from '../session/roles';
 import { SessionStore } from '../session/session.store';
 import { THEME_OPTIONS, ThemeService } from '../theme/theme.service';
 import { NAVIGATION, visibleItems } from './navigation';
 
 const COMPACT_LAYOUT = '(max-width: 959.98px)';
+const DEMO_ROLES: readonly Role[] = ['analyst', 'reviewer', 'admin'];
+const DEMO_LANDING = '/bandeja';
 
 @Component({
   selector: 'app-shell',
@@ -56,6 +59,28 @@ export class ShellComponent {
     { initialValue: false },
   );
   protected readonly menuOpen = signal(false);
+  protected readonly demoRoles = DEMO_ROLES;
+  protected readonly roleLabel = roleLabel;
+  protected readonly roles = this.store.roles;
+  protected readonly currentRole = computed(() =>
+    [...this.store.roles()].map(roleLabel).join(', '),
+  );
+  protected readonly switching = signal(false);
+
+  protected async switchRole(role: Role): Promise<void> {
+    if (this.store.roles().has(role)) {
+      return;
+    }
+    this.switching.set(true);
+    try {
+      await this.store.switchDemoRole(role);
+      await this.router.navigateByUrl(DEMO_LANDING);
+    } catch {
+      // The 403 interceptor already tells the visitor why the switch was refused.
+    } finally {
+      this.switching.set(false);
+    }
+  }
 
   protected async logout(): Promise<void> {
     // The store forgets the session even when the server call fails.

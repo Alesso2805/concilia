@@ -25,6 +25,7 @@ class AuditAction(StrEnum):
     IMPORT_VOIDED = "import.voided"
     RECEIVABLE_CANCELLED = "receivable.cancelled"
     ENGINE_RUN_REQUESTED = "engine_run.requested"
+    DEMO_ROLE_SWITCHED = "demo.role_switched"
 
 
 ALLOWED_METADATA_KEYS = frozenset({"source", "roles", "kind", "fields"})

@@ -25,6 +25,7 @@ describe('ShellComponent', () => {
   async function render(
     session: SessionView,
     logout: () => Promise<void> = () => Promise.resolve(),
+    switchDemoRole: (role: string) => Promise<void> = () => Promise.resolve(),
   ): Promise<HTMLElement> {
     const state = signal(session);
     TestBed.configureTestingModule({
@@ -41,6 +42,7 @@ describe('ShellComponent', () => {
             ),
             roles: computed(() => new Set(state().roles)),
             logout,
+            switchDemoRole,
           },
         },
       ],
@@ -71,6 +73,31 @@ describe('ShellComponent', () => {
       'Importaciones',
       'Cobros',
     ]);
+  });
+
+  it('lets a demo visitor switch role and offers it nowhere else', async () => {
+    const switchDemoRole = vi.fn(() => Promise.resolve());
+    const element = await render(sessionIn(DEMO), undefined, switchDemoRole);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    const toggle = [...element.querySelectorAll('button')].find((button) =>
+      button.textContent?.includes('Ver como: Análisis'),
+    )!;
+
+    toggle.click();
+    await fixture.whenStable();
+    [...document.querySelectorAll<HTMLButtonElement>('.mat-mdc-menu-panel button')]
+      .find((button) => button.textContent?.trim() === 'Revisión')!
+      .click();
+    await fixture.whenStable();
+
+    expect(switchDemoRole).toHaveBeenCalledWith('reviewer');
+    expect(navigate).toHaveBeenCalledWith('/bandeja');
+  });
+
+  it('shows no role switch outside a demo', async () => {
+    const element = await render(sessionIn(ANDINA));
+
+    expect(element.textContent).not.toContain('Ver como');
   });
 
   it('marks a demo organization', async () => {

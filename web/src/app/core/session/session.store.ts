@@ -3,7 +3,14 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { Api } from '../../api/api';
-import { chooseOrganization, getSession, login, logout } from '../../api/functions';
+import {
+  chooseOrganization,
+  createDemo,
+  getSession,
+  login,
+  logout,
+  switchDemoRole,
+} from '../../api/functions';
 import { LoginView } from '../../api/models/login-view';
 import { SessionView } from '../../api/models/session-view';
 import { REDIRECT_ON_401 } from '../http/context';
@@ -42,6 +49,18 @@ export class SessionStore {
     await firstValueFrom(
       this.api.invoke(chooseOrganization, { body: { organization_id: organizationId } }),
     );
+    await this.refresh();
+  }
+
+  /** Creates a demo organization with fictional data and signs in as its analyst. */
+  async startDemo(): Promise<void> {
+    await firstValueFrom(this.api.invoke(createDemo));
+    await this.refresh();
+  }
+
+  /** Continues the demo as its user with another role, in a new session. */
+  async switchDemoRole(role: Role): Promise<void> {
+    await firstValueFrom(this.api.invoke(switchDemoRole, { body: { role } }));
     await this.refresh();
   }
 

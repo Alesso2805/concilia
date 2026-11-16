@@ -214,6 +214,31 @@ class SqlIdentityStore:
             id=session_id,
         )
 
+    async def demo_user_for_role(
+        self, organization_id: UUID, current_user_id: UUID, role: str, now: datetime
+    ) -> UUID | None:
+        found: UUID | None = await self._connection.scalar(
+            text(
+                """SELECT target.user_id
+                   FROM organizations o
+                   JOIN memberships current_member
+                       ON current_member.organization_id = o.id
+                      AND current_member.user_id = :current AND current_member.removed_at IS NULL
+                   JOIN users current_user_row ON current_user_row.id = current_member.user_id
+                   JOIN member_roles target ON target.organization_id = o.id AND target.role = :role
+                   JOIN memberships target_member
+                       ON target_member.organization_id = o.id
+                      AND target_member.user_id = target.user_id
+                      AND target_member.removed_at IS NULL
+                   JOIN users target_user ON target_user.id = target.user_id
+                   WHERE o.id = :organization AND o.is_demo AND o.demo_expires_at > :now
+                     AND current_user_row.is_demo AND target_user.is_demo
+                   LIMIT 1"""
+            ),
+            {"organization": organization_id, "current": current_user_id, "role": role, "now": now},
+        )
+        return found
+
 
 class SqlIdentityTransactions:
     def __init__(self, engine: AsyncEngine, audit_factory: AuditRecorderFactory) -> None:

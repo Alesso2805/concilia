@@ -8,7 +8,9 @@ import { Router } from '@angular/router';
 
 import { INVITATION_PATH, ORGANIZATION_PICKER_PATH, safeReturnUrl } from '../../core/session/paths';
 import { SessionStore } from '../../core/session/session.store';
-import { loginErrorMessage } from './login-errors';
+import { demoErrorMessage, loginErrorMessage } from './login-errors';
+
+const DEMO_START = '/bandeja';
 
 @Component({
   selector: 'app-login-page',
@@ -35,6 +37,21 @@ export class LoginPage {
   });
   protected readonly submitting = signal(false);
   protected readonly error = signal<string | null>(null);
+  protected readonly startingDemo = signal(false);
+  protected readonly demoError = signal<string | null>(null);
+
+  protected async startDemo(): Promise<void> {
+    this.startingDemo.set(true);
+    this.demoError.set(null);
+    try {
+      await this.store.startDemo();
+      await this.router.navigateByUrl(DEMO_START);
+    } catch (error) {
+      this.demoError.set(demoErrorMessage(error));
+    } finally {
+      this.startingDemo.set(false);
+    }
+  }
 
   protected async submit(): Promise<void> {
     if (this.form.invalid) {

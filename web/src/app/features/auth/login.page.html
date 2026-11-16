@@ -36,5 +36,21 @@
         <button mat-flat-button type="submit" [disabled]="submitting()">Ingresar</button>
       </mat-card-actions>
     </form>
+    <mat-card-content class="auth__demo">
+      <h2 class="auth__demo-title">¿Solo quieres mirar?</h2>
+      <p>
+        Entra a una demo propia con datos ficticios de una empresa: extractos, cobros y
+        coincidencias para revisar como analista o como revisora. Se borra sola a las 4 horas.
+      </p>
+      @if (demoError(); as message) {
+        <p class="auth__error" role="alert">{{ message }}</p>
+      }
+      <button mat-stroked-button type="button" [disabled]="startingDemo()" (click)="startDemo()">
+        Probar la demo
+      </button>
+      @if (startingDemo()) {
+        <p class="auth__hint" aria-live="polite">Preparando tu demo…</p>
+      }
+    </mat-card-content>
   </mat-card>
 </main>

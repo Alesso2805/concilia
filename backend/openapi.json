@@ -2646,6 +2646,42 @@
         "title": "StatementTemplateView",
         "type": "object"
       },
+      "SwitchRoleRequest": {
+        "properties": {
+          "role": {
+            "enum": [
+              "admin",
+              "analyst",
+              "reviewer"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role"
+        ],
+        "title": "SwitchRoleRequest",
+        "type": "object"
+      },
+      "SwitchedView": {
+        "properties": {
+          "role": {
+            "enum": [
+              "admin",
+              "analyst",
+              "reviewer"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role"
+        ],
+        "title": "SwitchedView",
+        "type": "object"
+      },
       "TeamView": {
         "properties": {
           "invitations": {
@@ -2918,6 +2954,48 @@
         "summary": "Archive Bank Account",
         "tags": [
           "banking"
+        ]
+      }
+    },
+    "/api/app/demo/switch-role": {
+      "post": {
+        "description": "Continue the demo as its user with another role, in a new session.\n\nOnly inside a live demo organization and between its demo users (403 `not_a_demo`).",
+        "operationId": "switch_demo_role",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwitchRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SwitchedView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Switch Demo Role",
+        "tags": [
+          "demo"
         ]
       }
     },

@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from tests.support.api import ORIGIN, build_app
+from tests.support.api import ORIGIN, build_app, create_member, signed_in, xsrf_header
 from tests.support.clock import FixedClock
 from tests.support.database import DatabaseUrls
 from tests.support.imports import NOW
@@ -177,3 +177,63 @@ async def test_creating_a_demo_requires_the_site_origin(database: DatabaseUrls) 
             )
 
     assert response.status_code == 403
+
+
+async def test_a_visitor_switches_role_into_a_new_session(
+    database: DatabaseUrls, owner_engine: AsyncEngine
+) -> None:
+    async with _app(database) as app, _visitor(app) as client:
+        organization_id = (await client.post("/api/public/demo")).json()["organization_id"]
+        analyst = (await client.get("/api/app/session")).json()
+        old_cookie = client.cookies.get("__Host-concilia_session")
+        switched = await client.post(
+            "/api/app/demo/switch-role", json={"role": "reviewer"}, headers=xsrf_header(client)
+        )
+        reviewer = (await client.get("/api/app/session")).json()
+        async with _visitor(app) as stale:
+            stale.cookies.set("__Host-concilia_session", old_cookie or "")
+            revoked = await stale.get("/api/app/session")
+
+    assert (switched.status_code, switched.json()) == (200, {"role": "reviewer"})
+    assert (reviewer["organization_id"], reviewer["roles"]) == (organization_id, ["reviewer"])
+    assert reviewer["user_id"] != analyst["user_id"]
+    assert revoked.status_code == 401
+    async with owner_engine.connect() as connection:
+        event = (
+            await connection.execute(
+                text(
+                    """SELECT actor_user_id, entity_id, metadata FROM audit_events
+                       WHERE organization_id = :id AND action = 'demo.role_switched'"""
+                ),
+                {"id": organization_id},
+            )
+        ).one()
+    assert (str(event.actor_user_id), str(event.entity_id), event.metadata) == (
+        analyst["user_id"],
+        reviewer["user_id"],
+        {"roles": ["reviewer"]},
+    )
+
+
+async def test_switching_role_needs_a_live_demo(
+    database: DatabaseUrls, owner_engine: AsyncEngine
+) -> None:
+    member = await create_member(owner_engine, NOW, organizations={"Real": ["analyst"]})
+    async with _app(database) as app:
+        async with signed_in(app, member.email) as client:
+            real = await client.post(
+                "/api/app/demo/switch-role", json={"role": "admin"}, headers=xsrf_header(client)
+            )
+        async with _visitor(app) as client:
+            organization_id = (await client.post("/api/public/demo")).json()["organization_id"]
+            async with owner_engine.begin() as connection:
+                await connection.execute(
+                    text("UPDATE organizations SET demo_expires_at = :past WHERE id = :id"),
+                    {"past": NOW - timedelta(minutes=1), "id": organization_id},
+                )
+            expired = await client.post(
+                "/api/app/demo/switch-role", json={"role": "admin"}, headers=xsrf_header(client)
+            )
+
+    assert (real.status_code, real.json()["detail"]) == (403, "not_a_demo")
+    assert (expired.status_code, expired.json()["detail"]) == (403, "not_a_demo")
