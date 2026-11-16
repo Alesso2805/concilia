@@ -11,7 +11,8 @@
     "lint": "ng lint",
     "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.spec.json --noEmit && tsc -p e2e/tsconfig.json",
     "e2e": "playwright test",
-    "generate:api": "ng-openapi-gen --config ng-openapi-gen.json"
+    "generate:api": "ng-openapi-gen --config ng-openapi-gen.json",
+    "e2e:video": "playwright test --config playwright.video.config.ts e2e/full-flow.spec.ts"
   },
   "private": true,
   "packageManager": "npm@11.20.0",
