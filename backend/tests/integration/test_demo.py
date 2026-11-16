@@ -1,6 +1,6 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
@@ -120,7 +120,7 @@ async def test_a_visitor_enters_a_demo_with_two_imported_months_as_its_analyst(
             ).all()
         )
     assert organization.is_demo is True
-    assert organization.demo_expires_at - NOW > timedelta(days=365 * 50)
+    assert organization.demo_expires_at == datetime(9999, 12, 31, tzinfo=UTC)
     assert [user.role for user in users] == ["admin", "analyst", "reviewer"]
     assert all(
         user.email.startswith("demo+")
