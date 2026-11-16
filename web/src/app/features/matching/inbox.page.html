@@ -150,8 +150,23 @@
                             {{ pen(credit.amount_cents) }}
                           </td>
                         </ng-container>
-                        <tr mat-header-row *matHeaderRowDef="creditColumns"></tr>
-                        <tr mat-row *matRowDef="let row; columns: creditColumns"></tr>
+                        <ng-container matColumnDef="ai">
+                          <th mat-header-cell *matHeaderCellDef scope="col">
+                            <span class="cdk-visually-hidden">Ayuda de la IA</span>
+                          </th>
+                          <td mat-cell *matCellDef="let credit">
+                            <button
+                              mat-button
+                              type="button"
+                              (click)="askAi(credit)"
+                              [attr.aria-label]="'Pedir ayuda a la IA para ' + credit.description"
+                            >
+                              Pedir ayuda a la IA
+                            </button>
+                          </td>
+                        </ng-container>
+                        <tr mat-header-row *matHeaderRowDef="creditColumns()"></tr>
+                        <tr mat-row *matRowDef="let row; columns: creditColumns()"></tr>
                       </table>
                       <mat-paginator
                         [length]="length()"
