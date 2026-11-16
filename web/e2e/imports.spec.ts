@@ -1,28 +1,22 @@
-import { callApi, expect, expectAccessible, logIn, test } from './fixtures';
+import { callApi, expect, expectAccessible, openApp, SIGNED_IN, test, uuidV7 } from './fixtures';
 
-const UUID_V7 = () => {
-  const hex = Date.now().toString(16).padStart(12, '0');
-  const random = Array.from(crypto.getRandomValues(new Uint8Array(10)), (byte) =>
-    byte.toString(16).padStart(2, '0'),
-  ).join('');
-  return `${hex.slice(0, 8)}-${hex.slice(8)}-7${random.slice(0, 3)}-8${random.slice(3, 6)}-${random.slice(6, 18)}`;
-};
+test.use({ storageState: SIGNED_IN });
 
 test('an analyst uploads a statement, confirms it and voids it', async ({ page }) => {
   const run = Date.now();
-  await logIn(page);
+  await openApp(page);
   const session = (await callApi(page, 'GET', '/api/app/session')) as { user_id: string };
   await callApi(page, 'PUT', `/api/app/team/members/${session.user_id}/roles`, {
     roles: ['admin', 'analyst'],
   });
   const account = (await callApi(page, 'POST', '/api/app/bank-accounts', {
-    id: UUID_V7(),
+    id: uuidV7(),
     bank: 'BCP',
     alias: `Importación ${run}`,
     number_last4: '7777',
   })) as { id: string };
   await callApi(page, 'POST', '/api/app/import-profiles', {
-    id: UUID_V7(),
+    id: uuidV7(),
     kind: 'bank_statement',
     bank_account_id: account.id,
     name: `CSV ${run}`,
@@ -81,13 +75,13 @@ test('an analyst imports receivables and previews what a second file changes', a
   const series = `E${String(run % 1000).padStart(3, '0')}`;
   const number = Math.floor(run / 1000) % 10_000_000;
   const [first, second] = [`${series}-${number}`, `${series}-${number + 1}`];
-  await logIn(page);
+  await openApp(page);
   const session = (await callApi(page, 'GET', '/api/app/session')) as { user_id: string };
   await callApi(page, 'PUT', `/api/app/team/members/${session.user_id}/roles`, {
     roles: ['admin', 'analyst'],
   });
   await callApi(page, 'POST', '/api/app/import-profiles', {
-    id: UUID_V7(),
+    id: uuidV7(),
     kind: 'receivables',
     name: `Cobros ${run}`,
     config: {

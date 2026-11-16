@@ -35,6 +35,11 @@ export const routes: Routes = [
         title: 'Importación · Concilia',
       },
       {
+        path: 'bandeja',
+        loadComponent: () => import('./features/matching/inbox.page').then((m) => m.InboxPage),
+        title: 'Bandeja · Concilia',
+      },
+      {
         path: 'cobros',
         loadComponent: () =>
           import('./features/imports/receivables.page').then((m) => m.ReceivablesPage),
