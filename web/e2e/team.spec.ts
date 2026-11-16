@@ -5,7 +5,9 @@ test('an admin invites someone who joins, and then removes them', async ({
   browser,
   baseURL,
 }) => {
-  const email = `invitada-${Date.now()}@example.com`;
+  const run = Date.now();
+  const email = `invitada-${run}@example.com`;
+  const name = `Invitada ${run}`;
   await logIn(page);
 
   await page
@@ -25,13 +27,17 @@ test('an admin invites someone who joins, and then removes them', async ({
   await dialog.getByRole('button', { name: 'Listo' }).click();
   await expect(page.getByRole('table').nth(1)).toContainText(email);
 
-  const invitee = await browser.newContext({ baseURL, ignoreHTTPSErrors: true });
+  const invitee = await browser.newContext({
+    baseURL,
+    ignoreHTTPSErrors: true,
+    reducedMotion: 'reduce',
+  });
   const inviteePage = await invitee.newPage();
   await inviteePage.goto(link);
   await expect(inviteePage).toHaveURL('/invitacion');
   await expectAccessible(inviteePage);
   await inviteePage.getByLabel('Correo').fill(email);
-  await inviteePage.getByLabel('Nombre').fill('Invitada E2E');
+  await inviteePage.getByLabel('Nombre').fill(name);
   await inviteePage.getByLabel('Contraseña').fill('una clave bastante larga');
   await inviteePage.getByRole('button', { name: 'Crear cuenta y unirme' }).click();
   await expect(inviteePage.getByRole('heading', { name: 'Inicio' })).toBeVisible();
@@ -42,7 +48,7 @@ test('an admin invites someone who joins, and then removes them', async ({
 
   await page.reload();
   await expect(page.getByRole('table').first()).toContainText(email);
-  await page.getByRole('button', { name: 'Dar de baja a Invitada E2E' }).click();
+  await page.getByRole('button', { name: `Dar de baja a ${name}` }).click();
   await expectAccessible(page);
   await page.getByRole('dialog').getByRole('button', { name: 'Dar de baja' }).click();
   await expect(page.getByRole('table').first()).not.toContainText(email);
