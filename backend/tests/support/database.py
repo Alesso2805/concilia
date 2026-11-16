@@ -10,6 +10,7 @@ from testcontainers.community.postgres import PostgresContainer
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 INIT_DIR = BACKEND_ROOT.parent / "infra" / "postgres" / "init"
 POSTGRES_IMAGE = "postgres:17.12"
+SUPERUSER_PASSWORD = "postgres-test"
 ROLE_PASSWORDS = {
     "concilia_owner": "owner-test",
     "concilia_app": "app-test",
@@ -27,6 +28,11 @@ class DatabaseUrls:
         password = ROLE_PASSWORDS[role]
         return f"postgresql+asyncpg://{role}:{password}@{self.host}:{self.port}/concilia"
 
+    def superuser(self) -> str:
+        return (
+            f"postgresql+asyncpg://postgres:{SUPERUSER_PASSWORD}@{self.host}:{self.port}/concilia"
+        )
+
 
 def migrate(url: str) -> None:
     config = Config(toml_file=str(BACKEND_ROOT / "pyproject.toml"))
@@ -37,7 +43,7 @@ def migrate(url: str) -> None:
 @contextmanager
 def running_database() -> Iterator[DatabaseUrls]:
     container = PostgresContainer(
-        POSTGRES_IMAGE, username="postgres", password="postgres-test", dbname="postgres"
+        POSTGRES_IMAGE, username="postgres", password=SUPERUSER_PASSWORD, dbname="postgres"
     )
     container.with_volume_mapping(str(INIT_DIR), "/docker-entrypoint-initdb.d", "ro")
     for role, password in ROLE_PASSWORDS.items():
