@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated, Literal
 from uuid import UUID
 
@@ -13,7 +13,11 @@ from concilia.matching.application.decisions import (
     MatchDecisionService,
     StoredDecision,
 )
-from concilia.matching.application.runs import NotAllowedError, NotFoundError
+from concilia.matching.application.runs import (
+    InvalidPeriodError,
+    NotAllowedError,
+    NotFoundError,
+)
 from concilia.shared.infrastructure.web import current_principal
 from concilia.shared.kernel.ids import ClientIdError, IdConflictError
 from concilia.shared.kernel.principal import Principal
@@ -60,8 +64,39 @@ def _view(decision: StoredDecision) -> RecordedDecisionView:
     )
 
 
+class BatchRequestBody(BaseModel):
+    action: Literal["confirm", "approve"]
+    bank_account_id: UUID
+    period: date
+
+
+class BatchView(BaseModel):
+    decided: int
+    skipped: int
+
+
 def decisions_router(service: MatchDecisionService) -> APIRouter:
     router = APIRouter(prefix="/api/app/matches", tags=["inbox"])
+
+    @router.post("/batch")
+    async def decide_batch(body: BatchRequestBody, principal: CurrentPrincipal) -> BatchView:
+        """Confirm (analysts) every proposal, or approve (reviewers) every confirmed match,
+        scored 100 in one account and month (`period` is its first day). Approvals the reviewer
+        may not give under four eyes are counted in `skipped` for someone else. Repeating it
+        decides nothing new.
+        """
+        try:
+            result = await service.decide_batch(
+                principal, body.bank_account_id, body.period, Action(body.action)
+            )
+        except DecisionError as error:
+            code = STATUS_CODES.get(error.code, status.HTTP_409_CONFLICT)
+            raise HTTPException(code, error.code) from None
+        except NotAllowedError:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "role_required") from None
+        except InvalidPeriodError:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "invalid_period") from None
+        return BatchView(decided=result.decided, skipped=result.skipped)
 
     @router.post("/{match_id}/decisions", status_code=status.HTTP_201_CREATED)
     async def decide_match(

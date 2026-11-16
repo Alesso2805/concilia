@@ -83,6 +83,19 @@
         <button mat-button type="button" (click)="clearFilters()">Quitar filtros</button>
       </form>
 
+      @if (batch(); as batch) {
+        <div class="inbox__bar">
+          <button
+            mat-stroked-button
+            type="button"
+            [disabled]="batching()"
+            (click)="decideBatch(batch.action)"
+          >
+            {{ batch.label }}
+          </button>
+        </div>
+      }
+
       <mat-tab-group
         [selectedIndex]="tabIndex()"
         (selectedIndexChange)="selectTab($event)"

@@ -64,6 +64,7 @@ describe('InboxPage', () => {
       credits: vi.fn(() => Promise.resolve({ credits: [], ...PAGE })),
       runEngine: vi.fn(() => Promise.resolve({ id: 'run1', job_id: 'j1' })),
       run: vi.fn(() => Promise.resolve({ id: 'run1', proposals_count: 1 })),
+      decideBatch: vi.fn(() => Promise.resolve({ decided: 2, skipped: 1 })),
     };
     open = vi.fn(() => ({ afterClosed: () => of(false) }));
     TestBed.configureTestingModule({
@@ -166,6 +167,25 @@ describe('InboxPage', () => {
     button(element, 'Ver detalle').click();
 
     expect(open).toHaveBeenCalledWith(MatchDetailDialog, { data: 'm1', autoFocus: 'dialog' });
+  });
+
+  it('confirms the score 100 proposals in batch for analysts only', async () => {
+    const element = await render(['analyst']);
+
+    button(element, 'Confirmar todas las de puntaje 100').click();
+    await settle(fixture);
+
+    expect(service['decideBatch']).toHaveBeenCalledWith(
+      { accountId: 'a1', period: '2027-02-01' },
+      'confirm',
+    );
+    expect(text(fixture)).toContain(
+      'Se confirmaron 2 coincidencias. Una queda para otra persona porque tú las creaste o confirmaste.',
+    );
+    TestBed.resetTestingModule();
+
+    const reviewer = await render(['reviewer']);
+    expect(button(reviewer, 'Confirmar todas las de puntaje 100')).toBeUndefined();
   });
 
   it('names months in Spanish', () => {

@@ -1,12 +1,13 @@
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
+from datetime import date
 from uuid import UUID
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from concilia.audit.application.recorder import AuditRecorder
-from concilia.matching.application.decisions import StoredDecision
+from concilia.matching.application.decisions import BATCH_SCORE, StoredDecision
 from concilia.matching.domain.decisions import Action, MatchState
 from concilia.matching.domain.inbox import MatchStatus
 from concilia.matching.domain.model import DifferenceReason
@@ -77,6 +78,26 @@ class SqlDecisionStore:
             row.decided_by,
             row.decided_at,
         )
+
+    async def batch_candidates(
+        self, bank_account_id: UUID, period: date, status: str
+    ) -> list[UUID]:
+        rows = await self._connection.execute(
+            text(
+                """SELECT m.id FROM matches m JOIN match_status s ON s.match_id = m.id
+                   WHERE m.bank_account_id = :account AND m.score = :score
+                     AND s.status = :status
+                     AND EXISTS (
+                         SELECT 1 FROM match_items c
+                         JOIN bank_movements b ON b.id = c.bank_movement_id
+                         WHERE c.match_id = m.id AND b.booked_on >= :period
+                           AND b.booked_on < CAST(:period AS date) + interval '1 month'
+                     )
+                   ORDER BY m.id"""
+            ),
+            {"account": bank_account_id, "period": period, "status": status, "score": BATCH_SCORE},
+        )
+        return list(rows.scalars())
 
     async def insert_decision(self, organization_id: UUID, decision: StoredDecision) -> None:
         await self._connection.execute(

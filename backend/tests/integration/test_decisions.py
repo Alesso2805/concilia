@@ -415,3 +415,48 @@ async def test_approving_and_rejecting_at_once_records_only_one_decision(
     assert actions[0] == "confirm"
     assert len(actions) == 2
     assert actions[1] in {"approve", "reject"}
+
+
+async def _batch(client: httpx.AsyncClient, team: Team, action: str, period: str) -> httpx.Response:
+    return await client.post(
+        "/api/app/matches/batch",
+        json={"action": action, "bank_account_id": str(team.setup.account_id), "period": period},
+        headers=xsrf_header(client),
+    )
+
+
+async def test_score_100_matches_are_confirmed_and_approved_in_batch_by_two_people(
+    app: FastAPI, team: Team
+) -> None:
+    async with signed_in(app, team.analyst.email) as analyst:
+        january = await _batch(analyst, team, "confirm", "2027-01-01")
+        february = await _batch(analyst, team, "confirm", "2027-02-01")
+        again = await _batch(analyst, team, "confirm", "2027-01-01")
+        not_mine = await _batch(analyst, team, "approve", "2027-01-01")
+        mid_month = await _batch(analyst, team, "confirm", "2027-01-15")
+    async with signed_in(app, team.reviewer.email) as reviewer:
+        approved = await _batch(reviewer, team, "approve", "2027-01-01")
+        counts = (
+            await reviewer.get(
+                "/api/app/inbox/counts",
+                params={"bank_account_id": str(team.setup.account_id), "period": "2027-01-01"},
+            )
+        ).json()
+
+    assert january.json() == {"decided": 1, "skipped": 0}
+    assert february.json() == {"decided": 0, "skipped": 0}
+    assert again.json() == {"decided": 0, "skipped": 0}
+    assert (not_mine.status_code, not_mine.json()["detail"]) == (403, "role_required")
+    assert (mid_month.status_code, mid_month.json()["detail"]) == (422, "invalid_period")
+    assert approved.json() == {"decided": 1, "skipped": 0}
+    assert (counts["confirmed"], counts["approved"]) == (0, 1)
+
+
+async def test_a_batch_approval_leaves_what_the_reviewer_confirmed_to_someone_else(
+    app: FastAPI, team: Team
+) -> None:
+    async with signed_in(app, team.both.email) as both:
+        await _batch(both, team, "confirm", "2027-01-01")
+        result = await _batch(both, team, "approve", "2027-01-01")
+
+    assert result.json() == {"decided": 0, "skipped": 1}

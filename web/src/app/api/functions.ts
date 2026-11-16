@@ -55,6 +55,8 @@ export type { ListMatches$Params as ListMatches$Params } from './fn/inbox/list-m
 export { listMatches as listMatches } from './fn/inbox/list-matches';
 export type { CreateManualMatch$Params as CreateManualMatch$Params } from './fn/inbox/create-manual-match';
 export { createManualMatch as createManualMatch } from './fn/inbox/create-manual-match';
+export type { DecideBatch$Params as DecideBatch$Params } from './fn/inbox/decide-batch';
+export { decideBatch as decideBatch } from './fn/inbox/decide-batch';
 export type { GetMatch$Params as GetMatch$Params } from './fn/inbox/get-match';
 export { getMatch as getMatch } from './fn/inbox/get-match';
 export type { DecideMatch$Params as DecideMatch$Params } from './fn/inbox/decide-match';
