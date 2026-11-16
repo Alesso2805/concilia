@@ -17,6 +17,8 @@ RLS_TABLES = (
     "memberships",
     "member_roles",
     "invitations",
+    "bank_accounts",
+    "import_profiles",
     "audit_events",
     "jobs",
 )
@@ -35,6 +37,7 @@ async def _create_tenant(owner_engine: AsyncEngine, name: str) -> Tenant:
         "user": tenant.user_id,
         "name": name,
         "email": f"{tenant.user_id}@example.test",
+        "account": uuid7(),
         "now": NOW,
     }
     async with owner_engine.begin() as connection:
@@ -51,6 +54,12 @@ async def _create_tenant(owner_engine: AsyncEngine, name: str) -> Tenant:
                VALUES (gen_random_uuid(), :org, 'invitee@example.test', '{analyst}',
                        gen_random_uuid()::text, :user, :now,
                        CAST(:now AS timestamptz) + interval '7 days')""",
+            """INSERT INTO bank_accounts (id, organization_id, bank, currency, alias, number_last4,
+                                          created_at)
+               VALUES (:account, :org, 'BCP', 'PEN', 'Principal', '1234', :now)""",
+            """INSERT INTO import_profiles (id, organization_id, kind, bank_account_id, name,
+                                            config, created_at)
+               VALUES (gen_random_uuid(), :org, 'bank_statement', :account, 'BCP', '{}', :now)""",
             """INSERT INTO audit_events (id, organization_id, actor_user_id, action, entity, at)
                VALUES (gen_random_uuid(), :org, :user, 'test.created', 'organization', :now)""",
             """INSERT INTO jobs (id, organization_id, kind, run_after, created_at)
