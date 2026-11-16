@@ -8,11 +8,16 @@ from fastapi.routing import APIRoute
 from pydantic import BaseModel
 
 from concilia.audit.infrastructure.sql import SqlAuditRecorder
+from concilia.banking.api.routes import banking_router
+from concilia.banking.application.service import BankingService
+from concilia.banking.infrastructure.sql import SqlBankingTransactions
 from concilia.identity.api.registration import registration_router
 from concilia.identity.api.sessions import WebSecurity, session_routers
+from concilia.identity.api.settings import settings_router
 from concilia.identity.api.team import team_routers
 from concilia.identity.application.registration import RegistrationService
 from concilia.identity.application.sessions import LoginPolicy, SessionService
+from concilia.identity.application.settings import SettingsService
 from concilia.identity.application.team import TeamService
 from concilia.identity.infrastructure.passwords import Argon2PasswordHasher
 from concilia.identity.infrastructure.sql import SqlIdentityTransactions, SqlRateLimiter
@@ -92,5 +97,13 @@ def create_app(settings: ApiSettings | None = None, clock: Clock | None = None) 
         routers.set_session_cookies,
     )
     app.include_router(team_public, dependencies=[Depends(routers.require_same_origin)])
-    app.include_router(team_app, dependencies=[Depends(routers.authenticate)])
+    authenticated = [Depends(routers.authenticate)]
+    app.include_router(team_app, dependencies=authenticated)
+    app.include_router(
+        settings_router(SettingsService(transactions, clock)), dependencies=authenticated
+    )
+    app.include_router(
+        banking_router(BankingService(SqlBankingTransactions(engine, SqlAuditRecorder), clock)),
+        dependencies=authenticated,
+    )
     return app

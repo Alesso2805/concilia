@@ -5,6 +5,7 @@ from uuid import UUID
 
 from concilia.audit.application.recorder import AuditRecorder
 from concilia.identity.domain.model import OrganizationAccess, Role, Session, User
+from concilia.identity.domain.settings import OrganizationSettings
 
 
 class PasswordHasher(Protocol):
@@ -29,6 +30,12 @@ class IdentityStore(Protocol):
     async def update_password_hash(self, user_id: UUID, password_hash: str) -> None: ...
 
     async def find_organization_name(self, organization_id: UUID) -> str | None: ...
+
+    async def organization_settings(self, organization_id: UUID) -> OrganizationSettings | None: ...
+
+    async def update_organization_settings(
+        self, organization_id: UUID, settings: OrganizationSettings
+    ) -> None: ...
 
     async def insert_organization(
         self, organization_id: UUID, name: str, now: datetime

@@ -4,12 +4,12 @@ from concilia.banking.application.profile_config import (
     DateFormat,
     FileFormat,
     ProfileConfig,
-    ProfileKind,
     ReceivablesColumns,
     ReceivablesConfig,
     StatementColumns,
     StatementConfig,
 )
+from concilia.banking.domain.model import ProfileKind
 
 
 @dataclass(frozen=True)

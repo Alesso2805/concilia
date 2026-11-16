@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from concilia.audit.application.recorder import AuditRecorder
 from concilia.identity.domain.model import OrganizationAccess, Role, Session, User
+from concilia.identity.domain.settings import OrganizationSettings
 from concilia.shared.infrastructure.db import (
     anonymous_transaction,
     lock_organization,
@@ -68,6 +69,37 @@ class SqlIdentityStore:
         )
         name: str | None = result.scalar_one_or_none()
         return name
+
+    async def organization_settings(self, organization_id: UUID) -> OrganizationSettings | None:
+        row = (
+            await self._connection.execute(
+                text(
+                    """SELECT name, tolerance_min_cents, tolerance_bp, detraction_rates_bp
+                       FROM organizations WHERE id = :id"""
+                ),
+                {"id": organization_id},
+            )
+        ).first()
+        if row is None:
+            return None
+        return OrganizationSettings(
+            row.name, row.tolerance_min_cents, row.tolerance_bp, tuple(row.detraction_rates_bp)
+        )
+
+    async def update_organization_settings(
+        self, organization_id: UUID, settings: OrganizationSettings
+    ) -> None:
+        await self._execute(
+            """UPDATE organizations
+               SET name = :name, tolerance_min_cents = :minimum, tolerance_bp = :bp,
+                   detraction_rates_bp = :rates
+               WHERE id = :id""",
+            name=settings.name,
+            minimum=settings.tolerance_min_cents,
+            bp=settings.tolerance_bp,
+            rates=list(settings.detraction_rates_bp),
+            id=organization_id,
+        )
 
     async def insert_organization(self, organization_id: UUID, name: str, now: datetime) -> None:
         try:
