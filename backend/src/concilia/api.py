@@ -8,6 +8,9 @@ from fastapi.routing import APIRoute
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from concilia.audit.api.routes import audit_router
+from concilia.audit.application.log import AuditLogService
+from concilia.audit.infrastructure.log_sql import SqlAuditLogTransactions
 from concilia.audit.infrastructure.sql import SqlAuditRecorder
 from concilia.banking.api.routes import banking_router
 from concilia.banking.application.service import BankingService
@@ -194,6 +197,9 @@ def create_app(settings: ApiSettings | None = None, clock: Clock | None = None) 
             DemoFilesService(SqlDemoReadTransactions(engine)),
         ),
         dependencies=authenticated,
+    )
+    app.include_router(
+        audit_router(AuditLogService(SqlAuditLogTransactions(engine))), dependencies=authenticated
     )
     app.include_router(jobs_router(engine), dependencies=authenticated)
     return app

@@ -79,6 +79,210 @@
         "title": "ApplicationBody",
         "type": "object"
       },
+      "AuditAction": {
+        "enum": [
+          "organization.created",
+          "invitation.created",
+          "invitation.revoked",
+          "invitation.accepted",
+          "member.roles_changed",
+          "member.removed",
+          "organization.settings_changed",
+          "bank_account.created",
+          "bank_account.updated",
+          "bank_account.archived",
+          "import_profile.created",
+          "import_profile.updated",
+          "import_profile.archived",
+          "import.uploaded",
+          "import.discarded",
+          "import.confirmed",
+          "import.voided",
+          "receivable.cancelled",
+          "engine_run.requested",
+          "demo.role_switched",
+          "match.created",
+          "match.confirmed",
+          "match.discarded",
+          "match.approved",
+          "match.rejected",
+          "match.reverted",
+          "period.closed",
+          "period.reopened"
+        ],
+        "title": "AuditAction",
+        "type": "string"
+      },
+      "AuditActorView": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "display_name"
+        ],
+        "title": "AuditActorView",
+        "type": "object"
+      },
+      "AuditEntity": {
+        "enum": [
+          "organization",
+          "user",
+          "invitation",
+          "member",
+          "bank_account",
+          "import_profile",
+          "import_file",
+          "receivable",
+          "engine_run",
+          "match",
+          "period_event"
+        ],
+        "title": "AuditEntity",
+        "type": "string"
+      },
+      "AuditEventView": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/AuditAction"
+          },
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name"
+          },
+          "actor_user_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor User Id"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "entity": {
+            "$ref": "#/components/schemas/AuditEntity"
+          },
+          "entity_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Id"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              ]
+            },
+            "title": "Metadata",
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "actor_user_id",
+          "actor_name",
+          "action",
+          "entity",
+          "entity_id",
+          "metadata"
+        ],
+        "title": "AuditEventView",
+        "type": "object"
+      },
+      "AuditPageView": {
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/AuditEventView"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "has_next": {
+            "title": "Has Next",
+            "type": "boolean"
+          },
+          "has_previous": {
+            "title": "Has Previous",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "previous_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Cursor"
+          }
+        },
+        "required": [
+          "events",
+          "has_previous",
+          "has_next",
+          "previous_cursor",
+          "next_cursor"
+        ],
+        "title": "AuditPageView",
+        "type": "object"
+      },
       "BankAccountView": {
         "properties": {
           "alias": {
@@ -3322,6 +3526,193 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/app/audit-events": {
+      "get": {
+        "description": "Who did what in the organization, newest first, for any member with a role.\n\n`from` and `to` are Lima days, both included. Pages by keyset: pass `next_cursor` as\n`after` or `previous_cursor` as `before`. 403 `role_required`; 422 `invalid_range` or\n`invalid_cursor`.",
+        "operationId": "list_audit_events",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "actor_user_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Actor User Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "action",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/AuditAction"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action"
+            }
+          },
+          {
+            "in": "query",
+            "name": "entity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/AuditEntity"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Entity"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditPageView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Audit Events",
+        "tags": [
+          "audit"
+        ]
+      }
+    },
+    "/api/app/audit-events/actors": {
+      "get": {
+        "description": "Current and former members, to filter the audit log by who acted.",
+        "operationId": "list_audit_actors",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AuditActorView"
+                  },
+                  "title": "Response List Audit Actors",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Audit Actors",
+        "tags": [
+          "audit"
+        ]
+      }
+    },
     "/api/app/bank-accounts": {
       "get": {
         "description": "List the organization's bank accounts, archived ones included.",

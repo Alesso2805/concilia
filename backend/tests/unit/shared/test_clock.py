@@ -4,7 +4,7 @@ import pytest
 import time_machine
 
 from concilia.shared.infrastructure.clock import SystemClock
-from concilia.shared.kernel.clock import lima_date
+from concilia.shared.kernel.clock import lima_date, lima_day_start
 
 
 def test_now_is_utc() -> None:
@@ -38,3 +38,7 @@ def test_lima_date_handles_month_year_and_leap_day_boundaries(
 def test_lima_date_rejects_naive_datetimes() -> None:
     with pytest.raises(ValueError, match="timezone-aware"):
         lima_date(datetime(2026, 1, 1))  # noqa: DTZ001
+
+
+def test_a_lima_day_starts_at_five_in_the_morning_utc() -> None:
+    assert lima_day_start(date(2027, 1, 5)) == datetime(2027, 1, 5, 5, tzinfo=UTC)
