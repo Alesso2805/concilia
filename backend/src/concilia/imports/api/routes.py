@@ -23,6 +23,7 @@ from concilia.imports.application.service import (
     FileSummary,
     FileTooLargeError,
     ImportService,
+    InvalidDocumentError,
     NotAllowedError,
     NotFoundError,
     Upload,
@@ -46,6 +47,7 @@ ERRORS: dict[type[Exception], tuple[int, str]] = {
     DuplicateFileError: (status.HTTP_409_CONFLICT, "duplicate_file"),
     ClosedPeriodError: (status.HTTP_409_CONFLICT, "closed_period"),
     ActiveMatchesError: (status.HTTP_409_CONFLICT, "active_matches"),
+    InvalidDocumentError: (status.HTTP_422_UNPROCESSABLE_CONTENT, "invalid_document"),
 }
 HANDLED: tuple[type[Exception], ...] = (ClientIdError, FileError, *ERRORS)
 

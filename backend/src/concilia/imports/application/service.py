@@ -44,6 +44,7 @@ from concilia.imports.domain.statement import (
 from concilia.periods.application.queries import PeriodQueries, period_of
 from concilia.shared.kernel.clock import Clock
 from concilia.shared.kernel.ids import create_or_replay, validate_client_id
+from concilia.shared.kernel.normalization import normalize_doc_number
 from concilia.shared.kernel.principal import Principal
 
 ANALYST = "analyst"
@@ -77,6 +78,10 @@ class ClosedPeriodError(Exception):
 
 
 class ActiveMatchesError(Exception):
+    pass
+
+
+class InvalidDocumentError(Exception):
     pass
 
 
@@ -119,6 +124,7 @@ class ImportStore(ReceivableStore, Protocol):
     async def receivable_page(
         self,
         cancelled: bool,
+        document: str | None,
         after: tuple[date, UUID] | None,
         before: tuple[date, UUID] | None,
         limit: int,
@@ -486,13 +492,21 @@ class ImportService:
         principal: Principal,
         *,
         cancelled: bool = False,
+        document: str | None = None,
         after: tuple[date, UUID] | None = None,
         before: tuple[date, UUID] | None = None,
         limit: int = 20,
     ) -> ReceivablePage:
         organization_id = _member_organization(principal)
+        normalized = None
+        if document is not None:
+            normalized = normalize_doc_number(document)
+            if normalized is None:
+                raise InvalidDocumentError
         async with self._transactions.organization(organization_id) as store:
-            return await store.receivable_page(cancelled, after, before, min(limit, PAGE_LIMIT))
+            return await store.receivable_page(
+                cancelled, normalized, after, before, min(limit, PAGE_LIMIT)
+            )
 
     async def parse(
         self, organization_id: UUID, file_id: UUID, store: ImportStore, progress: ProgressReporter

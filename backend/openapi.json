@@ -3114,7 +3114,7 @@
     },
     "/api/app/receivables": {
       "get": {
-        "description": "Receivables by due date, oldest first, by keyset cursor (no total, no jump to the end).\n\n`cancelled=true` lists only cancelled receivables; otherwise only live ones.",
+        "description": "Receivables by due date, oldest first, by keyset cursor (no total, no jump to the end).\n\n`cancelled=true` lists only cancelled receivables; otherwise only live ones. `document`\nfinds one document number in any accepted spelling (`F1-123` finds `F001-00000123`);\n422 `invalid_document` if it is not a document number.",
         "operationId": "list_receivables",
         "parameters": [
           {
@@ -3125,6 +3125,24 @@
               "default": false,
               "title": "Cancelled",
               "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "document",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 40,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Document"
             }
           },
           {

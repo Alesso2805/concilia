@@ -113,6 +113,21 @@ async def test_receivables_are_listed_by_due_date_with_keyset_pages(
     assert (invalid.status_code, invalid.json()["detail"]) == (422, "invalid_cursor")
 
 
+async def test_a_document_is_found_in_any_accepted_spelling(
+    app: FastAPI, owner_engine: AsyncEngine, worker_engine: AsyncEngine, clock: FixedClock
+) -> None:
+    setup, profile_id = await receivables_setup(owner_engine)
+    async with signed_in(app, setup.member.email) as client:
+        await _import(client, setup, profile_id, worker_engine, clock)
+        found = await _page(client, document="f1-123")
+        cancelled = await _page(client, document="F001-123", cancelled=True)
+        invalid = await client.get("/api/app/receivables", params={"document": "FACTURA"})
+
+    assert _documents(found) == ["F001-00000123"]
+    assert _documents(cancelled) == []
+    assert (invalid.status_code, invalid.json()["detail"]) == (422, "invalid_document")
+
+
 async def test_cancelling_moves_a_receivable_to_the_cancelled_list(
     app: FastAPI, owner_engine: AsyncEngine, worker_engine: AsyncEngine, clock: FixedClock
 ) -> None:

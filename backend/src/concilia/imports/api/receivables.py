@@ -62,18 +62,22 @@ def receivables_router(service: ImportService) -> APIRouter:
     async def list_receivables(
         principal: CurrentPrincipal,
         cancelled: bool = False,
+        document: Annotated[str | None, Query(min_length=1, max_length=40)] = None,
         after: str | None = None,
         before: str | None = None,
         limit: Annotated[int, Query(gt=0, le=100)] = 20,
     ) -> ReceivablePageView:
         """Receivables by due date, oldest first, by keyset cursor (no total, no jump to the end).
 
-        `cancelled=true` lists only cancelled receivables; otherwise only live ones.
+        `cancelled=true` lists only cancelled receivables; otherwise only live ones. `document`
+        finds one document number in any accepted spelling (`F1-123` finds `F001-00000123`);
+        422 `invalid_document` if it is not a document number.
         """
         try:
             page = await service.receivables(
                 principal,
                 cancelled=cancelled,
+                document=document,
                 after=decode_date_cursor(after) if after else None,
                 before=decode_date_cursor(before) if before else None,
                 limit=limit,
