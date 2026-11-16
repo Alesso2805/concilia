@@ -70,6 +70,7 @@ On the demo dataset, rules 1 to 3 propose the right receivables for 75.0 % of th
 | [0007](docs/adr/0007-frontend-angular.md) | Angular 22, zoneless, with a generated API client |
 | [0008](docs/adr/0008-sessions-csrf-local-https.md) | Cookie sessions, signed double-submit CSRF and local HTTPS |
 | [0009](docs/adr/0009-client-ids-and-idempotent-posts.md) | Client-generated ids and idempotent POST requests |
+| [0010](docs/adr/0010-deployment.md) | One server with Compose; images built by CI and pulled on deploy |
 
 ## Stack
 
@@ -103,6 +104,8 @@ It asks for the admin password and runs as the database owner role, like migrati
 printf '%s\n' "$PASSWORD" | docker compose run -T --rm migrator python -m concilia.cli create-org \
   --name "Comercial Andina" --email ana@example.com --display-name "Ana Torres" --password-stdin
 ```
+
+Deploying to a server: [docs/DEPLOY.md](docs/DEPLOY.md).
 
 `make down` stops everything and keeps the data. Local passwords have development defaults in `docker-compose.yml`; a real deployment must override them (`POSTGRES_PASSWORD`, `CONCILIA_OWNER_PASSWORD`, `CONCILIA_APP_PASSWORD`, `CONCILIA_WORKER_PASSWORD`, `CONCILIA_BACKUP_PASSWORD`).
 

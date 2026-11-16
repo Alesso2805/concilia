@@ -13,5 +13,6 @@ Each ADR records one technical decision that the specification ([SPEC.md](../SPE
 | [0007](0007-frontend-angular.md) | Frontend on Angular 22, zoneless, with a generated API client | Accepted |
 | [0008](0008-sessions-csrf-local-https.md) | Cookie sessions, signed double-submit CSRF and local HTTPS | Accepted |
 | [0009](0009-client-ids-and-idempotent-posts.md) | Client-generated ids and idempotent POST requests | Accepted |
+| [0010](0010-deployment.md) | Deployment on one server with Compose and images from CI | Accepted |
 
 New ADRs use the next free number and the sections of the existing ones: context, decision, consequences and alternatives considered.

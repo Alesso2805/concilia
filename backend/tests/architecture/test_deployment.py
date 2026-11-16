@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import yaml
@@ -18,3 +19,11 @@ def test_caddy_overwrites_the_forwarded_address_and_limits_request_size() -> Non
 
     assert "header_up X-Forwarded-For {remote_host}" in caddyfile
     assert "max_size 6MB" in caddyfile
+
+
+def test_production_requires_every_password_and_secret() -> None:
+    production = (ROOT / "docker-compose.prod.yml").read_text(encoding="utf-8")
+    sensitive = re.findall(r"\$\{(\w*(?:PASSWORD|SECRET)\w*)(:[?-])?\}", production)
+
+    assert sensitive
+    assert [name for name, check in sensitive if check != ":?"] == []

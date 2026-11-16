@@ -3,9 +3,11 @@ from contextlib import asynccontextmanager
 from datetime import timedelta
 from typing import Literal
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.routing import APIRoute
 from pydantic import BaseModel
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from concilia.ai.api.routes import ai_router
@@ -72,7 +74,7 @@ from concilia.reporting.infrastructure.dashboard_sql import SqlDashboardTransact
 from concilia.reporting.infrastructure.exports_sql import SqlExportTransactions
 from concilia.reporting.infrastructure.xlsx import build_workbook
 from concilia.shared.infrastructure.clock import SystemClock
-from concilia.shared.infrastructure.db import create_engine
+from concilia.shared.infrastructure.db import anonymous_transaction, create_engine
 from concilia.shared.infrastructure.jobs_api import jobs_router
 from concilia.shared.infrastructure.settings import ApiSettings
 from concilia.shared.infrastructure.web import install_error_handlers
@@ -114,9 +116,21 @@ def create_app(
     app.state.engine = engine
     install_error_handlers(app)
 
-    @app.get("/api/health", tags=["health"])
+    @app.get(
+        "/api/health",
+        tags=["health"],
+        responses={503: {"description": "The database does not answer"}},
+    )
     async def get_health() -> HealthResponse:
-        """Report that the API process is up."""
+        """Report that the API process is up and reaches the database; the external monitor
+        polls it. 503 `database_unavailable`."""
+        try:
+            async with anonymous_transaction(engine) as connection:
+                await connection.execute(text("SELECT 1"))
+        except OSError, SQLAlchemyError:
+            raise HTTPException(
+                status.HTTP_503_SERVICE_UNAVAILABLE, "database_unavailable"
+            ) from None
         return HealthResponse(status="ok")
 
     transactions = SqlIdentityTransactions(engine, SqlAuditRecorder)

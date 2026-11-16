@@ -1,0 +1,82 @@
+name: Deploy
+
+# After CI passes on main: publish both images to GitHub Container Registry, then roll the
+# server forward over SSH. Until the DEPLOY_* secrets exist (docs/DEPLOY.md), only the images
+# are published.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  images:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      version: ${{ steps.names.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - id: names
+        run: |
+          echo "images=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+          echo "version=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io --username "${{ github.actor }}" --password-stdin
+      - name: Build and push
+        env:
+          IMAGES: ${{ steps.names.outputs.images }}
+          VERSION: ${{ steps.names.outputs.version }}
+        run: |
+          for image in backend web; do
+            docker build --tag "$IMAGES/concilia-$image:$VERSION" --tag "$IMAGES/concilia-$image:latest" "./$image"
+            docker push --all-tags "$IMAGES/concilia-$image"
+          done
+
+  server:
+    needs: images
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+    steps:
+      - if: env.DEPLOY_HOST == ''
+        run: echo "No DEPLOY_HOST secret yet; images published, nothing to deploy."
+      - if: env.DEPLOY_HOST != ''
+        name: Roll the server forward
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          VERSION: ${{ needs.images.outputs.version }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" "sh -s" <<EOF
+          set -eu
+          cd /opt/concilia
+          git fetch --quiet origin main
+          git checkout --quiet --detach "$VERSION"
+          export CONCILIA_VERSION="$VERSION"
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml pull --quiet
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml up --detach --no-build --remove-orphans
+          EOF
+      - if: env.DEPLOY_HOST != ''
+        name: The public site answers
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+        run: curl --fail --silent --show-error --retry 10 --retry-all-errors --retry-delay 3 "$SITE_URL/api/health"
