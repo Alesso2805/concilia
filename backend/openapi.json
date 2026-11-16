@@ -439,7 +439,7 @@
         "title": "DateFormat",
         "type": "string"
       },
-      "DecisionView": {
+      "DecisionRequestBody": {
         "properties": {
           "action": {
             "enum": [
@@ -452,18 +452,10 @@
             "title": "Action",
             "type": "string"
           },
-          "decided_at": {
-            "format": "date-time",
-            "title": "Decided At",
-            "type": "string"
-          },
-          "decided_by": {
-            "title": "Decided By",
-            "type": "string"
-          },
           "difference_note": {
             "anyOf": [
               {
+                "maxLength": 500,
                 "type": "string"
               },
               {
@@ -490,9 +482,15 @@
             ],
             "title": "Difference Reason"
           },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
           "reason": {
             "anyOf": [
               {
+                "maxLength": 500,
                 "type": "string"
               },
               {
@@ -503,14 +501,10 @@
           }
         },
         "required": [
-          "action",
-          "reason",
-          "difference_reason",
-          "difference_note",
-          "decided_by",
-          "decided_at"
+          "id",
+          "action"
         ],
-        "title": "DecisionView",
+        "title": "DecisionRequestBody",
         "type": "object"
       },
       "DemoView": {
@@ -1122,7 +1116,7 @@
           },
           "decisions": {
             "items": {
-              "$ref": "#/components/schemas/DecisionView"
+              "$ref": "#/components/schemas/concilia__matching__api__inbox__DecisionView"
             },
             "title": "Decisions",
             "type": "array"
@@ -2798,6 +2792,161 @@
         ],
         "title": "VoidRequest",
         "type": "object"
+      },
+      "concilia__matching__api__decisions__DecisionView": {
+        "properties": {
+          "action": {
+            "enum": [
+              "confirm",
+              "discard",
+              "approve",
+              "reject",
+              "revert"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "decided_at": {
+            "format": "date-time",
+            "title": "Decided At",
+            "type": "string"
+          },
+          "difference_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Note"
+          },
+          "difference_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "commission",
+                  "detraction",
+                  "rounding",
+                  "overpayment",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Reason"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "match_id": {
+            "format": "uuid",
+            "title": "Match Id",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "id",
+          "match_id",
+          "action",
+          "reason",
+          "difference_reason",
+          "difference_note",
+          "decided_at"
+        ],
+        "title": "DecisionView",
+        "type": "object"
+      },
+      "concilia__matching__api__inbox__DecisionView": {
+        "properties": {
+          "action": {
+            "enum": [
+              "confirm",
+              "discard",
+              "approve",
+              "reject",
+              "revert"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "decided_at": {
+            "format": "date-time",
+            "title": "Decided At",
+            "type": "string"
+          },
+          "decided_by": {
+            "title": "Decided By",
+            "type": "string"
+          },
+          "difference_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Note"
+          },
+          "difference_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "commission",
+                  "detraction",
+                  "rounding",
+                  "overpayment",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Reason"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "action",
+          "reason",
+          "difference_reason",
+          "difference_note",
+          "decided_by",
+          "decided_at"
+        ],
+        "title": "DecisionView",
+        "type": "object"
       }
     }
   },
@@ -4422,6 +4571,60 @@
           }
         },
         "summary": "Get Match",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/app/matches/{match_id}/decisions": {
+      "post": {
+        "description": "Record a decision following the state table: an analyst confirms or discards a\nproposal, and a reviewer other than whoever created or confirmed it approves, rejects or\nreverts it.\n\nIdempotent on the client-generated id. Errors: 403 `role_required`; 409 `wrong_state`,\n`four_eyes` or `closed_period`; 422 `reason_required` (reject and revert) or\n`difference_reason` (a confirmed difference needs a reason, `overpayment` only when\npositive and `other` with a note).",
+        "operationId": "decide_match",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "match_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Match Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/concilia__matching__api__decisions__DecisionView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide Match",
         "tags": [
           "inbox"
         ]
