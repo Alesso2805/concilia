@@ -225,6 +225,9 @@ functions:
   app_reset_demo:
     security_definer: true
     execute: []
+  app_refresh_stats:
+    security_definer: true
+    execute: [concilia_app, concilia_worker]
   app_user_orgs:
     security_definer: true
     execute: [concilia_app]

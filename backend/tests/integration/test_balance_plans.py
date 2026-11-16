@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from concilia.audit.infrastructure.sql import SqlAuditRecorder
 from concilia.matching.infrastructure.runs_sql import SqlRunTransactions
 from concilia.periods.infrastructure.sql import SqlPeriodQueries
+from concilia.shared.infrastructure.db import refresh_statistics
 from tests.support.database import DatabaseUrls
 from tests.support.imports import NOW, Setup, statement_setup
 
@@ -18,35 +19,38 @@ SEED = [
     """INSERT INTO import_files (id, organization_id, kind, bank_account_id, import_profile_id,
                                  profile_snapshot, filename, sha256, size_bytes, content, status,
                                  created_by, created_at)
-       VALUES (md5('plans')::uuid, :org, 'bank_statement', :account, :profile, '{}', 'p.csv',
-               repeat('d', 64), 3, 'abc', 'confirmed', :user, :now)""",
+       VALUES (md5(:key || 'plans')::uuid, :org, 'bank_statement', :account, :profile, '{}',
+               'p.csv', repeat('d', 64), 3, 'abc', 'confirmed', :user, :now)""",
     """INSERT INTO bank_movements (id, organization_id, bank_account_id, import_file_id,
                                    booked_on, amount_cents, description, description_norm,
                                    fingerprint, doc_refs, created_at)
-       SELECT md5('pm' || n)::uuid, :org, :account, md5('plans')::uuid,
+       SELECT md5(:key || 'pm' || n)::uuid, :org, :account, md5(:key || 'plans')::uuid,
               DATE '2027-01-01' + (n % 28), 1000 + n, 'PAGO', 'PAGO',
-              md5('pm' || n) || md5('pf' || n), '{}', :now
+              md5(:key || 'pm' || n) || md5(:key || 'pf' || n), '{}', :now
        FROM generate_series(1, :rows) n""",
     """INSERT INTO receivables (id, organization_id, import_file_id, customer_name,
                                 customer_name_norm, doc_number, doc_number_norm, issued_on,
                                 due_on, amount_cents, created_at, updated_at)
-       SELECT md5('pr' || n)::uuid, :org, md5('plans')::uuid, 'Cliente', 'CLIENTE',
-              'F009-' || n, 'F009-' || n, DATE '2026-12-15', DATE '2027-01-15',
+       SELECT md5(:key || 'pr' || n)::uuid, :org, md5(:key || 'plans')::uuid, 'Cliente',
+              'CLIENTE', 'F009-' || n, 'F009-' || n, DATE '2026-12-15', DATE '2027-01-15',
               2000 + n, :now, :now
        FROM generate_series(1, :rows) n""",
     """INSERT INTO matches (id, organization_id, bank_account_id, source, created_by,
                            created_at)
-       SELECT md5('px' || n)::uuid, :org, :account, 'manual', :user, :now
+       SELECT md5(:key || 'px' || n)::uuid, :org, :account, 'manual', :user, :now
        FROM generate_series(1, :rows / 2) n""",
     """INSERT INTO match_items (id, organization_id, match_id, bank_movement_id)
-       SELECT md5('pi' || n)::uuid, :org, md5('px' || n)::uuid, md5('pm' || n)::uuid
+       SELECT md5(:key || 'pi' || n)::uuid, :org, md5(:key || 'px' || n)::uuid,
+              md5(:key || 'pm' || n)::uuid
        FROM generate_series(1, :rows / 2) n""",
     """INSERT INTO match_items (id, organization_id, match_id, receivable_id, applied_cents)
-       SELECT md5('pj' || n)::uuid, :org, md5('px' || n)::uuid, md5('pr' || n)::uuid, 1000 + n
+       SELECT md5(:key || 'pj' || n)::uuid, :org, md5(:key || 'px' || n)::uuid,
+              md5(:key || 'pr' || n)::uuid, 1000 + n
        FROM generate_series(1, :rows / 2) n""",
     """INSERT INTO match_decisions (id, organization_id, match_id, action, decided_by,
                                    decided_at)
-       SELECT md5('pd' || n)::uuid, :org, md5('px' || n)::uuid, 'confirm', :user, :now
+       SELECT md5(:key || 'pd' || n)::uuid, :org, md5(:key || 'px' || n)::uuid, 'confirm',
+              :user, :now
        FROM generate_series(1, :rows / 2) n""",
 ]
 
@@ -61,6 +65,7 @@ async def books(owner_engine: AsyncEngine) -> Setup:
         "user": setup.member.user_id,
         "now": NOW,
         "rows": ROWS,
+        "key": str(setup.organization_id),
     }
     async with owner_engine.begin() as connection:
         for table in ("matches", "match_items", "match_decisions"):
@@ -110,3 +115,33 @@ async def test_balances_stay_fast_while_the_statistics_know_nothing_of_the_rows(
         await superuser.dispose()
 
     assert len(engine_input.receivables) == ROWS
+
+
+async def test_the_application_refreshes_the_statistics_of_the_loaded_rows(
+    database: DatabaseUrls, books: Setup
+) -> None:
+    superuser = create_async_engine(database.superuser())
+    try:
+        async with superuser.connect() as connection:
+            transaction = await connection.begin()
+            await connection.execute(
+                text("UPDATE pg_class SET reltuples = 10, relpages = 1 WHERE relname = ANY(:t)"),
+                {"t": list(STALE)},
+            )
+            await connection.execute(text("SET LOCAL ROLE concilia_app"))
+            await refresh_statistics(connection)
+            estimates: dict[str, float] = dict(
+                (
+                    await connection.execute(
+                        text("SELECT relname, reltuples FROM pg_class WHERE relname = ANY(:t)"),
+                        {"t": list(STALE)},
+                    )
+                ).all()
+            )
+            await transaction.rollback()
+    finally:
+        await superuser.dispose()
+
+    assert estimates["bank_movements"] >= ROWS
+    assert estimates["receivables"] >= ROWS
+    assert estimates["match_items"] >= ROWS

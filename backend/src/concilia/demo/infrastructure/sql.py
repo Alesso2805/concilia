@@ -6,12 +6,17 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from concilia.demo.application.creation import DemoStores
-from concilia.shared.infrastructure.db import organization_transaction
+from concilia.shared.infrastructure.db import (
+    anonymous_transaction,
+    organization_transaction,
+    refresh_statistics,
+)
 
 
 class SqlDemoTransactions:
     """Creates a demo in one transaction whose `app.org_id` is the new organization, with the
-    stores of every module on that connection (built by the composition root)."""
+    stores of every module on that connection (built by the composition root), and refreshes the
+    planner statistics once it commits."""
 
     def __init__(
         self, engine: AsyncEngine, stores: Callable[[AsyncConnection], DemoStores]
@@ -23,6 +28,8 @@ class SqlDemoTransactions:
     async def organization(self, organization_id: UUID) -> AsyncIterator[DemoStores]:
         async with organization_transaction(self._engine, organization_id) as connection:
             yield self._stores(connection)
+        async with anonymous_transaction(self._engine) as connection:
+            await refresh_statistics(connection)
 
 
 class SqlDemoQueries:

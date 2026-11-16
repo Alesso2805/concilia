@@ -9,7 +9,7 @@ from concilia.imports.domain.cells import Cell
 from concilia.imports.domain.statement import FileError
 from concilia.imports.infrastructure.readers import detect_format, read_rows
 from concilia.imports.infrastructure.sql import SqlImportTransactions
-from concilia.shared.infrastructure.db import organization_transaction
+from concilia.shared.infrastructure.db import organization_transaction, refresh_statistics
 from concilia.shared.infrastructure.jobs import Handler, Job, JobError, report_progress
 
 
@@ -66,6 +66,7 @@ def confirm_import_handler(service: ImportService, transactions: SqlImportTransa
             await service.confirm(organization_id, file_id, store, actor)
         except DuplicateFileError:
             raise JobError("duplicate_file", retry=False) from None
+        await refresh_statistics(connection)
 
     return run
 
