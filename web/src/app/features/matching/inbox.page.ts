@@ -34,6 +34,8 @@ import { isFinished, JobTracker } from '../../core/jobs/job-tracker';
 import { KeysetPaginatorIntl, keysetLength } from '../../core/paging/keyset';
 import { SessionStore } from '../../core/session/session.store';
 import { BankingService } from '../admin/banking.service';
+import { PeriodsService } from '../periods/periods.service';
+import { ReopenPeriodDialog } from '../periods/reopen-period.dialog';
 import { dayLabel, monthLabel, RULE_LABELS, TABS } from './labels';
 import { MatchDetailDialog } from './match-detail.dialog';
 import {
@@ -87,6 +89,7 @@ type Loaded = { tab: 'free'; view: CreditPageView } | { tab: MatchTab; view: Mat
 export class InboxPage implements OnInit {
   private readonly matching = inject(MatchingService);
   private readonly banking = inject(BankingService);
+  private readonly periodsApi = inject(PeriodsService);
   private readonly jobs = inject(JobTracker);
   private readonly dialog = inject(MatDialog);
   private readonly session = inject(SessionStore);
@@ -153,6 +156,17 @@ export class InboxPage implements OnInit {
     return null;
   });
   protected readonly batching = signal(false);
+  protected readonly closing = signal(false);
+  protected readonly canClose = computed(
+    () =>
+      this.session.roles().has('reviewer') &&
+      this.month() !== null &&
+      !this.closed() &&
+      !this.running(),
+  );
+  protected readonly canReopen = computed(
+    () => this.session.roles().has('reviewer') && this.closed(),
+  );
   protected readonly length = computed(() =>
     keysetLength(this.pageIndex(), PAGE_SIZE, this.page()?.view.has_next ?? false),
   );
@@ -300,6 +314,59 @@ export class InboxPage implements OnInit {
       this.error.set(matchingErrorMessage(error));
     } finally {
       this.batching.set(false);
+    }
+  }
+
+  protected async closePeriod(): Promise<void> {
+    const month = this.month();
+    if (!month) {
+      return;
+    }
+    await this.changePeriod(
+      () => this.periodsApi.close(month),
+      `Cerraste ${monthLabel(month.period)}.`,
+    );
+  }
+
+  protected async reopenPeriod(): Promise<void> {
+    const month = this.month();
+    if (!month) {
+      return;
+    }
+    const reason = await firstValueFrom(
+      this.dialog
+        .open<ReopenPeriodDialog, string, string>(ReopenPeriodDialog, {
+          data: monthLabel(month.period),
+          autoFocus: 'first-tabbable',
+        })
+        .afterClosed(),
+    );
+    if (!reason) {
+      return;
+    }
+    await this.changePeriod(
+      () => this.periodsApi.reopen(month, reason),
+      `Reabriste ${monthLabel(month.period)}.`,
+    );
+  }
+
+  private async changePeriod(change: () => Promise<unknown>, done: string): Promise<void> {
+    const month = this.month();
+    if (!month) {
+      return;
+    }
+    this.closing.set(true);
+    this.notice.set(null);
+    this.error.set(null);
+    try {
+      await change();
+      this.periods.set(await this.matching.periods(month.accountId));
+      this.notice.set(done);
+      await this.refresh();
+    } catch (error) {
+      this.error.set(matchingErrorMessage(error));
+    } finally {
+      this.closing.set(false);
     }
   }
 

@@ -26,6 +26,7 @@ from concilia.matching.application.decisions import (
     MatchDecisionService,
 )
 from concilia.matching.application.runs import EngineRunService, RunStore
+from concilia.periods.application.closing import PeriodAction, PeriodService, PeriodStore
 from concilia.shared.kernel.clock import Clock
 
 ORGANIZATION_NAME = "Comercial Demo SAC (datos ficticios)"
@@ -78,6 +79,7 @@ class DemoStores:
     imports: ImportStore
     runs: RunStore
     decisions: DecisionStore
+    periods: PeriodStore
 
 
 class DemoTransactions(Protocol):
@@ -96,6 +98,7 @@ class DemoService:
         transactions: DemoTransactions,
         runs: EngineRunService,
         decisions: MatchDecisionService,
+        periods: PeriodService,
         reader: FileReader,
         rate_limiter: RateLimiter,
         clock: Clock,
@@ -106,6 +109,7 @@ class DemoService:
         self._transactions = transactions
         self._runs = runs
         self._decisions = decisions
+        self._periods = periods
         self._reader = reader
         self._rate_limiter = rate_limiter
         self._clock = clock
@@ -126,8 +130,8 @@ class DemoService:
 
     async def create(self, ip: str) -> CreatedDemo:
         """A new demo organization with two months imported and the first one proposed by the
-        engine, confirmed by its analyst and approved by its reviewer; locally (no TTL) it never
-        expires."""
+        engine, confirmed by its analyst, approved and closed by its reviewer; locally (no TTL) it
+        never expires."""
         await self._check_limits(ip)
         now = self._clock.now()
         organization_id = uuid7()
@@ -180,4 +184,14 @@ class DemoService:
                         roles=frozenset({actor}),
                         now=now,
                     )
+            await self._periods.apply(
+                stores.periods,
+                organization_id,
+                banking.account_id,
+                dataset.months[0].period,
+                PeriodAction.CLOSE,
+                None,
+                actor=users["reviewer"],
+                roles=frozenset({"reviewer"}),
+            )
         return CreatedDemo(organization_id, users["analyst"])

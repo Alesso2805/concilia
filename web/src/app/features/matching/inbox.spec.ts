@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
@@ -9,6 +10,8 @@ import { JobTracker } from '../../core/jobs/job-tracker';
 import { provideLocale } from '../../core/locale';
 import { SessionStore } from '../../core/session/session.store';
 import { BankingService } from '../admin/banking.service';
+import { PeriodsService } from '../periods/periods.service';
+import { ReopenPeriodDialog } from '../periods/reopen-period.dialog';
 import { InboxPage } from './inbox.page';
 import { monthLabel } from './labels';
 import { MatchDetailDialog } from './match-detail.dialog';
@@ -51,6 +54,7 @@ describe('InboxPage', () => {
   let fixture: ComponentFixture<InboxPage>;
   let service: Record<string, ReturnType<typeof vi.fn>>;
   let open: ReturnType<typeof vi.fn>;
+  let periodsApi: Record<string, ReturnType<typeof vi.fn>>;
 
   async function render(roles: string[], closed = false): Promise<HTMLElement> {
     service = {
@@ -68,6 +72,10 @@ describe('InboxPage', () => {
       decideBatch: vi.fn(() => Promise.resolve({ decided: 2, skipped: 1 })),
     };
     open = vi.fn(() => ({ afterClosed: () => of(false) }));
+    periodsApi = {
+      close: vi.fn(() => Promise.resolve({})),
+      reopen: vi.fn(() => Promise.resolve({})),
+    };
     TestBed.configureTestingModule({
       imports: [InboxPage],
       providers: [
@@ -95,6 +103,7 @@ describe('InboxPage', () => {
         },
         { provide: SessionStore, useValue: { roles: signal(new Set(roles)) } },
         { provide: MatDialog, useValue: { open } },
+        { provide: PeriodsService, useValue: periodsApi },
       ],
     });
     fixture = TestBed.createComponent(InboxPage);
@@ -188,6 +197,52 @@ describe('InboxPage', () => {
 
     const reviewer = await render(['reviewer']);
     expect(button(reviewer, 'Confirmar todas las de puntaje 100')).toBeUndefined();
+  });
+
+  it('lets reviewers close an open month', async () => {
+    const element = await render(['reviewer']);
+
+    button(element, 'Cerrar mes').click();
+    await settle(fixture);
+
+    expect(periodsApi['close']).toHaveBeenCalledWith({ accountId: 'a1', period: '2027-02-01' });
+    expect(service['periods']).toHaveBeenCalledTimes(2);
+    expect(text(fixture)).toContain('Cerraste febrero de 2027.');
+    TestBed.resetTestingModule();
+
+    const analyst = await render(['analyst']);
+    expect(button(analyst, 'Cerrar mes')).toBeUndefined();
+  });
+
+  it('reopens a closed month with the reason given in its dialog', async () => {
+    const element = await render(['reviewer'], true);
+    expect(button(element, 'Cerrar mes')).toBeUndefined();
+    open.mockReturnValue({ afterClosed: () => of('Faltó un abono') });
+
+    button(element, 'Reabrir mes').click();
+    await settle(fixture);
+
+    expect(open).toHaveBeenCalledWith(ReopenPeriodDialog, {
+      data: 'febrero de 2027',
+      autoFocus: 'first-tabbable',
+    });
+    expect(periodsApi['reopen']).toHaveBeenCalledWith(
+      { accountId: 'a1', period: '2027-02-01' },
+      'Faltó un abono',
+    );
+    expect(text(fixture)).toContain('Reabriste febrero de 2027.');
+  });
+
+  it('explains why a month with pending matches stays open', async () => {
+    const element = await render(['reviewer']);
+    periodsApi['close'].mockRejectedValue(
+      new HttpErrorResponse({ status: 409, error: { detail: 'pending_matches' } }),
+    );
+
+    button(element, 'Cerrar mes').click();
+    await settle(fixture);
+
+    expect(text(fixture)).toContain('Quedan coincidencias propuestas o confirmadas en este mes');
   });
 
   it('names months in Spanish', () => {

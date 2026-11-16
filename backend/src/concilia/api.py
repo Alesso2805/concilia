@@ -149,6 +149,8 @@ def create_app(settings: ApiSettings | None = None, clock: Clock | None = None) 
 
     decision_transactions = SqlDecisionTransactions(engine, SqlAuditRecorder)
     decisions = MatchDecisionService(decision_transactions, clock)
+    period_transactions = SqlPeriodTransactions(engine, SqlAuditRecorder, SqlMatchQueries)
+    periods = PeriodService(period_transactions, clock)
 
     def demo_stores(connection: AsyncConnection) -> DemoStores:
         return DemoStores(
@@ -157,12 +159,14 @@ def create_app(settings: ApiSettings | None = None, clock: Clock | None = None) 
             import_transactions.store(connection),
             run_transactions.store(connection),
             decision_transactions.store(connection),
+            period_transactions.store(connection),
         )
 
     demo = DemoService(
         SqlDemoTransactions(engine, demo_stores),
         runs,
         decisions,
+        periods,
         ContentReader(),
         SqlRateLimiter(engine),
         clock,
@@ -180,10 +184,7 @@ def create_app(settings: ApiSettings | None = None, clock: Clock | None = None) 
     inbox = InboxService(SqlInboxTransactions(engine))
     app.include_router(inbox_router(inbox), dependencies=authenticated)
     app.include_router(decisions_router(decisions), dependencies=authenticated)
-    period_transactions = SqlPeriodTransactions(engine, SqlAuditRecorder, SqlMatchQueries)
-    app.include_router(
-        periods_router(PeriodService(period_transactions, clock)), dependencies=authenticated
-    )
+    app.include_router(periods_router(periods), dependencies=authenticated)
     manual = ManualMatchService(SqlManualTransactions(engine, SqlAuditRecorder), decisions, clock)
     app.include_router(manual_router(manual), dependencies=authenticated)
     app.include_router(
