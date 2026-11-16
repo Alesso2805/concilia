@@ -1,0 +1,79 @@
+<div class="page-header">
+  <h1 class="page-header__title">Perfiles de importación</h1>
+  <a mat-flat-button routerLink="/perfiles/nuevo">
+    <mat-icon svgIcon="add" />
+    Nuevo perfil
+  </a>
+</div>
+<p class="admin__intro">
+  Un perfil le dice a Concilia cómo leer el extracto de una cuenta o tu lista de cobros: qué
+  columnas usar, el formato de fecha y cómo vienen los montos.
+</p>
+
+@if (error(); as message) {
+  <p class="admin__error" role="alert">{{ message }}</p>
+}
+
+@if (profiles(); as profiles) {
+  <mat-slide-toggle
+    class="admin__toggle"
+    [checked]="showArchived()"
+    (change)="showArchived.set($event.checked)"
+  >
+    Mostrar archivados
+  </mat-slide-toggle>
+  @if (visible().length > 0) {
+    <div class="admin__table">
+      <table mat-table [dataSource]="visible()">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef scope="col">Nombre</th>
+          <td mat-cell *matCellDef="let profile">{{ profile.name }}</td>
+        </ng-container>
+        <ng-container matColumnDef="kind">
+          <th mat-header-cell *matHeaderCellDef scope="col">Tipo</th>
+          <td mat-cell *matCellDef="let profile">{{ kindOf(profile) }}</td>
+        </ng-container>
+        <ng-container matColumnDef="account">
+          <th mat-header-cell *matHeaderCellDef scope="col">Cuenta</th>
+          <td mat-cell *matCellDef="let profile">{{ accountOf(profile) }}</td>
+        </ng-container>
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef scope="col">Estado</th>
+          <td mat-cell *matCellDef="let profile">
+            {{ profile.archived_at ? 'Archivado' : 'Activo' }}
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef scope="col">
+            <span class="admin__hidden">Acciones</span>
+          </th>
+          <td mat-cell *matCellDef="let profile" class="admin__actions">
+            @if (!profile.archived_at) {
+              <a
+                mat-icon-button
+                [routerLink]="['/perfiles', profile.id]"
+                [attr.aria-label]="'Editar ' + profile.name"
+              >
+                <mat-icon svgIcon="edit" />
+              </a>
+              <button
+                mat-icon-button
+                type="button"
+                [attr.aria-label]="'Archivar ' + profile.name"
+                (click)="archive(profile)"
+              >
+                <mat-icon svgIcon="archive" />
+              </button>
+            }
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns"></tr>
+      </table>
+    </div>
+  } @else {
+    <p class="admin__empty">Todavía no hay perfiles. Crea uno a partir de una plantilla.</p>
+  }
+} @else if (!error()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Cargando los perfiles" />
+}

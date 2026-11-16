@@ -1,0 +1,175 @@
+<div class="page-header">
+  <h1 class="page-header__title">
+    {{ editing() ? 'Editar perfil de importación' : 'Nuevo perfil de importación' }}
+  </h1>
+</div>
+
+@if (error(); as message) {
+  <p class="admin__error" role="alert">{{ message }}</p>
+}
+
+@if (loaded()) {
+  <form class="admin__form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    @if (!editing()) {
+      <mat-form-field appearance="outline">
+        <mat-label>Partir de una plantilla</mat-label>
+        <mat-select (selectionChange)="useTemplate($event.value)">
+          @for (template of templates(); track template.key) {
+            <mat-option [value]="template.key">{{ template.name }}</mat-option>
+          }
+        </mat-select>
+        <mat-hint>Opcional: copia una configuración de ejemplo que puedes ajustar.</mat-hint>
+      </mat-form-field>
+      @if (templateNote()) {
+        <p class="admin__intro" role="status">
+          Plantilla de ejemplo: verifica los nombres de columna y las filas a saltar con un extracto
+          real de tu banco.
+        </p>
+      }
+    }
+
+    <mat-form-field appearance="outline">
+      <mat-label>Tipo de archivo</mat-label>
+      <mat-select formControlName="kind">
+        <mat-option value="bank_statement">{{ kinds.bank_statement }}</mat-option>
+        <mat-option value="receivables">{{ kinds.receivables }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    @if (form.controls.bank_account_id.enabled || editing()?.kind === 'bank_statement') {
+      <mat-form-field appearance="outline">
+        <mat-label>Cuenta bancaria</mat-label>
+        <mat-select formControlName="bank_account_id" required>
+          @for (account of accounts(); track account.id) {
+            <mat-option [value]="account.id">
+              {{ account.alias }} · {{ account.bank }} ···· {{ account.number_last4 }}
+            </mat-option>
+          }
+        </mat-select>
+        <mat-error>Elige la cuenta del extracto.</mat-error>
+      </mat-form-field>
+    }
+
+    <mat-form-field appearance="outline">
+      <mat-label>Nombre del perfil</mat-label>
+      <input matInput formControlName="name" maxlength="80" required />
+      <mat-error>Ingresa un nombre.</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Formato</mat-label>
+      <mat-select formControlName="format">
+        <mat-option value="xlsx">Excel (.xlsx)</mat-option>
+        <mat-option value="csv">CSV</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    @if (form.controls.format.value === 'xlsx') {
+      <mat-form-field appearance="outline">
+        <mat-label>Hoja (opcional)</mat-label>
+        <input matInput formControlName="sheet" maxlength="31" />
+        <mat-hint>Si la dejas vacía se usa la primera hoja.</mat-hint>
+      </mat-form-field>
+    } @else {
+      <mat-form-field appearance="outline">
+        <mat-label>Separador de columnas</mat-label>
+        <mat-select formControlName="delimiter">
+          @for (option of delimiters; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Codificación</mat-label>
+        <mat-select formControlName="encoding">
+          <mat-option value="utf-8">UTF-8</mat-option>
+          <mat-option value="latin-1">Latin-1 (Windows)</mat-option>
+        </mat-select>
+      </mat-form-field>
+    }
+
+    <mat-form-field appearance="outline">
+      <mat-label>Filas a saltar antes de los encabezados</mat-label>
+      <input matInput type="number" formControlName="skip_rows" min="0" max="50" required />
+      <mat-error>Usa un número entre 0 y 50.</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Formato de fecha</mat-label>
+      <mat-select formControlName="date_format">
+        @for (format of dateFormats; track format) {
+          <mat-option [value]="format">{{ format }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Separador decimal</mat-label>
+      <mat-select formControlName="decimal_separator">
+        @for (option of decimalSeparators; track option.value) {
+          <mat-option [value]="option.value">{{ option.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Separador de miles</mat-label>
+      <mat-select formControlName="thousands_separator">
+        @for (option of thousandsSeparators; track option.value) {
+          <mat-option [value]="option.value">{{ option.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    @if (form.hasError('separators')) {
+      <p class="admin__error" role="alert">
+        El separador decimal y el de miles deben ser distintos.
+      </p>
+    }
+
+    @if (form.controls.kind.value === 'bank_statement') {
+      <fieldset class="admin__form" formGroupName="statement">
+        <legend>Columnas del extracto</legend>
+        <mat-radio-group
+          aria-label="Cómo vienen los montos"
+          [formControl]="form.controls.amount_layout"
+        >
+          <mat-radio-button value="signed">Una columna con signo</mat-radio-button>
+          <mat-radio-button value="split">Columnas separadas de cargo y abono</mat-radio-button>
+        </mat-radio-group>
+        @for (column of statementColumns; track column.key) {
+          @if (form.controls.statement.controls[column.key].enabled) {
+            <mat-form-field appearance="outline">
+              <mat-label>{{ column.label }}</mat-label>
+              <input matInput [formControlName]="column.key" maxlength="80" />
+              <mat-error>Ingresa el encabezado de la columna.</mat-error>
+            </mat-form-field>
+          }
+        }
+        @if (form.controls.statement.hasError('duplicated')) {
+          <p class="admin__error" role="alert">Cada campo necesita su propia columna.</p>
+        }
+      </fieldset>
+    } @else {
+      <fieldset class="admin__form" formGroupName="receivables">
+        <legend>Columnas de los cobros</legend>
+        @for (column of receivablesColumns; track column.key) {
+          <mat-form-field appearance="outline">
+            <mat-label>{{ column.label }}</mat-label>
+            <input matInput [formControlName]="column.key" maxlength="80" />
+            <mat-error>Ingresa el encabezado de la columna.</mat-error>
+          </mat-form-field>
+        }
+        @if (form.controls.receivables.hasError('duplicated')) {
+          <p class="admin__error" role="alert">Cada campo necesita su propia columna.</p>
+        }
+      </fieldset>
+    }
+
+    <div class="admin__form-actions">
+      <a mat-button [routerLink]="profilesPath">Cancelar</a>
+      <button mat-flat-button type="submit" [disabled]="saving()">Guardar perfil</button>
+    </div>
+  </form>
+} @else if (!error()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Cargando el perfil" />
+}
