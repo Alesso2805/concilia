@@ -36,10 +36,28 @@ class AuditAction(StrEnum):
     PERIOD_REOPENED = "period.reopened"
 
 
+class AuditEntity(StrEnum):
+    ORGANIZATION = "organization"
+    USER = "user"
+    INVITATION = "invitation"
+    MEMBER = "member"
+    BANK_ACCOUNT = "bank_account"
+    IMPORT_PROFILE = "import_profile"
+    IMPORT_FILE = "import_file"
+    RECEIVABLE = "receivable"
+    ENGINE_RUN = "engine_run"
+    MATCH = "match"
+    PERIOD_EVENT = "period_event"
+
+
 ALLOWED_METADATA_KEYS = frozenset({"source", "roles", "kind", "fields"})
 
 
 class AuditMetadataError(ValueError):
+    pass
+
+
+class AuditEntityError(ValueError):
     pass
 
 
@@ -58,3 +76,5 @@ class AuditEvent:
         unknown = set(self.metadata) - ALLOWED_METADATA_KEYS
         if unknown:
             raise AuditMetadataError(f"metadata keys not allowed: {sorted(unknown)}")
+        if self.entity not in AuditEntity:
+            raise AuditEntityError(f"unknown entity: {self.entity}")

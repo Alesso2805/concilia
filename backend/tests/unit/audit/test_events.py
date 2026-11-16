@@ -3,7 +3,12 @@ from uuid import uuid7
 
 import pytest
 
-from concilia.audit.domain.events import AuditAction, AuditEvent, AuditMetadataError
+from concilia.audit.domain.events import (
+    AuditAction,
+    AuditEntityError,
+    AuditEvent,
+    AuditMetadataError,
+)
 
 NOW = datetime(2026, 11, 23, tzinfo=UTC)
 
@@ -31,3 +36,8 @@ def test_allowed_metadata_keys_are_accepted() -> None:
 def test_metadata_with_customer_data_keys_is_rejected(key: str) -> None:
     with pytest.raises(AuditMetadataError):
         _event({key: "x"})
+
+
+def test_unknown_entities_are_rejected() -> None:
+    with pytest.raises(AuditEntityError):
+        AuditEvent(uuid7(), uuid7(), None, AuditAction.MATCH_CREATED, "customer", None, NOW)
