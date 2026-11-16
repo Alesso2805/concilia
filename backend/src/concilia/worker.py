@@ -13,8 +13,8 @@ from concilia.imports.infrastructure.jobs import (
     confirm_import_handler,
     parse_import_handler,
 )
-from concilia.imports.infrastructure.no_matches import NoActiveMatches
 from concilia.imports.infrastructure.sql import SqlImportTransactions
+from concilia.matching.infrastructure.queries import SqlMatchQueries
 from concilia.periods.infrastructure.sql import SqlPeriodQueries
 from concilia.shared.infrastructure.clock import SystemClock
 from concilia.shared.infrastructure.db import create_engine
@@ -45,7 +45,7 @@ def cleanup_handler(clock: Clock) -> Handler:
 
 def handlers(engine: AsyncEngine, clock: Clock) -> dict[str, Handler]:
     transactions = SqlImportTransactions(
-        engine, SqlAuditRecorder, SqlPeriodQueries, NoActiveMatches
+        engine, SqlAuditRecorder, SqlPeriodQueries, SqlMatchQueries
     )
     imports = ImportService(transactions, ContentReader(), clock)
     return {

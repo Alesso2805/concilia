@@ -110,9 +110,9 @@ Un monolito modular con dos procesos (API y worker) que comparten código y base
 **Puertos hacia módulos posteriores.** Cuando un módulo necesita saber algo de uno posterior, define un puerto en su capa `application` y el módulo posterior lo implementa. El cableado vive solo en `api.py` y `worker.py`. Los puertos del MVP son:
 
 - `periods.PendingMatchesQuery` (lo implementa `matching`): ¿quedan coincidencias propuestas o confirmadas en este período?
-- `imports.ActiveMatchesQuery` (lo implementa `matching`): ¿estos movimientos o cobros están en coincidencias activas o aprobadas?
+- `imports.ActiveMatchesQuery` (lo implementa `matching`): ¿cuáles de estos movimientos o cobros están en coincidencias activas (propuestas, confirmadas o aprobadas), y cuáles solo en propuestas o confirmadas?
 
-Hasta que exista `matching` (CN-12), esos puertos se cablean con un adaptador que responde "no hay coincidencias".
+Desde CN-12 ambos los implementa `matching.infrastructure.SqlMatchQueries`; antes se cableaban con un adaptador que respondía "no hay coincidencias".
 
 **Frontend.** Carpetas por funcionalidad: `features/auth` (inicio de sesión, aceptar invitación, registro), `features/admin` (equipo, configuración, cuentas y perfiles), `features/imports`, `features/matching` (bandeja, manual, lotes), `features/ai`, `features/periods`, `features/reports` (panel y exportación), `features/audit` y `features/demo`. Cada una con rutas diferidas (lazy). Estado de la pantalla con signals; un servicio por funcionalidad que envuelve los servicios generados desde OpenAPI. Las tablas usan `mat-table` con `mat-paginator` y paginación del servidor por keyset (sin scroll virtual): solo anterior y siguiente, sin total ni salto a la última página, con un cursor compuesto por el orden activo más el id, que se reinicia al cambiar filtros o pestaña. Las fuentes e íconos de Material se sirven desde la propia app (sin Google Fonts). Un interceptor redirige al inicio de sesión ante un 401 y muestra un aviso ante un 403.
 
