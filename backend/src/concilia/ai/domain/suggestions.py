@@ -1,13 +1,23 @@
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
+from typing import Literal
 from uuid import UUID
 
 from concilia.shared.kernel.normalization import customer_similarity
 
 MAX_CANDIDATES = 10
 MAX_SUGGESTIONS = 3
-DIFFERENCE_REASONS = frozenset({"commission", "detraction", "rounding", "overpayment", "other"})
+type Confidence = Literal["low", "medium", "high"]
+type DifferenceReason = Literal["commission", "detraction", "rounding", "overpayment", "other"]
+
+DIFFERENCE_REASONS: dict[str, DifferenceReason] = {
+    "commission": "commission",
+    "detraction": "detraction",
+    "rounding": "rounding",
+    "overpayment": "overpayment",
+    "other": "other",
+}
 
 
 @dataclass(frozen=True)
@@ -44,7 +54,7 @@ class Proposal:
 
     candidates: Sequence[str]
     applied: Sequence[tuple[str, int]] | None
-    confidence: str
+    confidence: Confidence
     explanation: str
     difference_reason: str | None
 
@@ -60,9 +70,9 @@ class AppliedAmount:
 class ServerSuggestion:
     applied: list[AppliedAmount]
     difference_cents: int
-    confidence: str
+    confidence: Confidence
     explanation: str
-    difference_reason: str | None
+    difference_reason: DifferenceReason | None
     recomputed: bool
 
 
@@ -141,9 +151,8 @@ def recompute(
         applied = [AppliedAmount(c.alias, c.receivable.id, amounts[c.alias]) for c in chosen]
         recomputed = False
     difference = credit_cents - sum(item.applied_cents for item in applied)
-    reason = proposal.difference_reason
-    fits = reason in DIFFERENCE_REASONS and (reason != "overpayment" or difference > 0)
-    if difference == 0 or not fits:
+    reason = DIFFERENCE_REASONS.get(proposal.difference_reason or "")
+    if difference == 0 or (reason == "overpayment" and difference < 0):
         reason = None
     return ServerSuggestion(
         applied, difference, proposal.confidence, proposal.explanation, reason, recomputed

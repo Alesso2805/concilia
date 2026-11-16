@@ -140,7 +140,8 @@
           "match.reverted",
           "period.closed",
           "period.reopened",
-          "export.requested"
+          "export.requested",
+          "ai_suggestion.requested"
         ],
         "title": "AuditAction",
         "type": "string"
@@ -177,7 +178,8 @@
           "engine_run",
           "match",
           "period_event",
-          "export"
+          "export",
+          "ai_suggestion"
         ],
         "title": "AuditEntity",
         "type": "string"
@@ -3594,6 +3596,206 @@
         "title": "StatementTemplateView",
         "type": "object"
       },
+      "SuggestedReceivableView": {
+        "properties": {
+          "alias": {
+            "title": "Alias",
+            "type": "string"
+          },
+          "applied_cents": {
+            "title": "Applied Cents",
+            "type": "integer"
+          },
+          "customer_name": {
+            "title": "Customer Name",
+            "type": "string"
+          },
+          "doc_number": {
+            "title": "Doc Number",
+            "type": "string"
+          },
+          "receivable_id": {
+            "format": "uuid",
+            "title": "Receivable Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "alias",
+          "receivable_id",
+          "doc_number",
+          "customer_name",
+          "applied_cents"
+        ],
+        "title": "SuggestedReceivableView",
+        "type": "object"
+      },
+      "SuggestionItemView": {
+        "properties": {
+          "confidence": {
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "title": "Confidence",
+            "type": "string"
+          },
+          "difference_cents": {
+            "title": "Difference Cents",
+            "type": "integer"
+          },
+          "difference_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "commission",
+                  "detraction",
+                  "rounding",
+                  "overpayment",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Reason"
+          },
+          "explanation": {
+            "title": "Explanation",
+            "type": "string"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "receivables": {
+            "items": {
+              "$ref": "#/components/schemas/SuggestedReceivableView"
+            },
+            "title": "Receivables",
+            "type": "array"
+          },
+          "recomputed": {
+            "title": "Recomputed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "index",
+          "receivables",
+          "difference_cents",
+          "difference_reason",
+          "confidence",
+          "explanation",
+          "recomputed"
+        ],
+        "title": "SuggestionItemView",
+        "type": "object"
+      },
+      "SuggestionRequestBody": {
+        "properties": {
+          "bank_movement_id": {
+            "format": "uuid",
+            "title": "Bank Movement Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "bank_movement_id"
+        ],
+        "title": "SuggestionRequestBody",
+        "type": "object"
+      },
+      "SuggestionView": {
+        "properties": {
+          "bank_movement_id": {
+            "format": "uuid",
+            "title": "Bank Movement Id",
+            "type": "string"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "job_id": {
+            "format": "uuid",
+            "title": "Job Id",
+            "type": "string"
+          },
+          "no_match_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "No Match Reason"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/SuggestionItemView"
+            },
+            "title": "Suggestions",
+            "type": "array"
+          },
+          "valid": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid"
+          }
+        },
+        "required": [
+          "id",
+          "job_id",
+          "bank_movement_id",
+          "status",
+          "error_code",
+          "valid",
+          "suggestions",
+          "no_match_reason"
+        ],
+        "title": "SuggestionView",
+        "type": "object"
+      },
       "SwitchRoleRequest": {
         "properties": {
           "role": {
@@ -3773,6 +3975,92 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/app/ai/suggestions": {
+      "post": {
+        "description": "Ask the AI for candidates for one free credit (analysts). The client id is also the\nid of the `ai_suggest` job to follow. The AI never decides: its suggestions are\nvalidated and recomputed by the server and a person accepts or rejects them.\nIdempotent on the client id. 403 `role_required`; 409 `credit_not_free`,\n`ai_unavailable` or `id_conflict`; 422 `id_not_uuid7` or `id_clock_skew`; 429\n`ai_daily_limit` (50 per organization and Lima day) or `ai_global_limit`.",
+        "operationId": "request_suggestion",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuggestionRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuggestionView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Request Suggestion",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/app/ai/suggestions/{suggestion_id}": {
+      "get": {
+        "description": "The state of a request and, once its job is done, the server's version of each\nsuggestion. An output that did not validate has `valid` false and shows nothing.\n404 `not_found`.",
+        "operationId": "get_suggestion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "suggestion_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Suggestion Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuggestionView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Suggestion",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/api/app/audit-events": {
       "get": {
         "description": "Who did what in the organization, newest first, for any member with a role.\n\n`from` and `to` are Lima days, both included. Pages by keyset: pass `next_cursor` as\n`after` or `previous_cursor` as `before`. 403 `role_required`; 422 `invalid_range` or\n`invalid_cursor`.",

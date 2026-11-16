@@ -18,5 +18,6 @@ export const AUDIT_ENTITY: AuditEntity[] = [
   'engine_run',
   'match',
   'period_event',
-  'export'
+  'export',
+  'ai_suggestion'
 ];

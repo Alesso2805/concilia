@@ -8,6 +8,10 @@ from fastapi.routing import APIRoute
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from concilia.ai.api.routes import ai_router
+from concilia.ai.application.service import LlmChooser, SuggestionService
+from concilia.ai.infrastructure.clients import LlmClients
+from concilia.ai.infrastructure.sql import SqlSuggestionTransactions
 from concilia.audit.api.routes import audit_router
 from concilia.audit.application.log import AuditLogService
 from concilia.audit.infrastructure.log_sql import SqlAuditLogTransactions
@@ -78,7 +82,11 @@ def _operation_id(route: APIRoute) -> str:
     return route.name
 
 
-def create_app(settings: ApiSettings | None = None, clock: Clock | None = None) -> FastAPI:
+def create_app(
+    settings: ApiSettings | None = None,
+    clock: Clock | None = None,
+    llm: LlmChooser | None = None,
+) -> FastAPI:
     settings = settings or ApiSettings()
     clock = clock or SystemClock()
     engine = create_engine(settings.database_url)
@@ -214,5 +222,13 @@ def create_app(settings: ApiSettings | None = None, clock: Clock | None = None) 
     )
     exports = ExportService(SqlExportTransactions(engine, SqlAuditRecorder), build_workbook, clock)
     app.include_router(exports_router(exports), dependencies=authenticated)
+    if settings.ai_enabled:
+        suggestions = SuggestionService(
+            SqlSuggestionTransactions(engine, SqlAuditRecorder),
+            llm or LlmClients(real=None),
+            clock,
+            global_daily_limit=settings.ai_global_daily_limit,
+        )
+        app.include_router(ai_router(suggestions), dependencies=authenticated)
     app.include_router(jobs_router(engine), dependencies=authenticated)
     return app

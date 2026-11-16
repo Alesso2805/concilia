@@ -35,6 +35,7 @@ class AuditAction(StrEnum):
     PERIOD_CLOSED = "period.closed"
     PERIOD_REOPENED = "period.reopened"
     EXPORT_REQUESTED = "export.requested"
+    AI_SUGGESTION_REQUESTED = "ai_suggestion.requested"
 
 
 class AuditEntity(StrEnum):
@@ -50,6 +51,7 @@ class AuditEntity(StrEnum):
     MATCH = "match"
     PERIOD_EVENT = "period_event"
     EXPORT = "export"
+    AI_SUGGESTION = "ai_suggestion"
 
 
 ALLOWED_METADATA_KEYS = frozenset({"source", "roles", "kind", "fields"})
