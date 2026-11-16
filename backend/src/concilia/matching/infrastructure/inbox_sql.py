@@ -179,12 +179,12 @@ class SqlInboxStore:
                             SELECT min(b.booked_on) AS booked_on,
                                    (array_agg(b.description ORDER BY b.booked_on, b.id))[1]
                                        AS description,
-                                   sum(b.amount_cents) AS credits_cents
+                                   sum(b.amount_cents)::bigint AS credits_cents
                             FROM match_items c JOIN bank_movements b ON b.id = c.bank_movement_id
                             WHERE c.match_id = m.id
                         ) cr
                         CROSS JOIN LATERAL (
-                            SELECT sum(i.applied_cents) AS applied_cents,
+                            SELECT sum(i.applied_cents)::bigint AS applied_cents,
                                    array_agg(r.doc_number ORDER BY r.doc_number_norm) AS documents,
                                    array_agg(DISTINCT r.customer_name) AS customers
                             FROM match_items i JOIN receivables r ON r.id = i.receivable_id

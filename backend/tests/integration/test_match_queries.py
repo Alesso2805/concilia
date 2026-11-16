@@ -9,9 +9,14 @@ from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from concilia.audit.infrastructure.sql import SqlAuditRecorder
 from concilia.imports.application.matches import ActiveMatchesQuery
+from concilia.matching.domain.inbox import MatchFilters, MatchStatus
+from concilia.matching.infrastructure.inbox_sql import SqlInboxStore
 from concilia.matching.infrastructure.queries import SqlMatchQueries
+from concilia.matching.infrastructure.runs_sql import SqlRunTransactions
 from concilia.periods.application.pending import PendingMatchesQuery
+from concilia.periods.infrastructure.sql import SqlPeriodQueries
 from concilia.shared.infrastructure.db import organization_transaction
 from tests.support.api import add_member, build_app, signed_in, xsrf_header
 from tests.support.clock import FixedClock
@@ -214,3 +219,33 @@ async def test_imports_respect_matches_through_the_api(
         ("F1-123", "active_matches"),
         ("F001-124", "cancelled"),
     ]
+
+
+async def test_money_read_back_from_the_database_stays_integer_cents(
+    app_engine: AsyncEngine, books: Books
+) -> None:
+    async with organization_transaction(app_engine, books.setup.organization_id) as connection:
+        runs = SqlRunTransactions(app_engine, SqlAuditRecorder, SqlPeriodQueries).store(connection)
+        engine_input = await runs.engine_input(
+            books.setup.organization_id, books.setup.account_id, date(2027, 1, 1)
+        )
+        page = await SqlInboxStore(connection).matches(
+            books.setup.account_id,
+            date(2027, 1, 1),
+            MatchStatus.PROPOSED,
+            MatchFilters(),
+            None,
+            None,
+            10,
+        )
+        balances = (
+            await connection.execute(
+                text("SELECT open_cents, available_cents FROM receivable_balances")
+            )
+        ).all()
+
+    amounts = [value for row in balances for value in row]
+    amounts += [receivable.available_cents for receivable in engine_input.receivables]
+    amounts += [value for row in page.matches for value in (row.credits_cents, row.applied_cents)]
+    assert amounts
+    assert {type(amount) for amount in amounts} == {int}
