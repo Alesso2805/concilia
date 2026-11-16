@@ -34,6 +34,37 @@ STATEMENT = (
     b"08/02/2027;SIN MONTO;\n"
 )
 
+RECEIVABLES_CONFIG = {
+    "version": 1,
+    "format": "csv",
+    "delimiter": ";",
+    "encoding": "utf-8",
+    "skip_rows": 0,
+    "date_format": "DD/MM/YYYY",
+    "decimal_separator": ",",
+    "thousands_separator": ".",
+    "columns": {
+        "customer_name": "Cliente",
+        "customer_tax_id": "RUC",
+        "doc_number": "Documento",
+        "issued_on": "Emision",
+        "due_on": "Vencimiento",
+        "amount": "Monto",
+    },
+}
+RECEIVABLES = (
+    b"Cliente;RUC;Documento;Emision;Vencimiento;Monto\n"
+    b"Comercial Andina SAC;20512345678;F001-00000123;02/01/2027;31/01/2027;1.180,00\n"
+    b"Gloria SA;;F001-124;03/01/2027;15/02/2027;500,00\n"
+    b"Sin Monto SRL;;F001-125;03/01/2027;15/02/2027;\n"
+)
+CHANGED_RECEIVABLES = (
+    b"Cliente;RUC;Documento;Emision;Vencimiento;Monto\n"
+    b"Comercial Andina SAC;20512345678;F1-123;02/01/2027;28/02/2027;1.200,00\n"
+    b"Gloria SA;;F001-124;03/01/2027;15/02/2027;500,00\n"
+    b"Nueva SAC;;F001-126;04/01/2027;20/02/2027;75,50\n"
+)
+
 
 class AlwaysActive:
     def __init__(self, _connection: object) -> None:
@@ -98,16 +129,58 @@ async def statement_setup(owner_engine: AsyncEngine, roles: list[str] | None = N
     return Setup(member, account_id, profile_id)
 
 
+async def receivables_profile(owner_engine: AsyncEngine, setup: Setup) -> UUID:
+    profile_id = uuid7()
+    async with owner_engine.begin() as connection:
+        await connection.execute(
+            text(
+                """INSERT INTO import_profiles (id, organization_id, kind, name, config,
+                                                created_at)
+                   VALUES (:id, :org, 'receivables', 'Cobranzas', CAST(:config AS jsonb), :now)"""
+            ),
+            {
+                "id": profile_id,
+                "org": setup.organization_id,
+                "config": json.dumps(RECEIVABLES_CONFIG),
+                "now": NOW,
+            },
+        )
+    return profile_id
+
+
+async def receivables_setup(owner_engine: AsyncEngine) -> tuple[Setup, UUID]:
+    setup = await statement_setup(owner_engine)
+    return setup, await receivables_profile(owner_engine, setup)
+
+
+async def stored_receivables(
+    owner_engine: AsyncEngine, setup: Setup
+) -> list[tuple[str, int, str | None]]:
+    async with owner_engine.connect() as connection:
+        rows = await connection.execute(
+            text(
+                """SELECT doc_number_norm, amount_cents, cancel_reason FROM receivables
+                   WHERE organization_id = :org ORDER BY due_on, id"""
+            ),
+            {"org": setup.organization_id},
+        )
+        return [(row.doc_number_norm, row.amount_cents, row.cancel_reason) for row in rows]
+
+
 async def upload(
     client: httpx.AsyncClient,
     setup: Setup,
     content: bytes = STATEMENT,
     file_id: str | None = None,
     filename: str = "enero.csv",
+    profile_id: UUID | None = None,
 ) -> httpx.Response:
     return await client.post(
         "/api/app/imports",
-        data={"id": file_id or client_id(), "import_profile_id": str(setup.profile_id)},
+        data={
+            "id": file_id or client_id(),
+            "import_profile_id": str(profile_id or setup.profile_id),
+        },
         files={"file": (filename, content, "text/csv")},
         headers=xsrf_header(client),
     )

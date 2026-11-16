@@ -21,6 +21,7 @@ from concilia.imports.domain.model import (
     RowPage,
     RowStatus,
 )
+from concilia.imports.infrastructure.receivables_sql import SqlReceivables
 from concilia.periods.application.queries import PeriodQueries
 from concilia.shared.infrastructure.db import lock_organization, organization_transaction
 from concilia.shared.infrastructure.jobs import enqueue
@@ -64,7 +65,7 @@ def _file(row: Any) -> ImportFile:
     )
 
 
-class SqlImportStore:
+class SqlImportStore(SqlReceivables):
     def __init__(
         self,
         connection: AsyncConnection,
@@ -115,15 +116,20 @@ class SqlImportStore:
         ).scalar_one()
         return content
 
-    async def confirmed_with_hash(self, bank_account_id: UUID, sha256: str) -> UUID | None:
+    async def confirmed_duplicate(self, file: ImportFile) -> UUID | None:
         found: UUID | None = (
             await self._connection.execute(
                 text(
                     """SELECT id FROM import_files
-                       WHERE bank_account_id = :account AND sha256 = :sha
-                         AND status = 'confirmed'"""
+                       WHERE kind = :kind AND sha256 = :sha AND status = 'confirmed'
+                         AND bank_account_id IS NOT DISTINCT FROM :account AND id <> :id"""
                 ),
-                {"account": bank_account_id, "sha": sha256},
+                {
+                    "kind": file.kind,
+                    "sha": file.sha256,
+                    "account": file.bank_account_id,
+                    "id": file.id,
+                },
             )
         ).scalar_one_or_none()
         return found

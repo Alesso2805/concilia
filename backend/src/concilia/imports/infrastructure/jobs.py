@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
-from concilia.banking.application.profile_config import StatementConfig
+from concilia.banking.application.profile_config import ProfileConfig
 from concilia.imports.application.service import DuplicateFileError, ImportService
 from concilia.imports.domain.cells import Cell
 from concilia.imports.domain.statement import FileError
@@ -18,7 +18,7 @@ class ContentReader:
         if detect_format(content) != expected_format:
             raise FileError("wrong_format")
 
-    def rows(self, content: bytes, config: StatementConfig) -> list[list[Cell]]:
+    def rows(self, content: bytes, config: ProfileConfig) -> list[list[Cell]]:
         return read_rows(
             content,
             expected=config.format.value,
