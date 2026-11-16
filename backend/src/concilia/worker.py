@@ -7,7 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from concilia.ai.application.service import LlmChooser, SuggestionService
-from concilia.ai.infrastructure.clients import LlmClients
+from concilia.ai.infrastructure.clients import LlmClients, llm_clients
 from concilia.ai.infrastructure.jobs import ai_suggest_handler
 from concilia.ai.infrastructure.sql import SqlSuggestionTransactions
 from concilia.audit.infrastructure.sql import SqlAuditRecorder
@@ -90,8 +90,9 @@ async def serve(
     *,
     concurrency: int,
     poll_interval_seconds: float,
+    llm: LlmChooser | None = None,
 ) -> None:
-    runner = Runner(engine, clock, handlers(engine, clock))
+    runner = Runner(engine, clock, handlers(engine, clock, llm))
 
     async def run_jobs() -> None:
         while not stop.is_set():
@@ -127,6 +128,7 @@ async def main() -> None:
             stop,
             concurrency=settings.worker_concurrency,
             poll_interval_seconds=settings.worker_poll_interval_seconds,
+            llm=llm_clients(settings),
         )
     finally:
         await engine.dispose()

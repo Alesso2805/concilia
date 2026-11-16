@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from concilia.ai.api.routes import ai_router
 from concilia.ai.application.service import LlmChooser, SuggestionService
-from concilia.ai.infrastructure.clients import LlmClients
+from concilia.ai.infrastructure.clients import llm_clients
 from concilia.ai.infrastructure.sql import SqlSuggestionTransactions
 from concilia.audit.api.routes import audit_router
 from concilia.audit.application.log import AuditLogService
@@ -225,7 +225,7 @@ def create_app(
     if settings.ai_enabled:
         suggestions = SuggestionService(
             SqlSuggestionTransactions(engine, SqlAuditRecorder),
-            llm or LlmClients(real=None),
+            llm or llm_clients(settings),
             clock,
             global_daily_limit=settings.ai_global_daily_limit,
         )
