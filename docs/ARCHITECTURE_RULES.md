@@ -21,7 +21,7 @@ Checks live in `backend/.importlinter` (contracts) and `backend/tests/architectu
 
 ## AR-01 Module order
 
-Modules are ordered as in [ADR-0001](adr/0001-modular-monolith.md): `shared.kernel`, `shared.infrastructure`, `audit`, `identity`, `banking`, `periods`, `imports`, `matching`, `ai`, `reporting`, `demo`. A module may import only modules that come before it. No module imports the composition roots `concilia.api`, `concilia.worker` or `concilia.cli` (the operator commands, such as `make create-org`).
+Modules are ordered as in [ADR-0001](adr/0001-modular-monolith.md): `shared.kernel`, `shared.infrastructure`, `audit`, `identity`, `banking`, `periods`, `imports`, `matching`, `ai`, `reporting`, `demo`. A module may import only modules that come before it. No module imports the composition roots `concilia.api`, `concilia.worker`, `concilia.cli` (the operator commands, such as `make create-org`) or `concilia.record_ai` (`make record-ai`).
 
 **Why:** dependencies flow one way, so a module can be understood, tested and changed without the ones after it. When an earlier module needs a later one, it declares a port (ADR-0001).
 

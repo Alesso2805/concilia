@@ -272,6 +272,7 @@ async def test_requests_are_idempotent_audited_and_stay_inside_their_organizatio
 async def test_rerunning_ai_suggest_calls_the_provider_once_and_stores_onesuggestion(
     database: DatabaseUrls, owner_engine: AsyncEngine, worker_engine: AsyncEngine, books: Setup
 ) -> None:
+    await run_ai_jobs(worker_engine, LlmClients(real=None))
     real = FakeLlmClient(answer(model_suggestion(["C1"], None)))
     llm = LlmClients(real=real)
     credit = await credit_of(owner_engine, books, 50_000)
