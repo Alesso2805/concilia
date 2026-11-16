@@ -8,9 +8,8 @@ import { Router } from '@angular/router';
 
 import { INVITATION_PATH, ORGANIZATION_PICKER_PATH, safeReturnUrl } from '../../core/session/paths';
 import { SessionStore } from '../../core/session/session.store';
+import { DEMO_LANDING } from '../demo/demo-start.page';
 import { demoErrorMessage, loginErrorMessage } from './login-errors';
-
-const DEMO_START = '/bandeja';
 
 @Component({
   selector: 'app-login-page',
@@ -45,7 +44,7 @@ export class LoginPage {
     this.demoError.set(null);
     try {
       await this.store.startDemo();
-      await this.router.navigateByUrl(DEMO_START);
+      await this.router.navigateByUrl(DEMO_LANDING);
     } catch (error) {
       this.demoError.set(demoErrorMessage(error));
     } finally {

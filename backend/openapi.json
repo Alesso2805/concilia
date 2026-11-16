@@ -2957,6 +2957,49 @@
         ]
       }
     },
+    "/api/app/demo/files/{kind}": {
+      "get": {
+        "description": "The demo's third month, to import by hand: the bank statement (starting with the last\nrows already imported, as bank exports overlap) or the receivables. Only inside a demo\n(403 `not_a_demo`).",
+        "operationId": "download_demo_file",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "enum": [
+                "statement",
+                "receivables"
+              ],
+              "title": "Kind",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/csv": {}
+            },
+            "description": "The CSV file"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Demo File",
+        "tags": [
+          "demo"
+        ]
+      }
+    },
     "/api/app/demo/switch-role": {
       "post": {
         "description": "Continue the demo as its user with another role, in a new session.\n\nOnly inside a live demo organization and between its demo users (403 `not_a_demo`).",

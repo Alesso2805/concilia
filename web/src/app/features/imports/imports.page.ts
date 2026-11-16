@@ -19,6 +19,7 @@ import { Router, RouterLink } from '@angular/router';
 import { FilePageView } from '../../api/models/file-page-view';
 import { ImportFileView } from '../../api/models/import-file-view';
 import { KeysetPaginatorIntl, keysetLength } from '../../core/paging/keyset';
+import { SessionStore } from '../../core/session/session.store';
 import { BankingService, ProfileView } from '../admin/banking.service';
 import { ImportsService, importErrorMessage } from './imports.service';
 import { ImportKind, KIND_TEXTS, STATUS_LABELS } from './labels';
@@ -51,8 +52,10 @@ export class ImportsPage implements OnInit {
   private readonly imports = inject(ImportsService);
   private readonly banking = inject(BankingService);
   private readonly router = inject(Router);
+  private readonly session = inject(SessionStore);
 
   protected readonly profiles = signal<ProfileView[]>([]);
+  protected readonly isDemo = computed(() => this.session.organization()?.is_demo ?? false);
   protected readonly groups = computed(() =>
     (['bank_statement', 'receivables'] as const)
       .map((kind) => ({

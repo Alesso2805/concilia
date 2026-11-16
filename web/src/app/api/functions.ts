@@ -19,6 +19,8 @@ export type { ArchiveImportProfile$Params as ArchiveImportProfile$Params } from 
 export { archiveImportProfile as archiveImportProfile } from './fn/banking/archive-import-profile';
 export type { ListImportTemplates$Params as ListImportTemplates$Params } from './fn/banking/list-import-templates';
 export { listImportTemplates as listImportTemplates } from './fn/banking/list-import-templates';
+export type { DownloadDemoFile$Params as DownloadDemoFile$Params } from './fn/demo/download-demo-file';
+export { downloadDemoFile as downloadDemoFile } from './fn/demo/download-demo-file';
 export type { SwitchDemoRole$Params as SwitchDemoRole$Params } from './fn/demo/switch-demo-role';
 export { switchDemoRole as switchDemoRole } from './fn/demo/switch-demo-role';
 export type { CreateDemo$Params as CreateDemo$Params } from './fn/demo/create-demo';

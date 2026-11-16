@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { Router, provideRouter } from '@angular/router';
@@ -7,6 +8,7 @@ import { of } from 'rxjs';
 import { ImportSummaryView } from '../../api/models/import-summary-view';
 import { JobTracker } from '../../core/jobs/job-tracker';
 import { provideLocale } from '../../core/locale';
+import { SessionStore } from '../../core/session/session.store';
 import { BankingService } from '../admin/banking.service';
 import { ImportPage } from './import.page';
 import { ImportsPage } from './imports.page';
@@ -75,7 +77,7 @@ describe('ImportsPage', () => {
   let upload: ReturnType<typeof vi.fn>;
   let navigate: ReturnType<typeof vi.spyOn>;
 
-  async function render(profiles: unknown[]): Promise<HTMLElement> {
+  async function render(profiles: unknown[], isDemo = false): Promise<HTMLElement> {
     upload = vi.fn(() => Promise.resolve({ file: FILE, job_id: 'j1', duplicate_of: null }));
     TestBed.configureTestingModule({
       imports: [ImportsPage],
@@ -97,6 +99,7 @@ describe('ImportsPage', () => {
           },
         },
         { provide: BankingService, useValue: { profiles: () => Promise.resolve(profiles) } },
+        { provide: SessionStore, useValue: { organization: signal({ is_demo: isDemo }) } },
       ],
     });
     navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
@@ -111,6 +114,19 @@ describe('ImportsPage', () => {
     expect(text(fixture)).toContain('Todavía no hay perfiles de importación.');
     expect(text(fixture)).toContain('Extracto');
     expect(text(fixture)).toContain('enero.csv');
+  });
+
+  it('offers the sample files only inside a demo', async () => {
+    const demo = await render([], true);
+    const links = [...demo.querySelectorAll<HTMLAnchorElement>('a[download]')];
+
+    expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '/api/app/demo/files/statement',
+      '/api/app/demo/files/receivables',
+    ]);
+    TestBed.resetTestingModule();
+    const real = await render([]);
+    expect(real.querySelector('a[download]')).toBeNull();
   });
 
   it('uploads the chosen file and follows its job', async () => {
