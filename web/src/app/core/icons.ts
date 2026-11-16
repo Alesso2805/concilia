@@ -15,6 +15,7 @@ import edit from '@material-symbols/svg-400/outlined/edit.svg';
 import error from '@material-symbols/svg-400/outlined/error.svg';
 import group from '@material-symbols/svg-400/outlined/group.svg';
 import home from '@material-symbols/svg-400/outlined/home.svg';
+import inbox from '@material-symbols/svg-400/outlined/inbox.svg';
 import lightMode from '@material-symbols/svg-400/outlined/light_mode.svg';
 import logout from '@material-symbols/svg-400/outlined/logout.svg';
 import menu from '@material-symbols/svg-400/outlined/menu.svg';
@@ -42,6 +43,7 @@ const ICONS = {
   error,
   group,
   home,
+  inbox,
   light_mode: lightMode,
   logout,
   menu,

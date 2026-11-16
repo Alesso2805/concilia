@@ -15,6 +15,8 @@ function required(name: string): string {
   return value;
 }
 
+export const SIGNED_IN = 'e2e/.auth/session.json';
+
 export const credentials = {
   email: required('E2E_EMAIL'),
   password: required('E2E_PASSWORD'),
@@ -75,6 +77,12 @@ export async function logIn(page: Page, path = '/'): Promise<void> {
   await expect(page).toHaveURL(path);
 }
 
+/** Opens the app with the session saved by the global setup (`test.use({ storageState })`). */
+export async function openApp(page: Page, path = '/'): Promise<void> {
+  await page.goto(path);
+  await expect(page).toHaveURL(path);
+}
+
 /** Calls the API as the signed-in user of the page, with the CSRF header. */
 export async function callApi(
   page: Page,
@@ -91,4 +99,39 @@ export async function callApi(
   });
   expect(response.ok(), `${method} ${path} -> ${response.status()}`).toBe(true);
   return response.status() === 204 ? null : response.json();
+}
+
+export function uuidV7(): string {
+  const hex = Date.now().toString(16).padStart(12, '0');
+  const random = Array.from(crypto.getRandomValues(new Uint8Array(10)), (byte) =>
+    byte.toString(16).padStart(2, '0'),
+  ).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8)}-7${random.slice(0, 3)}-8${random.slice(3, 6)}-${random.slice(6, 18)}`;
+}
+
+/** Uploads and confirms an import through the API, waiting for both jobs. */
+export async function importFile(
+  page: Page,
+  profileId: string,
+  name: string,
+  content: string,
+): Promise<void> {
+  const cookies = await page.context().cookies();
+  const token = cookies.find((cookie) => cookie.name === '__Host-XSRF-TOKEN')?.value ?? '';
+  const response = await page.request.post('/api/app/imports', {
+    multipart: {
+      id: uuidV7(),
+      import_profile_id: profileId,
+      file: { name, mimeType: 'text/csv', buffer: Buffer.from(content) },
+    },
+    headers: { 'X-XSRF-TOKEN': token, Origin: new URL(page.url()).origin },
+  });
+  expect(response.ok(), `upload ${name} -> ${response.status()}`).toBe(true);
+  const fileId = ((await response.json()) as { file: { id: string } }).file.id;
+  const status = async () =>
+    ((await callApi(page, 'GET', `/api/app/imports/${fileId}`)) as { file: { status: string } })
+      .file.status;
+  await expect.poll(status).toBe('previewed');
+  await callApi(page, 'POST', `/api/app/imports/${fileId}/confirm`);
+  await expect.poll(status).toBe('confirmed');
 }

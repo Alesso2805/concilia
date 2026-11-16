@@ -1,4 +1,6 @@
-import { expect, expectAccessible, logIn, test } from './fixtures';
+import { expect, expectAccessible, openApp, SIGNED_IN, test } from './fixtures';
+
+test.use({ storageState: SIGNED_IN });
 
 test('an admin sets up an account, a profile from a template and the tolerances', async ({
   page,
@@ -6,7 +8,7 @@ test('an admin sets up an account, a profile from a template and the tolerances'
   const run = Date.now();
   const alias = `Recaudación ${run}`;
   const profile = `BCP ${run}`;
-  await logIn(page);
+  await openApp(page);
   const navigation = page.getByRole('navigation', { name: 'Principal' });
 
   await navigation.getByRole('link', { name: 'Cuentas bancarias' }).click();

@@ -1,0 +1,118 @@
+<h2 mat-dialog-title>Detalle de la coincidencia</h2>
+<mat-dialog-content class="detail" tabindex="0">
+  @if (detail(); as detail) {
+    <dl class="inbox__facts">
+      <dt>Estado</dt>
+      <dd>{{ status(detail) }}</dd>
+      <dt>Origen</dt>
+      <dd>{{ origin(detail) }}</dd>
+      @if (detail.score !== null) {
+        <dt>Puntaje</dt>
+        <dd>{{ detail.score }}</dd>
+      }
+      <dt>Diferencia</dt>
+      <dd>
+        {{ pen(detail.difference_cents) }}
+        @if (detail.suggested_difference_reason) {
+          (motivo sugerido: {{ reason(detail.suggested_difference_reason) }})
+        }
+      </dd>
+    </dl>
+    @if (detail.explanation) {
+      <p class="detail__explanation">{{ detail.explanation }}</p>
+    }
+
+    <h3>Abonos</h3>
+    <table class="detail__table">
+      <thead>
+        <tr>
+          <th scope="col">Fecha</th>
+          <th scope="col">Descripción</th>
+          <th scope="col" class="inbox__amount">Monto</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (credit of detail.credits; track credit.id) {
+          <tr>
+            <td>{{ day(credit.booked_on) }}</td>
+            <td>{{ credit.description }}</td>
+            <td class="inbox__amount">{{ pen(credit.amount_cents) }}</td>
+          </tr>
+        }
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row" colspan="2">Total</th>
+          <td class="inbox__amount">{{ pen(detail.credits_cents) }}</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <h3>Cobros</h3>
+    <table class="detail__table">
+      <thead>
+        <tr>
+          <th scope="col">Documento</th>
+          <th scope="col">Cliente</th>
+          <th scope="col">Vence</th>
+          <th scope="col" class="inbox__amount">Monto</th>
+          <th scope="col" class="inbox__amount">Aplicado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of detail.receivables; track item.id) {
+          <tr>
+            <td>{{ item.doc_number }}</td>
+            <td>
+              {{ item.customer_name }}
+              @if (item.available_cents > 0) {
+                <span class="inbox__chip">Parcial: quedan {{ pen(item.available_cents) }}</span>
+              }
+            </td>
+            <td>{{ day(item.due_on) }}</td>
+            <td class="inbox__amount">{{ pen(item.amount_cents) }}</td>
+            <td class="inbox__amount">{{ pen(item.applied_cents) }}</td>
+          </tr>
+        }
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row" colspan="4">Total aplicado</th>
+          <td class="inbox__amount">{{ pen(detail.applied_cents) }}</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <h3>Historial</h3>
+    @if (detail.decisions.length === 0) {
+      <p class="inbox__muted">
+        Propuesta el {{ detail.created_at | date: 'medium' }}; todavía sin decisiones.
+      </p>
+    } @else {
+      <ul class="detail__history">
+        @for (decision of detail.decisions; track $index) {
+          <li>
+            {{ decision.decided_by }} · {{ action(decision.action) }} el
+            {{ decision.decided_at | date: 'medium' }}
+            @if (decision.difference_reason) {
+              · diferencia por {{ reason(decision.difference_reason) }}
+              @if (decision.difference_note) {
+                ({{ decision.difference_note }})
+              }
+            }
+            @if (decision.reason) {
+              · {{ decision.reason }}
+            }
+          </li>
+        }
+      </ul>
+    }
+  } @else if (error(); as message) {
+    <p class="inbox__error" role="alert">{{ message }}</p>
+  } @else {
+    <mat-progress-bar mode="indeterminate" aria-label="Cargando el detalle" />
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button type="button" mat-dialog-close>Cerrar</button>
+</mat-dialog-actions>
