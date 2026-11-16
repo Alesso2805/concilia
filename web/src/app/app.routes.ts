@@ -12,6 +12,11 @@ export const routes: Routes = [
   { path: 'iniciar-sesion', loadChildren: () => import('./features/auth/auth.routes') },
   { path: 'error', component: ErrorPage, title: 'Error · Concilia' },
   {
+    path: 'demo',
+    loadComponent: () => import('./features/demo/demo-start.page').then((m) => m.DemoStartPage),
+    title: 'Demo · Concilia',
+  },
+  {
     path: 'invitacion',
     loadComponent: () => import('./features/auth/invitation.page').then((m) => m.InvitationPage),
     title: 'Invitación · Concilia',

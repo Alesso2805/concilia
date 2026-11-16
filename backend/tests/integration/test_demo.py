@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from tests.support.api import ORIGIN, build_app, create_member, signed_in, xsrf_header
 from tests.support.clock import FixedClock
 from tests.support.database import DatabaseUrls
-from tests.support.imports import NOW
+from tests.support.imports import NOW, client_id, work
 
 pytestmark = pytest.mark.anyio
 
@@ -237,3 +237,36 @@ async def test_switching_role_needs_a_live_demo(
 
     assert (real.status_code, real.json()["detail"]) == (403, "not_a_demo")
     assert (expired.status_code, expired.json()["detail"]) == (403, "not_a_demo")
+
+
+async def test_the_third_month_downloads_and_imports_with_its_overlap(
+    database: DatabaseUrls, owner_engine: AsyncEngine, worker_engine: AsyncEngine
+) -> None:
+    member = await create_member(owner_engine, NOW, organizations={"Real": ["analyst"]})
+    async with _app(database) as app:
+        async with _visitor(app) as client:
+            await client.post("/api/public/demo")
+            statement = await client.get("/api/app/demo/files/statement")
+            receivables = await client.get("/api/app/demo/files/receivables")
+            profiles = (await client.get("/api/app/import-profiles")).json()
+            profile = next(p for p in profiles if p["kind"] == "bank_statement")
+            uploaded = await client.post(
+                "/api/app/imports",
+                data={"id": client_id(), "import_profile_id": profile["id"]},
+                files={"file": ("extracto-2026-12.csv", statement.content, "text/csv")},
+                headers=xsrf_header(client),
+            )
+            await work(worker_engine, FixedClock(NOW))
+            counts = (await client.get(f"/api/app/imports/{uploaded.json()['file']['id']}")).json()
+        async with signed_in(app, member.email) as client:
+            refused = await client.get("/api/app/demo/files/statement")
+
+    lines = statement.text.splitlines()
+    assert statement.headers["content-type"].startswith("text/csv")
+    assert 'filename="extracto-2026-12.csv"' in statement.headers["content-disposition"]
+    assert lines[0] == "Fecha;Descripción;Operación;Monto"
+    assert [line[3:10] for line in lines[1:4]] == ["11/2026"] * 3
+    assert 'filename="cobros-2026-12.csv"' in receivables.headers["content-disposition"]
+    assert receivables.text.startswith("Cliente,RUC,Documento,Emisión,Vencimiento,Monto\n")
+    assert (counts["counts"]["duplicate"], counts["counts"]["ok"]) == (3, len(lines) - 4)
+    assert (refused.status_code, refused.json()["detail"]) == (403, "not_a_demo")

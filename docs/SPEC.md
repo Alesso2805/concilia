@@ -231,8 +231,9 @@ Descartada, rechazada y revertida son finales; sus abonos y cobros quedan libres
 **Demo.**
 
 - El botón "Probar la demo" crea una organización de demo con el generador determinista y fechas fijas por `dataset_version`: una cuenta bancaria, perfiles, tres usuarios de demo (`admin`, `analyst`, `reviewer`) y el extracto y los cobros de dos meses ya importados. El primer mes se concilia con el motor real (un `engine_runs` sin trabajo), lo confirma el analista y lo aprueba el revisor de la demo a través del dominio, y queda cerrado; el segundo queda sin conciliar. La precarga crece con las historias: desde CN-22, propuestas del motor; desde CN-14, confirmadas y aprobadas; desde CN-16, el período cerrado. La sesión entra como analista y un selector cambia de rol con el endpoint de cambio de rol.
-- La demo ofrece para descargar un extracto CSV y un archivo de cobros de un tercer mes, con su perfil ya creado, para probar la importación.
-- Se borra a las `DEMO_TTL_HOURS` horas (4 en producción; en local, sin vencimiento, y `make demo` crea una nueva). Límite: 5 demos por IP al día y 300 por día en toda la instancia.
+- La demo ofrece para descargar un extracto CSV y un archivo de cobros de un tercer mes, con su perfil ya creado, para probar la importación. El extracto empieza con los tres últimos movimientos del mes anterior, como suele pasar al exportar del banco, y la vista previa los marca como ya importados.
+- Además del botón, el enlace `/demo` crea una demo y entra en ella, para compartirlo.
+- Se borra a las `DEMO_TTL_HOURS` horas (4 en producción). En local `DEMO_TTL_HOURS` no se define y la demo no vence; cada «Probar la demo», o el enlace `/demo` que abre `make demo`, crea una nueva. Límite: 5 demos por IP al día y 300 por día en toda la instancia.
 
 **Roles.**
 

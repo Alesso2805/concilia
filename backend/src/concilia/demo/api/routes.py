@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
 from concilia.demo.application.creation import DemoLimitError, DemoService
+from concilia.demo.application.files import DemoFilesService, NoDemoFilesError
 from concilia.identity.application.sessions import IssuedSession, NotADemoError, SessionService
 from concilia.shared.infrastructure.web import current_principal
 from concilia.shared.kernel.principal import Principal
@@ -50,9 +51,33 @@ def demo_router(
 
 
 def demo_app_router(
-    sessions: SessionService, set_session_cookies: Callable[[Response, IssuedSession], None]
+    sessions: SessionService,
+    set_session_cookies: Callable[[Response, IssuedSession], None],
+    files: DemoFilesService,
 ) -> APIRouter:
     router = APIRouter(prefix="/api/app/demo", tags=["demo"])
+
+    @router.get(
+        "/files/{kind}",
+        response_class=Response,
+        responses={200: {"content": {"text/csv": {}}, "description": "The CSV file"}},
+    )
+    async def download_demo_file(
+        kind: Literal["statement", "receivables"], principal: CurrentPrincipal
+    ) -> Response:
+        """The demo's third month, to import by hand: the bank statement (starting with the last
+        rows already imported, as bank exports overlap) or the receivables. Only inside a demo
+        (403 `not_a_demo`).
+        """
+        try:
+            file = await files.file(principal, kind)
+        except NoDemoFilesError:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "not_a_demo") from None
+        return Response(
+            file.content,
+            media_type="text/csv; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{file.filename}"'},
+        )
 
     @router.post("/switch-role")
     async def switch_demo_role(

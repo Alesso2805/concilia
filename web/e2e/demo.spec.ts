@@ -29,3 +29,31 @@ test('a visitor enters a demo, reviews its months and switches to the reviewer',
   await expect(page.getByRole('button', { name: 'Correr el motor' })).toBeDisabled();
   await expectAccessible(page);
 });
+
+test('a visitor imports the third month of the demo from its sample files', async ({ page }) => {
+  await page.goto('/demo');
+  await expect(page).toHaveURL('/bandeja');
+  await page
+    .getByRole('navigation', { name: 'Principal' })
+    .getByRole('link', { name: 'Importaciones' })
+    .click();
+  await expect(
+    page.getByRole('heading', { name: 'Archivos de ejemplo para la demo' }),
+  ).toBeVisible();
+  await expectAccessible(page);
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('link', { name: 'Extracto de diciembre (CSV)' }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe('extracto-2026-12.csv');
+  await page.getByText('Perfil de importación', { exact: true }).click();
+  await page.getByRole('option', { name: 'Extracto de la demo (CSV)' }).click();
+  await page.locator('input[type="file"]').setInputFiles(await download.path());
+  await page.getByRole('button', { name: 'Subir y revisar' }).click();
+
+  await expect(page.getByRole('tab', { name: 'Ya importadas (3)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Válidas (165)' })).toBeVisible();
+  await page.getByRole('button', { name: 'Confirmar 165 movimientos' }).click();
+  await expect(page.getByText('Importación confirmada')).toBeVisible();
+});

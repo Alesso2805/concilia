@@ -14,7 +14,8 @@ from concilia.banking.application.service import BankingService
 from concilia.banking.infrastructure.sql import SqlBankingStore, SqlBankingTransactions
 from concilia.demo.api.routes import demo_app_router, demo_router
 from concilia.demo.application.creation import DemoPolicy, DemoService, DemoStores
-from concilia.demo.infrastructure.sql import SqlDemoTransactions
+from concilia.demo.application.files import DemoFilesService
+from concilia.demo.infrastructure.sql import SqlDemoReadTransactions, SqlDemoTransactions
 from concilia.identity.api.registration import registration_router
 from concilia.identity.api.sessions import WebSecurity, session_routers
 from concilia.identity.api.settings import settings_router
@@ -166,7 +167,12 @@ def create_app(settings: ApiSettings | None = None, clock: Clock | None = None) 
     inbox = InboxService(SqlInboxTransactions(engine))
     app.include_router(inbox_router(inbox), dependencies=authenticated)
     app.include_router(
-        demo_app_router(sessions, routers.set_session_cookies), dependencies=authenticated
+        demo_app_router(
+            sessions,
+            routers.set_session_cookies,
+            DemoFilesService(SqlDemoReadTransactions(engine)),
+        ),
+        dependencies=authenticated,
     )
     app.include_router(jobs_router(engine), dependencies=authenticated)
     return app

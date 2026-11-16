@@ -1,5 +1,25 @@
 <h1 class="imports__title">Importaciones</h1>
 
+@if (isDemo()) {
+  <section class="imports__card" aria-labelledby="ejemplos">
+    <h2 id="ejemplos">Archivos de ejemplo para la demo</h2>
+    <p>
+      Octubre y noviembre ya están importados. Descarga el extracto y los cobros de diciembre de
+      2026 y súbelos con los perfiles «Extracto de la demo (CSV)» y «Cobros de la demo (CSV)». El
+      extracto empieza con tres movimientos de noviembre, como suele pasar al exportar del banco: la
+      vista previa los marca como ya importados.
+    </p>
+    <div class="imports__actions">
+      <a mat-stroked-button href="/api/app/demo/files/statement" download>
+        Extracto de diciembre (CSV)
+      </a>
+      <a mat-stroked-button href="/api/app/demo/files/receivables" download>
+        Cobros de diciembre (CSV)
+      </a>
+    </div>
+  </section>
+}
+
 <section class="imports__card" aria-labelledby="subir">
   <h2 id="subir">Subir un extracto o una lista de cobros</h2>
   @if (profiles().length === 0) {
