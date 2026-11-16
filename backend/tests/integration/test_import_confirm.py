@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator
 from datetime import timedelta
 from typing import Any
 from uuid import UUID, uuid7
@@ -19,7 +19,15 @@ from concilia.shared.kernel.principal import Principal
 from tests.support.api import build_app, signed_in, xsrf_header
 from tests.support.clock import FixedClock
 from tests.support.database import DatabaseUrls
-from tests.support.imports import NOW, STATEMENT, Setup, statement_setup, upload, work
+from tests.support.imports import (
+    NOW,
+    STATEMENT,
+    AlwaysActive,
+    Setup,
+    statement_setup,
+    upload,
+    work,
+)
 
 pytestmark = pytest.mark.anyio
 
@@ -217,16 +225,6 @@ async def test_movements_in_a_closed_period_cannot_be_voided(
         response = await _void(client, file_id)
 
     assert (response.status_code, response.json()["detail"]) == (409, "closed_period")
-
-
-class AlwaysActive:
-    def __init__(self, _connection: object) -> None:
-        pass
-
-    async def any_active(
-        self, movement_ids: Sequence[UUID], receivable_ids: Sequence[UUID]
-    ) -> bool:
-        return bool(movement_ids)
 
 
 async def test_movements_in_active_matches_cannot_be_voided(
