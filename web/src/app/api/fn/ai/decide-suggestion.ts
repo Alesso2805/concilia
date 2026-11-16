@@ -7,15 +7,15 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { ConciliaAiApiRoutesDecisionRequestBody } from '../../models/concilia-ai-api-routes-decision-request-body';
-import { ConciliaAiApiRoutesDecisionView } from '../../models/concilia-ai-api-routes-decision-view';
+import { SuggestionDecisionBody } from '../../models/suggestion-decision-body';
+import { SuggestionDecisionView } from '../../models/suggestion-decision-view';
 
 export interface DecideSuggestion$Params {
   suggestion_id: string;
-      body: ConciliaAiApiRoutesDecisionRequestBody
+      body: SuggestionDecisionBody
 }
 
-export function decideSuggestion(http: HttpClient, rootUrl: string, params: DecideSuggestion$Params, context?: HttpContext): Observable<StrictHttpResponse<ConciliaAiApiRoutesDecisionView>> {
+export function decideSuggestion(http: HttpClient, rootUrl: string, params: DecideSuggestion$Params, context?: HttpContext): Observable<StrictHttpResponse<SuggestionDecisionView>> {
   const rb = new RequestBuilder(rootUrl, decideSuggestion.PATH, 'post');
   if (params) {
     rb.path('suggestion_id', params.suggestion_id, {});
@@ -27,7 +27,7 @@ export function decideSuggestion(http: HttpClient, rootUrl: string, params: Deci
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<ConciliaAiApiRoutesDecisionView>;
+      return r as StrictHttpResponse<SuggestionDecisionView>;
     })
   );
 }

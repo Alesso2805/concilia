@@ -816,6 +816,148 @@
         "title": "DateFormat",
         "type": "string"
       },
+      "DecisionRequestBody": {
+        "properties": {
+          "action": {
+            "enum": [
+              "confirm",
+              "discard",
+              "approve",
+              "reject",
+              "revert"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "difference_note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Note"
+          },
+          "difference_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "commission",
+                  "detraction",
+                  "rounding",
+                  "overpayment",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Reason"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "id",
+          "action"
+        ],
+        "title": "DecisionRequestBody",
+        "type": "object"
+      },
+      "DecisionView": {
+        "properties": {
+          "action": {
+            "enum": [
+              "confirm",
+              "discard",
+              "approve",
+              "reject",
+              "revert"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "decided_at": {
+            "format": "date-time",
+            "title": "Decided At",
+            "type": "string"
+          },
+          "decided_by": {
+            "title": "Decided By",
+            "type": "string"
+          },
+          "difference_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Note"
+          },
+          "difference_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "commission",
+                  "detraction",
+                  "rounding",
+                  "overpayment",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Reason"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "action",
+          "reason",
+          "difference_reason",
+          "difference_note",
+          "decided_by",
+          "decided_at"
+        ],
+        "title": "DecisionView",
+        "type": "object"
+      },
       "DemoView": {
         "properties": {
           "organization_id": {
@@ -1643,7 +1785,7 @@
           },
           "decisions": {
             "items": {
-              "$ref": "#/components/schemas/concilia__matching__api__inbox__DecisionView"
+              "$ref": "#/components/schemas/DecisionView"
             },
             "title": "Decisions",
             "type": "array"
@@ -3490,6 +3632,107 @@
         "title": "SuggestedReceivableView",
         "type": "object"
       },
+      "SuggestionDecisionBody": {
+        "properties": {
+          "action": {
+            "enum": [
+              "accept",
+              "reject"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "index": {
+            "maximum": 2.0,
+            "minimum": 0.0,
+            "title": "Index",
+            "type": "integer"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "id",
+          "index",
+          "action"
+        ],
+        "title": "SuggestionDecisionBody",
+        "type": "object"
+      },
+      "SuggestionDecisionView": {
+        "properties": {
+          "action": {
+            "enum": [
+              "accept",
+              "reject"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "decided_at": {
+            "format": "date-time",
+            "title": "Decided At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "match_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Id"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "id",
+          "index",
+          "action",
+          "reason",
+          "match_id",
+          "decided_at"
+        ],
+        "title": "SuggestionDecisionView",
+        "type": "object"
+      },
       "SuggestionItemView": {
         "properties": {
           "confidence": {
@@ -3504,7 +3747,7 @@
           "decision": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/concilia__ai__api__routes__DecisionView"
+                "$ref": "#/components/schemas/SuggestionDecisionView"
               },
               {
                 "type": "null"
@@ -3867,249 +4110,6 @@
         ],
         "title": "VoidRequest",
         "type": "object"
-      },
-      "concilia__ai__api__routes__DecisionRequestBody": {
-        "properties": {
-          "action": {
-            "enum": [
-              "accept",
-              "reject"
-            ],
-            "title": "Action",
-            "type": "string"
-          },
-          "id": {
-            "format": "uuid",
-            "title": "Id",
-            "type": "string"
-          },
-          "index": {
-            "maximum": 2.0,
-            "minimum": 0.0,
-            "title": "Index",
-            "type": "integer"
-          },
-          "reason": {
-            "anyOf": [
-              {
-                "maxLength": 500,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reason"
-          }
-        },
-        "required": [
-          "id",
-          "index",
-          "action"
-        ],
-        "title": "DecisionRequestBody",
-        "type": "object"
-      },
-      "concilia__ai__api__routes__DecisionView": {
-        "properties": {
-          "action": {
-            "enum": [
-              "accept",
-              "reject"
-            ],
-            "title": "Action",
-            "type": "string"
-          },
-          "decided_at": {
-            "format": "date-time",
-            "title": "Decided At",
-            "type": "string"
-          },
-          "id": {
-            "format": "uuid",
-            "title": "Id",
-            "type": "string"
-          },
-          "index": {
-            "title": "Index",
-            "type": "integer"
-          },
-          "match_id": {
-            "anyOf": [
-              {
-                "format": "uuid",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Match Id"
-          },
-          "reason": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reason"
-          }
-        },
-        "required": [
-          "id",
-          "index",
-          "action",
-          "reason",
-          "match_id",
-          "decided_at"
-        ],
-        "title": "DecisionView",
-        "type": "object"
-      },
-      "concilia__matching__api__decisions__DecisionRequestBody": {
-        "properties": {
-          "action": {
-            "enum": [
-              "confirm",
-              "discard",
-              "approve",
-              "reject",
-              "revert"
-            ],
-            "title": "Action",
-            "type": "string"
-          },
-          "difference_note": {
-            "anyOf": [
-              {
-                "maxLength": 500,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Difference Note"
-          },
-          "difference_reason": {
-            "anyOf": [
-              {
-                "enum": [
-                  "commission",
-                  "detraction",
-                  "rounding",
-                  "overpayment",
-                  "other"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Difference Reason"
-          },
-          "id": {
-            "format": "uuid",
-            "title": "Id",
-            "type": "string"
-          },
-          "reason": {
-            "anyOf": [
-              {
-                "maxLength": 500,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reason"
-          }
-        },
-        "required": [
-          "id",
-          "action"
-        ],
-        "title": "DecisionRequestBody",
-        "type": "object"
-      },
-      "concilia__matching__api__inbox__DecisionView": {
-        "properties": {
-          "action": {
-            "enum": [
-              "confirm",
-              "discard",
-              "approve",
-              "reject",
-              "revert"
-            ],
-            "title": "Action",
-            "type": "string"
-          },
-          "decided_at": {
-            "format": "date-time",
-            "title": "Decided At",
-            "type": "string"
-          },
-          "decided_by": {
-            "title": "Decided By",
-            "type": "string"
-          },
-          "difference_note": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Difference Note"
-          },
-          "difference_reason": {
-            "anyOf": [
-              {
-                "enum": [
-                  "commission",
-                  "detraction",
-                  "rounding",
-                  "overpayment",
-                  "other"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Difference Reason"
-          },
-          "reason": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reason"
-          }
-        },
-        "required": [
-          "action",
-          "reason",
-          "difference_reason",
-          "difference_note",
-          "decided_by",
-          "decided_at"
-        ],
-        "title": "DecisionView",
-        "type": "object"
       }
     }
   },
@@ -4225,7 +4225,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/concilia__ai__api__routes__DecisionRequestBody"
+                "$ref": "#/components/schemas/SuggestionDecisionBody"
               }
             }
           },
@@ -4236,7 +4236,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/concilia__ai__api__routes__DecisionView"
+                  "$ref": "#/components/schemas/SuggestionDecisionView"
                 }
               }
             },
@@ -6411,7 +6411,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/concilia__matching__api__decisions__DecisionRequestBody"
+                "$ref": "#/components/schemas/DecisionRequestBody"
               }
             }
           },

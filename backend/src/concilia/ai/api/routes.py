@@ -43,7 +43,7 @@ class SuggestedReceivableView(BaseModel):
     applied_cents: int
 
 
-class DecisionView(BaseModel):
+class SuggestionDecisionView(BaseModel):
     id: UUID
     index: int
     action: Literal["accept", "reject"]
@@ -52,7 +52,7 @@ class DecisionView(BaseModel):
     decided_at: datetime
 
 
-class DecisionRequestBody(BaseModel):
+class SuggestionDecisionBody(BaseModel):
     id: UUID
     index: int = Field(ge=0, le=2)
     action: Literal["accept", "reject"]
@@ -67,7 +67,7 @@ class UsageView(BaseModel):
 
 class SuggestionItemView(BaseModel):
     index: int
-    decision: DecisionView | None
+    decision: SuggestionDecisionView | None
     receivables: list[SuggestedReceivableView]
     difference_cents: int
     difference_reason: (
@@ -89,8 +89,8 @@ class SuggestionView(BaseModel):
     no_match_reason: str | None
 
 
-def _decision(decision: SuggestionDecision) -> DecisionView:
-    return DecisionView(
+def _decision(decision: SuggestionDecision) -> SuggestionDecisionView:
+    return SuggestionDecisionView(
         id=decision.id,
         index=decision.suggestion_index,
         action=decision.action,
@@ -201,10 +201,10 @@ def ai_router(service: SuggestionService, decisions: SuggestionDecisionService) 
     @router.post("/suggestions/{suggestion_id}/decisions", status_code=status.HTTP_201_CREATED)
     async def decide_suggestion(
         suggestion_id: UUID,
-        body: DecisionRequestBody,
+        body: SuggestionDecisionBody,
         principal: CurrentPrincipal,
         response: Response,
-    ) -> DecisionView:
+    ) -> SuggestionDecisionView:
         """An analyst accepts one suggestion (by its `index`), which creates a proposed match
         with source `ai` for the normal confirm and approve flow, or rejects it with a reason.
         Idempotent on the client id. 403 `role_required`; 404 `not_found`; 409

@@ -7,12 +7,12 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { ConciliaMatchingApiDecisionsDecisionRequestBody } from '../../models/concilia-matching-api-decisions-decision-request-body';
+import { DecisionRequestBody } from '../../models/decision-request-body';
 import { RecordedDecisionView } from '../../models/recorded-decision-view';
 
 export interface DecideMatch$Params {
   match_id: string;
-      body: ConciliaMatchingApiDecisionsDecisionRequestBody
+      body: DecisionRequestBody
 }
 
 export function decideMatch(http: HttpClient, rootUrl: string, params: DecideMatch$Params, context?: HttpContext): Observable<StrictHttpResponse<RecordedDecisionView>> {
