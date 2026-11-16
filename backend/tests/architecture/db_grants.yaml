@@ -101,6 +101,20 @@ tables:
       concilia_worker:
         UPDATE: [archived_at, config, name]
 
+  period_events:
+    rls: organization
+    privileges:
+      concilia_app: [INSERT, SELECT]
+      concilia_worker: [INSERT, SELECT]
+      concilia_backup: [SELECT]
+
+  period_status:
+    rls: view
+    privileges:
+      concilia_app: [SELECT]
+      concilia_worker: [SELECT]
+      concilia_backup: [SELECT]
+
   jobs:
     rls: jobs
     privileges:

@@ -114,11 +114,11 @@ After all migrations, the catalog of the `public` schema matches `backend/tests/
 
 **Why:** project rules 3 and 4 and the role table in SPEC. Isolation must not depend on code review, and a table added by a later story must be noticed even if its author forgets it.
 
-**Check:** `tests/architecture/test_catalog.py` runs `catalog_violations` against PostgreSQL 17 in Testcontainers, migrated from scratch with the same role script that Docker Compose uses. Its meta-tests each apply one violation and roll it back:
+**Check:** `tests/architecture/test_catalog.py` runs `catalog_violations` against PostgreSQL 17 in Testcontainers, migrated from scratch with the same role script that Docker Compose uses. Its meta-tests each apply one violation, roll it back, and assert that the report names that specific violation:
 
 - a table without RLS;
 - RLS that is not forced;
-- a view without `security_invoker`;
+- an undeclared view, and a declared view that loses `security_invoker`;
 - an extra table, column or `PUBLIC` grant;
 - an extra executor of a function;
 - an additional policy;
