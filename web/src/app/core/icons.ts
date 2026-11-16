@@ -5,6 +5,7 @@ import accountBalance from '@material-symbols/svg-400/outlined/account_balance.s
 import accountCircle from '@material-symbols/svg-400/outlined/account_circle.svg';
 import add from '@material-symbols/svg-400/outlined/add.svg';
 import archive from '@material-symbols/svg-400/outlined/archive.svg';
+import barChart from '@material-symbols/svg-400/outlined/bar_chart.svg';
 import block from '@material-symbols/svg-400/outlined/block.svg';
 import check from '@material-symbols/svg-400/outlined/check.svg';
 import contentCopy from '@material-symbols/svg-400/outlined/content_copy.svg';
@@ -34,6 +35,7 @@ const ICONS = {
   account_circle: accountCircle,
   add,
   archive,
+  bar_chart: barChart,
   block,
   check,
   content_copy: contentCopy,

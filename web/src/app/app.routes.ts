@@ -95,6 +95,12 @@ export const routes: Routes = [
         title: 'Configuración · Concilia',
       },
       {
+        path: 'panel',
+        loadComponent: () =>
+          import('./features/reports/dashboard.page').then((m) => m.DashboardPage),
+        title: 'Panel · Concilia',
+      },
+      {
         path: 'auditoria',
         loadComponent: () => import('./features/audit/audit.page').then((m) => m.AuditPage),
         title: 'Auditoría · Concilia',

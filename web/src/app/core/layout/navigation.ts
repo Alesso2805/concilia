@@ -13,6 +13,7 @@ const EVERYONE: readonly Role[] = ['admin', 'analyst', 'reviewer'];
 export const NAVIGATION: readonly NavigationItem[] = [
   { path: '/', label: 'Inicio', icon: 'home', roles: EVERYONE },
   { path: '/bandeja', label: 'Bandeja', icon: 'inbox', roles: EVERYONE },
+  { path: '/panel', label: 'Panel', icon: 'bar_chart', roles: EVERYONE },
   { path: '/importaciones', label: 'Importaciones', icon: 'upload_file', roles: ['analyst'] },
   { path: '/cobros', label: 'Cobros', icon: 'receipt_long', roles: EVERYONE },
   { path: '/equipo', label: 'Equipo', icon: 'group', roles: ['admin'] },

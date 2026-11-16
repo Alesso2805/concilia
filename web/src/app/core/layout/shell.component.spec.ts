@@ -70,6 +70,7 @@ describe('ShellComponent', () => {
     expect([...element.querySelectorAll('nav a')].map((a) => a.textContent?.trim())).toEqual([
       'Inicio',
       'Bandeja',
+      'Panel',
       'Importaciones',
       'Cobros',
       'Auditoría',
