@@ -10,6 +10,7 @@ import check from '@material-symbols/svg-400/outlined/check.svg';
 import contentCopy from '@material-symbols/svg-400/outlined/content_copy.svg';
 import contrast from '@material-symbols/svg-400/outlined/contrast.svg';
 import darkMode from '@material-symbols/svg-400/outlined/dark_mode.svg';
+import description from '@material-symbols/svg-400/outlined/description.svg';
 import edit from '@material-symbols/svg-400/outlined/edit.svg';
 import error from '@material-symbols/svg-400/outlined/error.svg';
 import group from '@material-symbols/svg-400/outlined/group.svg';
@@ -34,6 +35,7 @@ const ICONS = {
   content_copy: contentCopy,
   contrast,
   dark_mode: darkMode,
+  description,
   edit,
   error,
   group,
