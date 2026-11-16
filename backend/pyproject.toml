@@ -1,0 +1,73 @@
+[project]
+name = "concilia"
+version = "0.1.0"
+description = "Bank reconciliation backoffice with maker-checker approval and an AI assistant that suggests but never decides."
+license = "MIT"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "fastapi>=0.163.1",
+    "tzdata>=2025.2",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "hypothesis>=6.170",
+    "mypy>=2.4",
+    "pytest>=9.2",
+    "ruff>=0.17.5",
+    "time-machine>=3.6",
+]
+
+[build-system]
+requires = ["uv_build>=0.11,<0.12"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "ASYNC",
+    "B",
+    "C4",
+    "DTZ",
+    "E",
+    "ERA",
+    "F",
+    "I",
+    "N",
+    "PERF",
+    "PIE",
+    "PT",
+    "RET",
+    "RUF",
+    "S",
+    "SIM",
+    "T20",
+    "TID",
+    "UP",
+    "W",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.mypy]
+strict = true
+python_version = "3.14"
+files = ["src", "tests"]
+mypy_path = ["src", "."]
+explicit_package_bases = true
+
+[tool.pytest.ini_options]
+addopts = ["-ra", "--strict-markers", "--strict-config", "--import-mode=importlib"]
+testpaths = ["tests"]
+pythonpath = ["."]
+xfail_strict = true
+filterwarnings = ["error"]
