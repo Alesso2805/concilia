@@ -77,6 +77,7 @@ class SessionRouters:
     public: APIRouter
     app: APIRouter
     authenticate: Callable[[Request], Awaitable[None]]
+    require_same_origin: Callable[[Request], Awaitable[None]]
 
 
 def session_routers(service: SessionService, security: WebSecurity) -> SessionRouters:
@@ -185,4 +186,4 @@ def session_routers(service: SessionService, security: WebSecurity) -> SessionRo
         response.delete_cookie(SESSION_COOKIE, secure=True, httponly=True, samesite="lax")
         response.delete_cookie(XSRF_COOKIE, secure=True, samesite="lax")
 
-    return SessionRouters(public, app, authenticate)
+    return SessionRouters(public, app, authenticate, require_same_origin)

@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from concilia.audit.application.recorder import AuditRecorder
@@ -13,6 +14,7 @@ from concilia.shared.infrastructure.db import (
     lock_organization,
     organization_transaction,
 )
+from concilia.shared.kernel.ids import IdConflictError
 
 type AuditRecorderFactory = Callable[[AsyncConnection], AuditRecorder]
 
@@ -68,12 +70,27 @@ class SqlIdentityStore:
         return name
 
     async def insert_organization(self, organization_id: UUID, name: str, now: datetime) -> None:
-        await self._execute(
-            "INSERT INTO organizations (id, name, created_at) VALUES (:id, :name, :now)",
-            id=organization_id,
-            name=name,
-            now=now,
+        try:
+            await self._execute(
+                "INSERT INTO organizations (id, name, created_at) VALUES (:id, :name, :now)",
+                id=organization_id,
+                name=name,
+                now=now,
+            )
+        except IntegrityError as error:
+            raise IdConflictError from error
+
+    async def is_admin(self, organization_id: UUID, user_id: UUID) -> bool:
+        result = await self._connection.execute(
+            text(
+                """SELECT 1 FROM member_roles r
+                   JOIN memberships m USING (organization_id, user_id)
+                   WHERE r.organization_id = :org AND r.user_id = :user AND r.role = 'admin'
+                     AND m.removed_at IS NULL"""
+            ),
+            {"org": organization_id, "user": user_id},
         )
+        return result.first() is not None
 
     async def insert_membership(
         self, organization_id: UUID, user_id: UUID, roles: frozenset[Role], now: datetime

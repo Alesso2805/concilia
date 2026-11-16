@@ -7,5 +7,7 @@ export type { HttpValidationError } from './models/http-validation-error';
 export type { LoginRequest } from './models/login-request';
 export type { LoginView } from './models/login-view';
 export type { OrganizationView } from './models/organization-view';
+export type { RegistrationRequest } from './models/registration-request';
+export type { RegistrationView } from './models/registration-view';
 export type { SessionView } from './models/session-view';
 export type { ValidationError } from './models/validation-error';

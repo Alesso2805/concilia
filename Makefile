@@ -1,4 +1,4 @@
-.PHONY: up down trust-ca lint test openapi
+.PHONY: up down trust-ca create-org lint test openapi
 
 CA_FILE := caddy-local-root.crt
 
@@ -30,3 +30,6 @@ test:
 openapi:
 	cd backend && uv run python -m concilia.openapi openapi.json
 	cd web && npm run generate:api
+
+create-org:
+	docker compose run --rm migrator python -m concilia.cli create-org --name "$(NAME)" --email "$(EMAIL)" --display-name "$(DISPLAY_NAME)"

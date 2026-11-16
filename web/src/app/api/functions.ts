@@ -11,3 +11,5 @@ export type { Login$Params as Login$Params } from './fn/session/login';
 export { login as login } from './fn/session/login';
 export type { GetHealth$Params as GetHealth$Params } from './fn/health/get-health';
 export { getHealth as getHealth } from './fn/health/get-health';
+export type { Register$Params as Register$Params } from './fn/registration/register';
+export { register as register } from './fn/registration/register';
