@@ -13,10 +13,13 @@ from fastapi import (
     UploadFile,
     status,
 )
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from concilia.imports.application.service import (
     MAX_FILE_BYTES,
+    ActiveMatchesError,
+    ClosedPeriodError,
+    DuplicateFileError,
     FileSummary,
     FileTooLargeError,
     ImportService,
@@ -39,6 +42,9 @@ ERRORS: dict[type[Exception], tuple[int, str]] = {
     WrongStateError: (status.HTTP_409_CONFLICT, "wrong_state"),
     IdConflictError: (status.HTTP_409_CONFLICT, "id_conflict"),
     FileTooLargeError: (status.HTTP_413_CONTENT_TOO_LARGE, "file_too_large"),
+    DuplicateFileError: (status.HTTP_409_CONFLICT, "duplicate_file"),
+    ClosedPeriodError: (status.HTTP_409_CONFLICT, "closed_period"),
+    ActiveMatchesError: (status.HTTP_409_CONFLICT, "active_matches"),
 }
 HANDLED: tuple[type[Exception], ...] = (ClientIdError, FileError, *ERRORS)
 
@@ -95,6 +101,14 @@ class ErrorRowView(BaseModel):
     status: Literal["error"]
     error_code: str
     cells: list[str]
+
+
+class ConfirmView(BaseModel):
+    job_id: UUID
+
+
+class VoidRequest(BaseModel):
+    reason: str = Field(min_length=1, max_length=500)
 
 
 class RowPageView(BaseModel):
@@ -214,6 +228,28 @@ def imports_router(service: ImportService) -> APIRouter:
         """Discard a preview without saving any movement. Analysts only."""
         try:
             await service.discard(principal, file_id)
+        except HANDLED as error:
+            raise _http_error(error) from None
+
+    @router.post("/{file_id}/confirm", status_code=status.HTTP_202_ACCEPTED)
+    async def confirm_import(file_id: UUID, principal: CurrentPrincipal) -> ConfirmView:
+        """Queue the confirmation of a preview. Analysts only.
+
+        Repeating the request while the job is pending returns the same job.
+        """
+        try:
+            return ConfirmView(job_id=await service.request_confirm(principal, file_id))
+        except HANDLED as error:
+            raise _http_error(error) from None
+
+    @router.post("/{file_id}/void", status_code=status.HTTP_204_NO_CONTENT)
+    async def void_import(file_id: UUID, body: VoidRequest, principal: CurrentPrincipal) -> None:
+        """Void a confirmed statement and its movements. Analysts only.
+
+        Refused if any movement is in a closed period or in an active match.
+        """
+        try:
+            await service.void(principal, file_id, body.reason)
         except HANDLED as error:
             raise _http_error(error) from None
 

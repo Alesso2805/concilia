@@ -1,93 +1,28 @@
-import json
 from collections.abc import AsyncIterator
-from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import date
 from typing import Any
-from uuid import UUID, uuid7
+from uuid import uuid7
 
-import httpx
 import pytest
-import time_machine
 from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from concilia.imports.domain.statement import StatementLine, fingerprints
-from concilia.shared.infrastructure.jobs import Runner, enqueue
-from concilia.worker import handlers
-from tests.support.api import Member, build_app, create_member, signed_in, xsrf_header
+from concilia.shared.infrastructure.jobs import enqueue
+from tests.support.api import build_app, signed_in, xsrf_header
 from tests.support.clock import FixedClock
 from tests.support.database import DatabaseUrls
-
-pytestmark = pytest.mark.anyio
-
-NOW = datetime(2027, 2, 3, 15, 0, tzinfo=UTC)
-CONFIG = {
-    "version": 1,
-    "format": "csv",
-    "delimiter": ";",
-    "encoding": "utf-8",
-    "skip_rows": 0,
-    "date_format": "DD/MM/YYYY",
-    "decimal_separator": ",",
-    "thousands_separator": ".",
-    "columns": {"date": "Fecha", "description": "Detalle", "amount": "Importe"},
-}
-STATEMENT = (
-    b"Fecha;Detalle;Importe\n"
-    b"05/01/2027;PAGO FACT F001-123;1.180,00\n"
-    b"06/01/2027;COMISION;-12,50\n"
-    b"07/02/2027;TRANSF CLIENTE;500,00\n"
-    b"08/02/2027;SIN MONTO;\n"
+from tests.support.imports import (
+    NOW,
+    STATEMENT,
+    client_id,
+    statement_setup,
+    upload,
+    work,
 )
 
-
-@dataclass(frozen=True)
-class Setup:
-    member: Member
-    account_id: UUID
-    profile_id: UUID
-
-    @property
-    def organization_id(self) -> UUID:
-        return self.member.organization_ids[0]
-
-
-def _client_id() -> str:
-    with time_machine.travel(NOW, tick=False):
-        return str(uuid7())
-
-
-async def _setup(owner_engine: AsyncEngine, roles: list[str] | None = None) -> Setup:
-    member = await create_member(
-        owner_engine, NOW, organizations={"Andina": roles or ["admin", "analyst"]}
-    )
-    account_id, profile_id = uuid7(), uuid7()
-    async with owner_engine.begin() as connection:
-        await connection.execute(
-            text(
-                """INSERT INTO bank_accounts (id, organization_id, bank, currency, alias,
-                                              number_last4, created_at)
-                   VALUES (:id, :org, 'BCP', 'PEN', 'Principal', '1234', :now)"""
-            ),
-            {"id": account_id, "org": member.organization_ids[0], "now": NOW},
-        )
-        await connection.execute(
-            text(
-                """INSERT INTO import_profiles (id, organization_id, kind, bank_account_id, name,
-                                                config, created_at)
-                   VALUES (:id, :org, 'bank_statement', :account, 'BCP CSV',
-                           CAST(:config AS jsonb), :now)"""
-            ),
-            {
-                "id": profile_id,
-                "org": member.organization_ids[0],
-                "account": account_id,
-                "config": json.dumps(CONFIG),
-                "now": NOW,
-            },
-        )
-    return Setup(member, account_id, profile_id)
+pytestmark = pytest.mark.anyio
 
 
 @pytest.fixture
@@ -102,42 +37,19 @@ async def app(database: DatabaseUrls, clock: FixedClock) -> AsyncIterator[FastAP
     await app.state.engine.dispose()
 
 
-async def _upload(
-    client: httpx.AsyncClient,
-    setup: Setup,
-    content: bytes = STATEMENT,
-    file_id: str | None = None,
-    filename: str = "enero.csv",
-) -> httpx.Response:
-    return await client.post(
-        "/api/app/imports",
-        data={"id": file_id or _client_id(), "import_profile_id": str(setup.profile_id)},
-        files={"file": (filename, content, "text/csv")},
-        headers=xsrf_header(client),
-    )
-
-
-async def _work(worker_engine: AsyncEngine, clock: FixedClock) -> int:
-    runner = Runner(worker_engine, clock, handlers(worker_engine, clock))
-    done = 0
-    while await runner.run_once():
-        done += 1
-    return done
-
-
 async def test_an_upload_is_previewed_by_the_worker(
     app: FastAPI, owner_engine: AsyncEngine, worker_engine: AsyncEngine, clock: FixedClock
 ) -> None:
-    setup = await _setup(owner_engine)
+    setup = await statement_setup(owner_engine)
     async with signed_in(app, setup.member.email) as client:
-        uploaded = await _upload(client, setup, filename="C:\\Descargas\\enero.csv")
+        uploaded = await upload(client, setup, filename="C:\\Descargas\\enero.csv")
         assert uploaded.status_code == 201
         body = uploaded.json()
         assert body["file"]["status"] == "uploaded"
         assert body["file"]["filename"] == "enero.csv"
         assert body["duplicate_of"] is None
 
-        assert await _work(worker_engine, clock) == 1
+        assert await work(worker_engine, clock) == 1
 
         summary = (await client.get(f"/api/app/imports/{body['file']['id']}")).json()
         ok = (await client.get(f"/api/app/imports/{body['file']['id']}/rows")).json()
@@ -174,7 +86,7 @@ async def test_an_upload_is_previewed_by_the_worker(
 async def test_rows_already_imported_or_in_closed_periods_are_flagged(
     app: FastAPI, owner_engine: AsyncEngine, worker_engine: AsyncEngine, clock: FixedClock
 ) -> None:
-    setup = await _setup(owner_engine)
+    setup = await statement_setup(owner_engine)
     line = StatementLine(2, date(2027, 1, 5), 118_000, "PAGO FACT F001-123", None)
     [fingerprint] = fingerprints(setup.account_id, [line])
     async with owner_engine.begin() as connection:
@@ -227,8 +139,8 @@ async def test_rows_already_imported_or_in_closed_periods_are_flagged(
             },
         )
     async with signed_in(app, setup.member.email) as client:
-        file_id = (await _upload(client, setup)).json()["file"]["id"]
-        await _work(worker_engine, clock)
+        file_id = (await upload(client, setup)).json()["file"]["id"]
+        await work(worker_engine, clock)
         counts = (await client.get(f"/api/app/imports/{file_id}")).json()["counts"]
 
     assert counts == {"ok": 1, "error": 1, "duplicate": 1, "closed_period": 1, "conflict": 0}
@@ -237,15 +149,15 @@ async def test_rows_already_imported_or_in_closed_periods_are_flagged(
 async def test_uploads_are_idempotent_on_the_client_id(
     app: FastAPI, owner_engine: AsyncEngine
 ) -> None:
-    setup = await _setup(owner_engine)
-    other = await _setup(owner_engine)
-    file_id = _client_id()
+    setup = await statement_setup(owner_engine)
+    other = await statement_setup(owner_engine)
+    file_id = client_id()
     async with signed_in(app, setup.member.email) as client:
-        first = await _upload(client, setup, file_id=file_id)
-        replay = await _upload(client, setup, file_id=file_id)
-        changed = await _upload(client, setup, STATEMENT + b"09/02/2027;X;1,00\n", file_id)
+        first = await upload(client, setup, file_id=file_id)
+        replay = await upload(client, setup, file_id=file_id)
+        changed = await upload(client, setup, STATEMENT + b"09/02/2027;X;1,00\n", file_id)
     async with signed_in(app, other.member.email) as client:
-        elsewhere = await _upload(client, other, file_id=file_id)
+        elsewhere = await upload(client, other, file_id=file_id)
 
     assert (first.status_code, replay.status_code) == (201, 200)
     assert replay.json()["job_id"] is None
@@ -264,9 +176,9 @@ async def test_uploads_are_idempotent_on_the_client_id(
 async def test_the_content_is_checked_on_upload(
     app: FastAPI, owner_engine: AsyncEngine, content: bytes, code: int, detail: str
 ) -> None:
-    setup = await _setup(owner_engine)
+    setup = await statement_setup(owner_engine)
     async with signed_in(app, setup.member.email) as client:
-        response = await _upload(client, setup, content)
+        response = await upload(client, setup, content)
 
     assert (response.status_code, response.json()["detail"]) == (code, detail)
 
@@ -274,20 +186,20 @@ async def test_the_content_is_checked_on_upload(
 async def test_only_analysts_upload_and_only_with_their_own_profiles(
     app: FastAPI, owner_engine: AsyncEngine
 ) -> None:
-    setup = await _setup(owner_engine)
-    admin_only = await _setup(owner_engine, ["admin"])
-    other = await _setup(owner_engine)
+    setup = await statement_setup(owner_engine)
+    admin_only = await statement_setup(owner_engine, ["admin"])
+    other = await statement_setup(owner_engine)
     async with signed_in(app, admin_only.member.email) as client:
-        forbidden = await _upload(client, admin_only)
+        forbidden = await upload(client, admin_only)
     async with signed_in(app, other.member.email) as client:
-        foreign = await _upload(client, setup)
+        foreign = await upload(client, setup)
     async with owner_engine.begin() as connection:
         await connection.execute(
             text("UPDATE import_profiles SET archived_at = :now WHERE id = :id"),
             {"now": NOW, "id": setup.profile_id},
         )
     async with signed_in(app, setup.member.email) as client:
-        archived = await _upload(client, setup)
+        archived = await upload(client, setup)
 
     assert (forbidden.status_code, forbidden.json()["detail"]) == (403, "role_required")
     assert (foreign.status_code, archived.status_code) == (404, 404)
@@ -296,12 +208,12 @@ async def test_only_analysts_upload_and_only_with_their_own_profiles(
 async def test_an_unreadable_layout_fails_the_file(
     app: FastAPI, owner_engine: AsyncEngine, worker_engine: AsyncEngine, clock: FixedClock
 ) -> None:
-    setup = await _setup(owner_engine)
+    setup = await statement_setup(owner_engine)
     async with signed_in(app, setup.member.email) as client:
-        file_id = (await _upload(client, setup, b"Fecha;Concepto\n05/01/2027;X\n")).json()["file"][
+        file_id = (await upload(client, setup, b"Fecha;Concepto\n05/01/2027;X\n")).json()["file"][
             "id"
         ]
-        await _work(worker_engine, clock)
+        await work(worker_engine, clock)
         summary = (await client.get(f"/api/app/imports/{file_id}")).json()
 
     assert (summary["file"]["status"], summary["file"]["error_code"]) == (
@@ -313,11 +225,11 @@ async def test_an_unreadable_layout_fails_the_file(
 async def test_previews_are_paged_by_row_number(
     app: FastAPI, owner_engine: AsyncEngine, worker_engine: AsyncEngine, clock: FixedClock
 ) -> None:
-    setup = await _setup(owner_engine)
+    setup = await statement_setup(owner_engine)
     content = ("Fecha;Detalle;Importe\n" + "05/01/2027;PAGO;1,00\n" * 120).encode()
     async with signed_in(app, setup.member.email) as client:
-        file_id = (await _upload(client, setup, content)).json()["file"]["id"]
-        await _work(worker_engine, clock)
+        file_id = (await upload(client, setup, content)).json()["file"]["id"]
+        await work(worker_engine, clock)
         url = f"/api/app/imports/{file_id}/rows"
         first = (await client.get(url)).json()
         second = (await client.get(f"{url}?after=51")).json()
@@ -338,14 +250,14 @@ async def test_previews_are_paged_by_row_number(
 async def test_discarding_a_preview_removes_its_rows(
     app: FastAPI, owner_engine: AsyncEngine, worker_engine: AsyncEngine, clock: FixedClock
 ) -> None:
-    setup = await _setup(owner_engine)
+    setup = await statement_setup(owner_engine)
     async with signed_in(app, setup.member.email) as client:
-        uploaded = (await _upload(client, setup)).json()
+        uploaded = (await upload(client, setup)).json()
         file_id = uploaded["file"]["id"]
         too_early = await client.post(
             f"/api/app/imports/{file_id}/discard", headers=xsrf_header(client)
         )
-        await _work(worker_engine, clock)
+        await work(worker_engine, clock)
         discarded = [
             await client.post(f"/api/app/imports/{file_id}/discard", headers=xsrf_header(client))
             for _ in range(2)
@@ -369,14 +281,14 @@ async def test_discarding_a_preview_removes_its_rows(
 async def test_rerunning_parse_import_does_not_duplicate_rows(
     app: FastAPI, owner_engine: AsyncEngine, worker_engine: AsyncEngine, clock: FixedClock
 ) -> None:
-    setup = await _setup(owner_engine)
+    setup = await statement_setup(owner_engine)
     async with signed_in(app, setup.member.email) as client:
-        file_id = (await _upload(client, setup)).json()["file"]["id"]
+        file_id = (await upload(client, setup)).json()["file"]["id"]
     async with owner_engine.begin() as connection:
         await connection.execute(
             text("UPDATE import_files SET status = 'parsing' WHERE id = :id"), {"id": file_id}
         )
-    await _work(worker_engine, clock)
+    await work(worker_engine, clock)
     async with worker_engine.begin() as connection:
         await enqueue(
             connection,
@@ -386,7 +298,7 @@ async def test_rerunning_parse_import_does_not_duplicate_rows(
             organization_id=setup.organization_id,
             payload={"import_file_id": file_id},
         )
-    assert await _work(worker_engine, clock) == 1
+    assert await work(worker_engine, clock) == 1
 
     async with owner_engine.connect() as connection:
         rows = await connection.scalar(
@@ -398,11 +310,11 @@ async def test_rerunning_parse_import_does_not_duplicate_rows(
 async def test_imports_and_jobs_of_another_organization_are_invisible(
     app: FastAPI, owner_engine: AsyncEngine, worker_engine: AsyncEngine, clock: FixedClock
 ) -> None:
-    setup = await _setup(owner_engine)
-    other = await _setup(owner_engine)
+    setup = await statement_setup(owner_engine)
+    other = await statement_setup(owner_engine)
     async with signed_in(app, setup.member.email) as client:
-        uploaded = (await _upload(client, setup)).json()
-    await _work(worker_engine, clock)
+        uploaded = (await upload(client, setup)).json()
+    await work(worker_engine, clock)
     file_id = uploaded["file"]["id"]
     async with signed_in(app, other.member.email) as client:
         responses = [

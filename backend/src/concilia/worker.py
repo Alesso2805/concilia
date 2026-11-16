@@ -8,7 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from concilia.audit.infrastructure.sql import SqlAuditRecorder
 from concilia.imports.application.service import ImportService
-from concilia.imports.infrastructure.jobs import ContentReader, parse_import_handler
+from concilia.imports.infrastructure.jobs import (
+    ContentReader,
+    confirm_import_handler,
+    parse_import_handler,
+)
+from concilia.imports.infrastructure.no_matches import NoActiveMatches
 from concilia.imports.infrastructure.sql import SqlImportTransactions
 from concilia.periods.infrastructure.sql import SqlPeriodQueries
 from concilia.shared.infrastructure.clock import SystemClock
@@ -39,12 +44,15 @@ def cleanup_handler(clock: Clock) -> Handler:
 
 
 def handlers(engine: AsyncEngine, clock: Clock) -> dict[str, Handler]:
-    transactions = SqlImportTransactions(engine, SqlAuditRecorder, SqlPeriodQueries)
+    transactions = SqlImportTransactions(
+        engine, SqlAuditRecorder, SqlPeriodQueries, NoActiveMatches
+    )
     imports = ImportService(transactions, ContentReader(), clock)
     return {
         "noop": run_noop,
         "cleanup": cleanup_handler(clock),
         "parse_import": parse_import_handler(engine, imports, transactions),
+        "confirm_import": confirm_import_handler(imports, transactions),
     }
 
 

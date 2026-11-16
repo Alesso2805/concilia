@@ -23,10 +23,14 @@ export type { UploadImport$Params as UploadImport$Params } from './fn/imports/up
 export { uploadImport as uploadImport } from './fn/imports/upload-import';
 export type { GetImport$Params as GetImport$Params } from './fn/imports/get-import';
 export { getImport as getImport } from './fn/imports/get-import';
+export type { ConfirmImport$Params as ConfirmImport$Params } from './fn/imports/confirm-import';
+export { confirmImport as confirmImport } from './fn/imports/confirm-import';
 export type { DiscardImport$Params as DiscardImport$Params } from './fn/imports/discard-import';
 export { discardImport as discardImport } from './fn/imports/discard-import';
 export type { ListImportRows$Params as ListImportRows$Params } from './fn/imports/list-import-rows';
 export { listImportRows as listImportRows } from './fn/imports/list-import-rows';
+export type { VoidImport$Params as VoidImport$Params } from './fn/imports/void-import';
+export { voidImport as voidImport } from './fn/imports/void-import';
 export type { CreateInvitation$Params as CreateInvitation$Params } from './fn/team/create-invitation';
 export { createInvitation as createInvitation } from './fn/team/create-invitation';
 export type { AcceptInvitation$Params as AcceptInvitation$Params } from './fn/team/accept-invitation';

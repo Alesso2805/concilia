@@ -4,7 +4,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from concilia.banking.application.profile_config import StatementConfig
-from concilia.imports.application.service import ImportService
+from concilia.imports.application.service import DuplicateFileError, ImportService
 from concilia.imports.domain.cells import Cell
 from concilia.imports.domain.statement import FileError
 from concilia.imports.infrastructure.readers import detect_format, read_rows
@@ -55,3 +55,23 @@ def parse_import_handler(
         await service.parse(organization_id, file_id, transactions.store(connection), progress)
 
     return run
+
+
+def confirm_import_handler(service: ImportService, transactions: SqlImportTransactions) -> Handler:
+    async def run(job: Job, connection: AsyncConnection) -> None:
+        organization_id, file_id = _file_id(job)
+        store = transactions.store(connection)
+        actor = await _creator(connection, job.id)
+        try:
+            await service.confirm(organization_id, file_id, store, actor)
+        except DuplicateFileError:
+            raise JobError("duplicate_file", retry=False) from None
+
+    return run
+
+
+async def _creator(connection: AsyncConnection, job_id: UUID) -> UUID | None:
+    created_by: UUID | None = (
+        await connection.execute(text("SELECT created_by FROM jobs WHERE id = :id"), {"id": job_id})
+    ).scalar_one_or_none()
+    return created_by
