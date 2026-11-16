@@ -6921,7 +6921,7 @@
     },
     "/api/health": {
       "get": {
-        "description": "Report that the API process is up.",
+        "description": "Report that the API process is up and reaches the database; the external monitor\npolls it. 503 `database_unavailable`.",
         "operationId": "get_health",
         "responses": {
           "200": {
@@ -6933,6 +6933,9 @@
               }
             },
             "description": "Successful Response"
+          },
+          "503": {
+            "description": "The database does not answer"
           }
         },
         "summary": "Get Health",

@@ -1,0 +1,66 @@
+# Production override (docs/DEPLOY.md): images built by GitHub Actions instead of local builds,
+# every secret required, the public demo's limits, and a daily pg_dump.
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+x-backend-image: &backend-image ${CONCILIA_IMAGES:?}/concilia-backend:${CONCILIA_VERSION:?}
+
+services:
+  db:
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      CONCILIA_OWNER_PASSWORD: ${CONCILIA_OWNER_PASSWORD:?}
+      CONCILIA_APP_PASSWORD: ${CONCILIA_APP_PASSWORD:?}
+      CONCILIA_WORKER_PASSWORD: ${CONCILIA_WORKER_PASSWORD:?}
+      CONCILIA_BACKUP_PASSWORD: ${CONCILIA_BACKUP_PASSWORD:?}
+
+  migrator:
+    image: *backend-image
+    pull_policy: always
+    environment:
+      CONCILIA_MIGRATIONS_DATABASE_URL: postgresql+asyncpg://concilia_owner:${CONCILIA_OWNER_PASSWORD:?}@db:5432/concilia
+
+  api:
+    image: *backend-image
+    pull_policy: always
+    environment:
+      CONCILIA_DATABASE_URL: postgresql+asyncpg://concilia_app:${CONCILIA_APP_PASSWORD:?}@db:5432/concilia
+      CONCILIA_PUBLIC_ORIGIN: https://${SITE_ADDRESS:?}
+      CONCILIA_CSRF_SECRET: ${CONCILIA_CSRF_SECRET:?}
+      CONCILIA_RATE_LIMIT_SECRET: ${CONCILIA_RATE_LIMIT_SECRET:?}
+      CONCILIA_REGISTRATION_ENABLED: "false"
+      CONCILIA_DEMO_TTL_HOURS: "4"
+      CONCILIA_AI_ENABLED: ${CONCILIA_AI_ENABLED:-false}
+
+  worker:
+    image: *backend-image
+    pull_policy: always
+    environment:
+      CONCILIA_DATABASE_URL: postgresql+asyncpg://concilia_worker:${CONCILIA_WORKER_PASSWORD:?}@db:5432/concilia
+      CONCILIA_AI_ENABLED: ${CONCILIA_AI_ENABLED:-false}
+
+  web:
+    image: ${CONCILIA_IMAGES:?}/concilia-web:${CONCILIA_VERSION:?}
+    pull_policy: always
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?}
+      TLS_ISSUER: ${ACME_EMAIL:?}
+      HSTS: max-age=31536000
+
+  backup:
+    image: postgres:17.12
+    restart: unless-stopped
+    environment:
+      PGHOST: db
+      PGDATABASE: concilia
+      PGUSER: concilia_backup
+      PGPASSWORD: ${CONCILIA_BACKUP_PASSWORD:?}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+    volumes:
+      - ./infra/deploy/backup.sh:/usr/local/bin/backup.sh:ro
+      - backups:/backups
+    entrypoint: ["sh", "/usr/local/bin/backup.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  backups:
