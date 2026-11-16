@@ -26,6 +26,7 @@ class AuditAction(StrEnum):
     RECEIVABLE_CANCELLED = "receivable.cancelled"
     ENGINE_RUN_REQUESTED = "engine_run.requested"
     DEMO_ROLE_SWITCHED = "demo.role_switched"
+    MATCH_CREATED = "match.created"
     MATCH_CONFIRMED = "match.confirmed"
     MATCH_DISCARDED = "match.discarded"
     MATCH_APPROVED = "match.approved"

@@ -59,6 +59,26 @@
         "title": "AccountRequest",
         "type": "object"
       },
+      "ApplicationBody": {
+        "properties": {
+          "applied_cents": {
+            "exclusiveMinimum": 0.0,
+            "title": "Applied Cents",
+            "type": "integer"
+          },
+          "receivable_id": {
+            "format": "uuid",
+            "title": "Receivable Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "receivable_id",
+          "applied_cents"
+        ],
+        "title": "ApplicationBody",
+        "type": "object"
+      },
       "BankAccountView": {
         "properties": {
           "alias": {
@@ -1161,6 +1181,97 @@
         "title": "LoginView",
         "type": "object"
       },
+      "ManualMatchRequest": {
+        "properties": {
+          "applications": {
+            "items": {
+              "$ref": "#/components/schemas/ApplicationBody"
+            },
+            "maxItems": 49,
+            "minItems": 1,
+            "title": "Applications",
+            "type": "array"
+          },
+          "bank_account_id": {
+            "format": "uuid",
+            "title": "Bank Account Id",
+            "type": "string"
+          },
+          "credit_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 49,
+            "minItems": 1,
+            "title": "Credit Ids",
+            "type": "array"
+          },
+          "difference_note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Note"
+          },
+          "difference_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "commission",
+                  "detraction",
+                  "rounding",
+                  "overpayment",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Reason"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "bank_account_id",
+          "credit_ids",
+          "applications"
+        ],
+        "title": "ManualMatchRequest",
+        "type": "object"
+      },
+      "ManualMatchView": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "status": {
+            "const": "confirmed",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ],
+        "title": "ManualMatchView",
+        "type": "object"
+      },
       "MatchDetailView": {
         "properties": {
           "applied_cents": {
@@ -1589,6 +1700,114 @@
           "password"
         ],
         "title": "NewAccountRequest",
+        "type": "object"
+      },
+      "OpenReceivablePageView": {
+        "properties": {
+          "has_next": {
+            "title": "Has Next",
+            "type": "boolean"
+          },
+          "has_previous": {
+            "title": "Has Previous",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "previous_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Cursor"
+          },
+          "receivables": {
+            "items": {
+              "$ref": "#/components/schemas/OpenReceivableView"
+            },
+            "title": "Receivables",
+            "type": "array"
+          }
+        },
+        "required": [
+          "receivables",
+          "has_previous",
+          "has_next",
+          "previous_cursor",
+          "next_cursor"
+        ],
+        "title": "OpenReceivablePageView",
+        "type": "object"
+      },
+      "OpenReceivableView": {
+        "properties": {
+          "amount_cents": {
+            "title": "Amount Cents",
+            "type": "integer"
+          },
+          "available_cents": {
+            "title": "Available Cents",
+            "type": "integer"
+          },
+          "customer_name": {
+            "title": "Customer Name",
+            "type": "string"
+          },
+          "customer_tax_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Tax Id"
+          },
+          "doc_number": {
+            "title": "Doc Number",
+            "type": "string"
+          },
+          "due_on": {
+            "format": "date",
+            "title": "Due On",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "issued_on": {
+            "format": "date",
+            "title": "Issued On",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "doc_number",
+          "customer_name",
+          "customer_tax_id",
+          "issued_on",
+          "due_on",
+          "amount_cents",
+          "available_cents"
+        ],
+        "title": "OpenReceivableView",
         "type": "object"
       },
       "OrganizationSettingsRequest": {
@@ -4161,6 +4380,101 @@
         ]
       }
     },
+    "/api/app/inbox/receivables": {
+      "get": {
+        "description": "Live receivables with available balance, by due date, to reconcile by hand. `q`\nsearches the document number, the customer name or the RUC.",
+        "operationId": "list_open_receivables",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "exclusiveMinimum": 0,
+              "maximum": 100,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenReceivablePageView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Open Receivables",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
     "/api/app/invitations": {
       "post": {
         "description": "Invite someone by email. The token is returned only when the invitation is created.\n\nIdempotent on the client-generated id.",
@@ -4527,6 +4841,46 @@
           }
         },
         "summary": "List Matches",
+        "tags": [
+          "inbox"
+        ]
+      },
+      "post": {
+        "description": "Reconcile by hand: free credits of one account against receivables with available\nbalance, each with its applied amount (less than the balance leaves it partially paid).\nThe analyst who creates it confirms it at once, so another person approves it.\n\nIdempotent on the client-generated id. Errors: 403 `role_required`; 404 for unknown\ncredits or receivables; 409 `credit_not_free`, `insufficient_balance` or `closed_period`;\n422 `invalid_match` or `difference_reason`.",
+        "operationId": "create_manual_match",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManualMatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManualMatchView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Manual Match",
         "tags": [
           "inbox"
         ]

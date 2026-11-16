@@ -122,3 +122,22 @@ class MatchDetail:
         return sum(credit.amount_cents for credit in self.credits) - sum(
             receivable.applied_cents for receivable in self.receivables
         )
+
+
+@dataclass(frozen=True)
+class OpenReceivable:
+    id: UUID
+    doc_number: str
+    customer_name: str
+    customer_tax_id: str | None
+    issued_on: date
+    due_on: date
+    amount_cents: int
+    available_cents: int
+
+
+@dataclass(frozen=True)
+class OpenReceivablePage:
+    receivables: list[OpenReceivable]
+    has_previous: bool
+    has_next: bool
