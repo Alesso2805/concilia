@@ -35,5 +35,6 @@ export const AUDIT_ACTION: AuditAction[] = [
   'match.reverted',
   'period.closed',
   'period.reopened',
-  'export.requested'
+  'export.requested',
+  'ai_suggestion.requested'
 ];

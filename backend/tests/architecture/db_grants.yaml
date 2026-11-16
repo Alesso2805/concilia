@@ -156,6 +156,13 @@ tables:
       concilia_worker:
         UPDATE: [finished_at, proposals_count]
 
+  ai_suggestions:
+    rls: organization
+    privileges:
+      concilia_app: [INSERT, SELECT]
+      concilia_worker: [INSERT, SELECT]
+      concilia_backup: [SELECT]
+
   exports:
     rls: organization
     privileges:
@@ -226,6 +233,9 @@ functions:
   app_accept_invitation:
     security_definer: true
     execute: [concilia_app]
+  app_ai_usage_today:
+    security_definer: true
+    execute: [concilia_app, concilia_worker]
   app_cleanup:
     security_definer: true
     execute: [concilia_worker]

@@ -23,7 +23,7 @@ SECOND_MONTH_CREDITS = 118
 
 
 @asynccontextmanager
-async def _app(database: DatabaseUrls, **overrides: object) -> AsyncIterator[FastAPI]:
+async def _app(database: DatabaseUrls, **overrides: Any) -> AsyncIterator[FastAPI]:
     app = build_app(database.for_role("concilia_app"), FixedClock(NOW), **overrides)
     yield app
     await app.state.engine.dispose()

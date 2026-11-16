@@ -32,6 +32,7 @@ export const ACTION_LABELS: Record<AuditAction, string> = {
   'period.closed': 'Cerró un mes',
   'period.reopened': 'Reabrió un mes',
   'export.requested': 'Pidió el reporte en Excel',
+  'ai_suggestion.requested': 'Pidió sugerencias a la IA',
 };
 
 export const ENTITY_LABELS: Record<AuditEntity, string> = {
@@ -47,6 +48,7 @@ export const ENTITY_LABELS: Record<AuditEntity, string> = {
   match: 'Coincidencia',
   period_event: 'Cierre de mes',
   export: 'Reporte en Excel',
+  ai_suggestion: 'Sugerencia de IA',
 };
 
 const SOURCE_LABELS: Record<string, string> = {

@@ -11,6 +11,7 @@ DOCUMENT_ONLY_SETTINGS = ApiSettings(
     database_url="postgresql+asyncpg://openapi@localhost/openapi",
     csrf_secret=SecretStr("openapi-document-only"),
     rate_limit_secret=SecretStr("openapi-document-only"),
+    ai_enabled=True,
 )
 
 

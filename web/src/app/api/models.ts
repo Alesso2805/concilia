@@ -87,6 +87,10 @@ export type { StatementProfileRequest } from './models/statement-profile-request
 export type { StatementProfileView } from './models/statement-profile-view';
 export type { StatementRowView } from './models/statement-row-view';
 export type { StatementTemplateView } from './models/statement-template-view';
+export type { SuggestedReceivableView } from './models/suggested-receivable-view';
+export type { SuggestionItemView } from './models/suggestion-item-view';
+export type { SuggestionRequestBody } from './models/suggestion-request-body';
+export type { SuggestionView } from './models/suggestion-view';
 export type { SwitchedView } from './models/switched-view';
 export type { SwitchRoleRequest } from './models/switch-role-request';
 export type { TallyView } from './models/tally-view';

@@ -247,6 +247,7 @@ async def test_every_worker_handler_has_a_rerun_test(worker_engine: AsyncEngine)
         "confirm_import",
         "run_engine",
         "export_period",
+        "ai_suggest",
     }
     registered: dict[str, Handler] = handlers(worker_engine, FixedClock(NOW))
 
