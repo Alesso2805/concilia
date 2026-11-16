@@ -1,6 +1,7 @@
 from collections import Counter, defaultdict
 from collections.abc import Callable, Sequence
 from datetime import timedelta
+from heapq import nsmallest
 from itertools import combinations
 from math import comb
 
@@ -47,17 +48,18 @@ def unique_combination[T](
 
 def same_customer(state: RunState) -> None:
     for credit in state.free_credits():
-        scores = state.similarity.similar_customers(credit.id)
+        scores = state.similarity.similar_customers(credit)
         if not scores:
             continue
         best = max(scores.values())
         leaders = [customer for customer, score in scores.items() if score == best]
         if len(leaders) != 1:
             continue
-        nearest = sorted(
+        nearest = nsmallest(
+            SAME_CUSTOMER_NEAREST,
             filter(state.is_free, state.receivables_of(leaders[0])),
             key=lambda r: (abs((r.due_on - credit.booked_on).days), r.due_on, r.id),
-        )[:SAME_CUSTOMER_NEAREST]
+        )
         found = unique_combination(
             nearest, SAME_CUSTOMER_SIZES, credit.amount_cents, lambda r: r.available_cents
         )
@@ -81,16 +83,16 @@ def _within_spread(credits: tuple[Credit, ...]) -> bool:
 
 def paid_in_parts(state: RunState) -> None:
     for receivable in state.free_receivables():
-        similar = state.similarity.similar_credits(customer_key(receivable))
-        candidates = [
+        candidates = (
             credit
-            for credit in map(state.credit, similar)
+            for credit in state.similarity.similar_credits(customer_key(receivable))
             if state.is_free(credit) and in_payment_window(credit, receivable)
-        ]
-        nearest = sorted(
+        )
+        nearest = nsmallest(
+            PAID_IN_PARTS_NEAREST,
             candidates,
             key=lambda c: (abs((c.booked_on - receivable.due_on).days), c.booked_on, c.id),
-        )[:PAID_IN_PARTS_NEAREST]
+        )
         found = unique_combination(
             nearest,
             PAID_IN_PARTS_SIZES,
@@ -130,7 +132,7 @@ def amount_and_date(state: RunState) -> None:
     for credit in credits:
         found = candidates[credit.id]
         if len(found) == 1 and claims[found[0].id] == 1:
-            similarity = state.similarity.similarity(credit.id, customer_key(found[0]))
+            similarity = state.similarity.similarity(credit, customer_key(found[0]))
             unique_pairs.append((credit, found[0], similarity))
     unique_pairs.sort(key=lambda pair: (pair[2] is None, pair[0].booked_on, pair[0].id))
     for credit, receivable, similarity in unique_pairs:

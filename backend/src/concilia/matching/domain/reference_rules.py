@@ -53,10 +53,12 @@ def several_documents(state: RunState) -> None:
 
 def _explained_difference(
     state: RunState, credit: Credit, receivable: OpenReceivable
-) -> tuple[DifferenceReason, str] | None:
+) -> tuple[DifferenceReason | None, str] | None:
     balance = receivable.available_cents
     difference = credit.amount_cents - balance
     document = receivable.doc_number_norm
+    if difference == 0:
+        return None, explanations.exact(document)
     if within_tolerance(difference, balance, state.policy):
         return DifferenceReason.ROUNDING, explanations.within_tolerance(document, difference)
     rate = detraction_rate(credit.amount_cents, balance, state.policy)

@@ -42,6 +42,6 @@ def test_index_agrees_with_customer_similarity(
             )
             best[customer_key(r)] = max(best.get(customer_key(r), 0), score)
         strong = {key: score for key, score in best.items() if score >= STRONG_SIMILARITY}
-        assert dict(index.similar_customers(paid.id)) == strong
-        for key, score in strong.items():
-            assert index.similar_credits(key)[paid.id] == score
+        assert dict(index.similar_customers(paid)) == strong
+        for key in best:
+            assert (paid in index.similar_credits(key)) == (key in strong)

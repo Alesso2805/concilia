@@ -156,3 +156,25 @@ def test_the_same_inputs_in_another_order_give_the_same_proposals() -> None:
     credits = [credit(n, n * 1_000, f"PAGO F001-{n}") for n in range(1, 6)]
 
     assert run(credits, receivables) == run(credits[::-1], receivables[::-1])
+
+
+def test_reference_without_difference_once_another_rule_resolves_an_ambiguity() -> None:
+    receivables = [
+        receivable("F001-1", 50_000),
+        receivable("F001-2", 50_000),
+        receivable("F001-3", 30_000),
+    ]
+    ambiguous = credit(1, 50_000, "PAGO F001-1 F001-2", booked_on=date(2027, 1, 5))
+    both = credit(2, 80_000, "PAGO F001-2 F001-3", booked_on=date(2027, 1, 6))
+
+    proposals = run([ambiguous, both], receivables)
+
+    assert summary(proposals, receivables) == [
+        ("R2", 95, [2], ["F001-2", "F001-3"]),
+        ("R3", 85, [1], ["F001-1"]),
+    ]
+    assert proposals[1].difference_cents == 0
+    assert proposals[1].suggested_difference_reason is None
+    assert proposals[1].explanation == (
+        "La descripción menciona F001-1 y el monto coincide con su saldo."
+    )
