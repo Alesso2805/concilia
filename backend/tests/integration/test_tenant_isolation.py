@@ -22,6 +22,7 @@ RLS_TABLES = (
     "import_files",
     "import_rows",
     "bank_movements",
+    "receivables",
     "audit_events",
     "jobs",
 )
@@ -78,6 +79,11 @@ async def _create_tenant(owner_engine: AsyncEngine, name: str) -> Tenant:
                                            fingerprint, doc_refs, created_at)
                VALUES (gen_random_uuid(), :org, :account, :file, '2027-01-05', 100, 'PAGO',
                        'PAGO', repeat('b', 64), '{}', :now)""",
+            """INSERT INTO receivables (id, organization_id, import_file_id, customer_name,
+                                        customer_name_norm, doc_number, doc_number_norm, issued_on,
+                                        due_on, amount_cents, created_at, updated_at)
+               VALUES (gen_random_uuid(), :org, :file, 'Cliente', 'CLIENTE', 'F001-1', 'F001-1',
+                       '2027-01-01', '2027-01-31', 100, :now, :now)""",
             """INSERT INTO audit_events (id, organization_id, actor_user_id, action, entity, at)
                VALUES (gen_random_uuid(), :org, :user, 'test.created', 'organization', :now)""",
             """INSERT INTO jobs (id, organization_id, kind, run_after, created_at)

@@ -132,6 +132,18 @@ tables:
       concilia_worker:
         UPDATE: [voided_at]
 
+  receivables:
+    rls: organization
+    privileges:
+      concilia_app: [INSERT, SELECT]
+      concilia_worker: [INSERT, SELECT]
+      concilia_backup: [SELECT]
+    column_privileges:
+      concilia_app:
+        UPDATE: [amount_cents, cancel_reason, cancelled_at, due_on, updated_at]
+      concilia_worker:
+        UPDATE: [amount_cents, cancel_reason, cancelled_at, due_on, updated_at]
+
   period_events:
     rls: organization
     privileges:
