@@ -6,7 +6,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Router } from '@angular/router';
 
-import { ORGANIZATION_PICKER_PATH, safeReturnUrl } from '../../core/session/paths';
+import { INVITATION_PATH, ORGANIZATION_PICKER_PATH, safeReturnUrl } from '../../core/session/paths';
 import { SessionStore } from '../../core/session/session.store';
 import { loginErrorMessage } from './login-errors';
 
@@ -47,7 +47,7 @@ export class LoginPage {
       const { email, password } = this.form.getRawValue();
       const result = await this.store.login(email, password);
       const volver = safeReturnUrl(this.volver());
-      if (result.organization_id) {
+      if (result.organization_id || volver.startsWith(INVITATION_PATH)) {
         await this.router.navigateByUrl(volver);
       } else if (result.organizations.length > 0) {
         await this.router.navigate([ORGANIZATION_PICKER_PATH], { queryParams: { volver } });

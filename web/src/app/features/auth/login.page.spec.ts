@@ -91,6 +91,14 @@ describe('LoginPage', () => {
     expect(navigateByUrl).toHaveBeenCalledWith('/');
   });
 
+  it('goes back to an invitation even without organizations', async () => {
+    login.mockResolvedValue({ organization_id: null, organizations: [] });
+
+    await submit('ana@example.com', 'secret', '/invitacion');
+
+    expect(navigateByUrl).toHaveBeenCalledWith('/invitacion');
+  });
+
   it('asks to choose when the user has several organizations', async () => {
     login.mockResolvedValue({
       organization_id: null,

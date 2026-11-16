@@ -7,6 +7,7 @@ export default defineConfig({
   use: {
     baseURL: process.env['E2E_BASE_URL'] ?? 'https://localhost',
     ignoreHTTPSErrors: true,
+    contextOptions: { reducedMotion: 'reduce' },
     locale: 'es-PE',
     trace: 'retain-on-failure',
   },

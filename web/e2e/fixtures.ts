@@ -47,10 +47,24 @@ export const test = base.extend<{ cspGuard: void }>({
 export { expect };
 
 export async function expectAccessible(page: Page): Promise<void> {
+  // Contrast is measured on what is painted, so let dialogs and backdrops finish fading in.
+  await page.waitForFunction(() =>
+    document
+      .getAnimations()
+      .every(
+        (animation) =>
+          animation.playState !== 'running' ||
+          animation.effect?.getTiming().iterations === Infinity,
+      ),
+  );
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze();
-  expect(results.violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual([]);
+  const violations = results.violations.map(
+    (violation) =>
+      `${violation.id}: ${violation.help} at ${violation.nodes.map((node) => node.target.join(' ')).join(', ')}`,
+  );
+  expect(violations).toEqual([]);
 }
 
 export async function logIn(page: Page, path = '/'): Promise<void> {
