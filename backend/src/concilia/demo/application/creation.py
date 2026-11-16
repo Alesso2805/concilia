@@ -19,6 +19,12 @@ from concilia.identity.application.demo import DemoMember, create_demo_organizat
 from concilia.identity.application.ports import IdentityStore, RateLimiter
 from concilia.imports.application.demo import import_confirmed
 from concilia.imports.application.service import FileReader, ImportStore
+from concilia.matching.application.decisions import (
+    Action,
+    DecisionRequest,
+    DecisionStore,
+    MatchDecisionService,
+)
 from concilia.matching.application.runs import EngineRunService, RunStore
 from concilia.shared.kernel.clock import Clock
 
@@ -70,6 +76,7 @@ class DemoStores:
     banking: BankingStore
     imports: ImportStore
     runs: RunStore
+    decisions: DecisionStore
 
 
 class DemoTransactions(Protocol):
@@ -87,6 +94,7 @@ class DemoService:
         self,
         transactions: DemoTransactions,
         runs: EngineRunService,
+        decisions: MatchDecisionService,
         reader: FileReader,
         rate_limiter: RateLimiter,
         clock: Clock,
@@ -96,6 +104,7 @@ class DemoService:
     ) -> None:
         self._transactions = transactions
         self._runs = runs
+        self._decisions = decisions
         self._reader = reader
         self._rate_limiter = rate_limiter
         self._clock = clock
@@ -116,7 +125,8 @@ class DemoService:
 
     async def create(self, ip: str) -> CreatedDemo:
         """A new demo organization with two months imported and the first one proposed by the
-        engine; locally (no TTL) it never expires."""
+        engine, confirmed by its analyst and approved by its reviewer; locally (no TTL) it never
+        expires."""
         await self._check_limits(ip)
         now = self._clock.now()
         organization_id = uuid7()
@@ -152,7 +162,21 @@ class DemoService:
                         actor=users["analyst"],
                         now=now,
                     )
-            await self._runs.preload(
+            run = await self._runs.preload(
                 organization_id, banking.account_id, dataset.months[0].period, stores.runs
             )
+            for match_id, suggested in await stores.runs.proposals_of(run.id):
+                for request, actor in (
+                    (DecisionRequest(Action.CONFIRM, difference_reason=suggested), "analyst"),
+                    (DecisionRequest(Action.APPROVE), "reviewer"),
+                ):
+                    await self._decisions.apply(
+                        stores.decisions,
+                        organization_id,
+                        match_id,
+                        request,
+                        actor=users[actor],
+                        roles=frozenset({actor}),
+                        now=now,
+                    )
         return CreatedDemo(organization_id, users["analyst"])

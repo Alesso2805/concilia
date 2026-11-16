@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { firstValueFrom } from 'rxjs';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -237,8 +238,16 @@ export class InboxPage implements OnInit {
     await this.load(forward ? { after: view.next_cursor } : { before: view.previous_cursor });
   }
 
-  protected open(match: MatchRowView): void {
-    this.dialog.open(MatchDetailDialog, { data: match.id, autoFocus: 'dialog' });
+  protected async open(match: MatchRowView): Promise<void> {
+    const closed = this.dialog
+      .open<MatchDetailDialog, string, boolean>(MatchDetailDialog, {
+        data: match.id,
+        autoFocus: 'dialog',
+      })
+      .afterClosed();
+    if (await firstValueFrom(closed)) {
+      await this.refresh();
+    }
   }
 
   protected async runEngine(): Promise<void> {

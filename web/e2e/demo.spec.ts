@@ -15,8 +15,8 @@ test('a visitor enters a demo, reviews its months and switches to the reviewer',
   await expect(page.getByRole('tab', { name: 'Libres (118)' })).toBeVisible();
   await page.getByText('Mes', { exact: true }).click();
   await page.getByRole('option', { name: 'octubre de 2026' }).click();
-  await expect(page.getByRole('tab', { name: 'Propuestas (103)' })).toBeVisible();
-  await expect(page.getByRole('table')).toContainText('R1');
+  await expect(page.getByRole('tab', { name: 'Aprobadas (103)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Propuestas (0)' })).toBeVisible();
   await expectAccessible(page);
 
   const navigation = page.getByRole('navigation', { name: 'Principal' });
@@ -56,4 +56,37 @@ test('a visitor imports the third month of the demo from its sample files', asyn
   await expect(page.getByRole('tab', { name: 'Válidas (165)' })).toBeVisible();
   await page.getByRole('button', { name: 'Confirmar 165 movimientos' }).click();
   await expect(page.getByText('Importación confirmada')).toBeVisible();
+});
+
+test('the analyst confirms a proposal and the reviewer approves it', async ({ page }) => {
+  await page.goto('/demo');
+  await expect(page.getByRole('tab', { name: 'Libres (118)' })).toBeVisible();
+  await page.getByRole('button', { name: 'Correr el motor' }).click();
+  // The run goes through the worker's queue and the 2-second job polling.
+  await expect(page.getByText(/El motor propuso \d+ coincidencias\./)).toBeVisible({
+    timeout: 20_000,
+  });
+
+  await page
+    .getByRole('button', { name: /^Ver detalle de / })
+    .first()
+    .click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('button', { name: 'Confirmar' })).toBeVisible();
+  await expectAccessible(page);
+  await dialog.getByRole('button', { name: 'Confirmar' }).click();
+  await expect(page.getByRole('tab', { name: 'Confirmadas (1)' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Ver como: Análisis' }).click();
+  await page.getByRole('menuitemradio', { name: 'Revisión' }).click();
+  await expect(page.getByRole('button', { name: 'Ver como: Revisión' })).toBeVisible();
+  await page.getByRole('tab', { name: 'Confirmadas (1)' }).click();
+  await page
+    .getByRole('button', { name: /^Ver detalle de / })
+    .first()
+    .click();
+  await expect(dialog.getByText('Confirmó')).toBeVisible();
+  await expectAccessible(page);
+  await dialog.getByRole('button', { name: 'Aprobar' }).click();
+  await expect(page.getByRole('tab', { name: 'Aprobadas (1)' })).toBeVisible();
 });

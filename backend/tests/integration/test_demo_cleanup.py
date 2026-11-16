@@ -76,18 +76,6 @@ async def test_an_expired_demo_is_deleted_entirely_and_nothing_else(
         await visitor.post(
             "/api/app/demo/switch-role", json={"role": "reviewer"}, headers=xsrf_header(visitor)
         )
-        async with owner_engine.begin() as connection:
-            await connection.execute(
-                text(
-                    """INSERT INTO match_decisions (id, organization_id, match_id, action,
-                                                    decided_by, decided_at)
-                       SELECT gen_random_uuid(), organization_id, id, 'confirm',
-                              (SELECT user_id FROM member_roles
-                               WHERE organization_id = :org AND role = 'analyst'), :now
-                       FROM matches WHERE organization_id = :org AND rule = 'R1' LIMIT 1"""
-                ),
-                {"org": demo, "now": NOW},
-            )
         demo_users = await _demo_users(owner_engine, demo)
         before = await _rows_of(owner_engine, demo)
         real_before = await _rows_of(owner_engine, real.organization_id)

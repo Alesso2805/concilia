@@ -66,7 +66,12 @@ async def test_a_visitor_enters_a_demo_with_two_imported_months_as_its_analyst(
         ("receivables", "confirmed"),
         ("receivables", "confirmed"),
     ]
-    assert (october["proposed"], october["free"]) == (FIRST_MONTH_PROPOSALS, FIRST_MONTH_FREE)
+    assert october == {
+        "free": FIRST_MONTH_FREE,
+        "proposed": 0,
+        "confirmed": 0,
+        "approved": FIRST_MONTH_PROPOSALS,
+    }
     assert (november["proposed"], november["free"]) == (0, SECOND_MONTH_CREDITS)
     async with owner_engine.connect() as connection:
         organization = (
@@ -103,6 +108,17 @@ async def test_a_visitor_enters_a_demo_with_two_imported_months_as_its_analyst(
                 {"id": organization_id},
             )
         ).one()
+        decisions: dict[str, int] = dict(
+            (
+                await connection.execute(
+                    text(
+                        """SELECT action, count(*) FROM audit_events
+                           WHERE organization_id = :id AND entity = 'match' GROUP BY action"""
+                    ),
+                    {"id": organization_id},
+                )
+            ).all()
+        )
     assert organization.is_demo is True
     assert organization.demo_expires_at - NOW > timedelta(days=365 * 50)
     assert [user.role for user in users] == ["admin", "analyst", "reviewer"]
@@ -119,6 +135,10 @@ async def test_a_visitor_enters_a_demo_with_two_imported_months_as_its_analyst(
         FIRST_MONTH_PROPOSALS,
     )
     assert (audit.action, audit.metadata) == ("organization.created", {"source": "demo"})
+    assert decisions == {
+        "match.confirmed": FIRST_MONTH_PROPOSALS,
+        "match.approved": FIRST_MONTH_PROPOSALS,
+    }
 
 
 async def test_a_published_demo_expires_after_its_ttl(

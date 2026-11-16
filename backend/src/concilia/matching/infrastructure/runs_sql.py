@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 from concilia.audit.application.recorder import AuditRecorder
 from concilia.matching.domain.model import (
     Credit,
+    DifferenceReason,
     EngineInput,
     EnginePolicy,
     MatchKey,
@@ -272,6 +273,21 @@ class SqlRunStore:
             ),
             items,
         )
+
+    async def proposals_of(self, run_id: UUID) -> list[tuple[UUID, DifferenceReason | None]]:
+        rows = await self._connection.execute(
+            text(
+                """SELECT id, suggested_difference_reason FROM matches
+                   WHERE engine_run_id = :run ORDER BY id"""
+            ),
+            {"run": run_id},
+        )
+        return [
+            (row.id, DifferenceReason(row.suggested_difference_reason))
+            if row.suggested_difference_reason
+            else (row.id, None)
+            for row in rows
+        ]
 
     async def finish_run(self, run_id: UUID, proposals_count: int, now: datetime) -> None:
         await self._connection.execute(

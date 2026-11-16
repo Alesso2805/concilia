@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { Api } from '../../api/api';
 import {
+  decideMatch,
   getEngineRun,
   getInboxCounts,
   getMatch,
@@ -14,6 +15,8 @@ import {
 } from '../../api/functions';
 import { CountsView } from '../../api/models/counts-view';
 import { CreditPageView } from '../../api/models/credit-page-view';
+import { DecisionRequestBody } from '../../api/models/decision-request-body';
+import { RecordedDecisionView } from '../../api/models/recorded-decision-view';
 import { EngineRunView } from '../../api/models/engine-run-view';
 import { MatchDetailView } from '../../api/models/match-detail-view';
 import { MatchPageView } from '../../api/models/match-page-view';
@@ -48,8 +51,15 @@ export const NO_FILTERS: InboxFilters = {
   maxAmountCents: null,
 };
 
+export type Decision = Omit<DecisionRequestBody, 'id'>;
+
 const MESSAGES: Record<string, string> = {
-  closed_period: 'El período está cerrado: no se puede correr el motor.',
+  closed_period: 'El mes está cerrado: no admite cambios.',
+  difference_reason:
+    'Elige un motivo de diferencia que corresponda: sobrepago solo si sobra dinero, y «Otro» necesita una nota.',
+  four_eyes: 'Otra persona debe decidir: tú creaste o confirmaste esta coincidencia.',
+  reason_required: 'Indica el motivo.',
+  wrong_state: 'La coincidencia cambió de estado. Actualiza la bandeja.',
   invalid_cursor: 'La página ya no es válida. Vuelve a la primera.',
   invalid_period: 'Elige un mes válido.',
   not_found: 'No encontramos lo que buscas. Actualiza la página.',
@@ -124,6 +134,12 @@ export class MatchingService {
       this.api.invoke(requestEngineRun, {
         body: { id: newId(), bank_account_id: month.accountId, period: month.period },
       }),
+    );
+  }
+
+  decide(matchId: string, decision: Decision): Promise<RecordedDecisionView> {
+    return firstValueFrom(
+      this.api.invoke(decideMatch, { match_id: matchId, body: { id: newId(), ...decision } }),
     );
   }
 

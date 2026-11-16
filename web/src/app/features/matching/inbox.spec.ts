@@ -65,7 +65,7 @@ describe('InboxPage', () => {
       runEngine: vi.fn(() => Promise.resolve({ id: 'run1', job_id: 'j1' })),
       run: vi.fn(() => Promise.resolve({ id: 'run1', proposals_count: 1 })),
     };
-    open = vi.fn();
+    open = vi.fn(() => ({ afterClosed: () => of(false) }));
     TestBed.configureTestingModule({
       imports: [InboxPage],
       providers: [

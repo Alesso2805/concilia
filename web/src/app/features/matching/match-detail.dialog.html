@@ -14,7 +14,7 @@
       <dd>
         {{ pen(detail.difference_cents) }}
         @if (detail.suggested_difference_reason) {
-          (motivo sugerido: {{ reason(detail.suggested_difference_reason) }})
+          (motivo sugerido: {{ reasonLabel(detail.suggested_difference_reason) }})
         }
       </dd>
     </dl>
@@ -95,7 +95,7 @@
             {{ decision.decided_by }} · {{ action(decision.action) }} el
             {{ decision.decided_at | date: 'medium' }}
             @if (decision.difference_reason) {
-              · diferencia por {{ reason(decision.difference_reason) }}
+              · diferencia por {{ reasonLabel(decision.difference_reason) }}
               @if (decision.difference_note) {
                 ({{ decision.difference_note }})
               }
@@ -107,6 +107,35 @@
         }
       </ul>
     }
+
+    @if (canConfirm() && detail.difference_cents !== 0) {
+      <h3>Motivo de la diferencia</h3>
+      <div class="detail__decision">
+        <mat-form-field appearance="outline">
+          <mat-label>Motivo</mat-label>
+          <mat-select [formControl]="differenceReason">
+            @for (option of reasons; track option) {
+              <mat-option [value]="option">{{ reasonLabels[option] }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        @if (differenceReason.value === 'other') {
+          <mat-form-field appearance="outline">
+            <mat-label>Nota</mat-label>
+            <input matInput [formControl]="differenceNote" maxlength="500" />
+          </mat-form-field>
+        }
+      </div>
+    }
+    @if (canApprove() || canRevert()) {
+      <mat-form-field appearance="outline" class="detail__reason">
+        <mat-label>{{ canRevert() ? 'Motivo para revertir' : 'Motivo si la rechazas' }}</mat-label>
+        <textarea matInput [formControl]="reason" maxlength="500"></textarea>
+      </mat-form-field>
+    }
+    @if (error(); as message) {
+      <p class="inbox__error" role="alert">{{ message }}</p>
+    }
   } @else if (error(); as message) {
     <p class="inbox__error" role="alert">{{ message }}</p>
   } @else {
@@ -115,4 +144,25 @@
 </mat-dialog-content>
 <mat-dialog-actions align="end">
   <button mat-button type="button" mat-dialog-close>Cerrar</button>
+  @if (canConfirm()) {
+    <button mat-stroked-button type="button" [disabled]="deciding()" (click)="decide('discard')">
+      Descartar
+    </button>
+    <button mat-flat-button type="button" [disabled]="deciding()" (click)="decide('confirm')">
+      Confirmar
+    </button>
+  }
+  @if (canApprove()) {
+    <button mat-stroked-button type="button" [disabled]="deciding()" (click)="decide('reject')">
+      Rechazar
+    </button>
+    <button mat-flat-button type="button" [disabled]="deciding()" (click)="decide('approve')">
+      Aprobar
+    </button>
+  }
+  @if (canRevert()) {
+    <button mat-stroked-button type="button" [disabled]="deciding()" (click)="decide('revert')">
+      Revertir
+    </button>
+  }
 </mat-dialog-actions>
