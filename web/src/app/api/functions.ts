@@ -19,6 +19,10 @@ export type { ArchiveImportProfile$Params as ArchiveImportProfile$Params } from 
 export { archiveImportProfile as archiveImportProfile } from './fn/banking/archive-import-profile';
 export type { ListImportTemplates$Params as ListImportTemplates$Params } from './fn/banking/list-import-templates';
 export { listImportTemplates as listImportTemplates } from './fn/banking/list-import-templates';
+export type { RequestEngineRun$Params as RequestEngineRun$Params } from './fn/matching/request-engine-run';
+export { requestEngineRun as requestEngineRun } from './fn/matching/request-engine-run';
+export type { GetEngineRun$Params as GetEngineRun$Params } from './fn/matching/get-engine-run';
+export { getEngineRun as getEngineRun } from './fn/matching/get-engine-run';
 export type { ListImports$Params as ListImports$Params } from './fn/imports/list-imports';
 export { listImports as listImports } from './fn/imports/list-imports';
 export type { UploadImport$Params as UploadImport$Params } from './fn/imports/upload-import';

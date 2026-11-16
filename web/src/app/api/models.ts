@@ -14,6 +14,8 @@ export type { CreatedInvitationView } from './models/created-invitation-view';
 export type { CreateReceivablesProfileRequest } from './models/create-receivables-profile-request';
 export type { CreateStatementProfileRequest } from './models/create-statement-profile-request';
 export type { DateFormat } from './models/date-format';
+export type { EngineRunRequest } from './models/engine-run-request';
+export type { EngineRunView } from './models/engine-run-view';
 export type { ErrorRowView } from './models/error-row-view';
 export type { FileFormat } from './models/file-format';
 export type { FilePageView } from './models/file-page-view';
