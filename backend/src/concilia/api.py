@@ -22,6 +22,7 @@ from concilia.identity.application.team import TeamService
 from concilia.identity.infrastructure.passwords import Argon2PasswordHasher
 from concilia.identity.infrastructure.sql import SqlIdentityTransactions, SqlRateLimiter
 from concilia.identity.infrastructure.team_sql import SqlTeamTransactions
+from concilia.imports.api.receivables import receivables_router
 from concilia.imports.api.routes import imports_router
 from concilia.imports.application.service import ImportService
 from concilia.imports.infrastructure.jobs import ContentReader
@@ -119,5 +120,6 @@ def create_app(settings: ApiSettings | None = None, clock: Clock | None = None) 
         clock,
     )
     app.include_router(imports_router(imports), dependencies=authenticated)
+    app.include_router(receivables_router(imports), dependencies=authenticated)
     app.include_router(jobs_router(engine), dependencies=authenticated)
     return app

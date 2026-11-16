@@ -23,6 +23,7 @@ class AuditAction(StrEnum):
     IMPORT_DISCARDED = "import.discarded"
     IMPORT_CONFIRMED = "import.confirmed"
     IMPORT_VOIDED = "import.voided"
+    RECEIVABLE_CANCELLED = "receivable.cancelled"
 
 
 ALLOWED_METADATA_KEYS = frozenset({"source", "roles", "kind", "fields"})

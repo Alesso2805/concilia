@@ -1,11 +1,32 @@
 from datetime import date, datetime
+from typing import Any
 from uuid import UUID, uuid7
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from concilia.imports.application.receivables_flow import ExistingReceivable, ReceivableChange
-from concilia.imports.domain.model import ImportRow
+from concilia.imports.domain.model import ImportRow, Receivable, ReceivablePage
+
+RECEIVABLE_COLUMNS = """id, import_file_id, customer_name, customer_tax_id, doc_number,
+                        doc_number_norm, issued_on, due_on, amount_cents, cancelled_at,
+                        cancel_reason"""
+
+
+def _receivable(row: Any) -> Receivable:
+    return Receivable(
+        row.id,
+        row.import_file_id,
+        row.customer_name,
+        row.customer_tax_id,
+        row.doc_number,
+        row.doc_number_norm,
+        row.issued_on,
+        row.due_on,
+        row.amount_cents,
+        row.cancelled_at,
+        row.cancel_reason,
+    )
 
 
 class SqlReceivables:
@@ -102,4 +123,50 @@ class SqlReceivables:
                    WHERE id = ANY(:ids) AND cancelled_at IS NULL"""
             ),
             {"ids": ids, "reason": reason, "now": now},
+        )
+
+    async def find_receivable(self, receivable_id: UUID) -> Receivable | None:
+        row = (
+            await self._connection.execute(
+                text(f"SELECT {RECEIVABLE_COLUMNS} FROM receivables WHERE id = :id"),  # noqa: S608
+                {"id": receivable_id},
+            )
+        ).first()
+        return None if row is None else _receivable(row)
+
+    async def receivable_page(
+        self,
+        cancelled: bool,
+        after: tuple[date, UUID] | None,
+        before: tuple[date, UUID] | None,
+        limit: int,
+    ) -> ReceivablePage:
+        backwards = before is not None and after is None
+        cursor = before if backwards else after
+        comparison, order = ("<", "DESC") if backwards else (">", "ASC")
+        condition = f"(due_on, id) {comparison} (:on, :id)" if cursor else "true"
+        rows = list(
+            await self._connection.execute(
+                text(
+                    f"""SELECT {RECEIVABLE_COLUMNS} FROM receivables
+                        WHERE (cancelled_at IS NOT NULL) = :cancelled AND {condition}
+                        ORDER BY due_on {order}, id {order} LIMIT :limit"""  # noqa: S608
+                ),
+                {
+                    "cancelled": cancelled,
+                    "on": cursor[0] if cursor else None,
+                    "id": cursor[1] if cursor else None,
+                    "limit": limit + 1,
+                },
+            )
+        )
+        more = len(rows) > limit
+        rows = rows[:limit]
+        if backwards:
+            rows.reverse()
+            return ReceivablePage(
+                [_receivable(row) for row in rows], has_previous=more, has_next=True
+            )
+        return ReceivablePage(
+            [_receivable(row) for row in rows], has_previous=cursor is not None, has_next=more
         )

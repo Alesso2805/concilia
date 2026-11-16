@@ -1,6 +1,6 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from enum import StrEnum
 from typing import Any
 from uuid import UUID
@@ -62,5 +62,27 @@ class RowPage:
 @dataclass(frozen=True)
 class FilePage:
     files: list[ImportFile]
+    has_previous: bool
+    has_next: bool
+
+
+@dataclass(frozen=True)
+class Receivable:
+    id: UUID
+    import_file_id: UUID
+    customer_name: str
+    customer_tax_id: str | None
+    doc_number: str
+    doc_number_norm: str
+    issued_on: date
+    due_on: date
+    amount_cents: int
+    cancelled_at: datetime | None
+    cancel_reason: str | None
+
+
+@dataclass(frozen=True)
+class ReceivablePage:
+    receivables: list[Receivable]
     has_previous: bool
     has_next: bool
