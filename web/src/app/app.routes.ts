@@ -5,6 +5,8 @@ import { organizationGuard, roleGuard } from './core/session/guards';
 
 export const ERROR_PATH = '/error';
 
+const adminOnly = roleGuard('admin');
+
 export const routes: Routes = [
   { path: 'iniciar-sesion', loadChildren: () => import('./features/auth/auth.routes') },
   { path: 'error', component: ErrorPage, title: 'Error · Concilia' },
@@ -21,8 +23,21 @@ export const routes: Routes = [
       { path: '', loadChildren: () => import('./features/home/home.routes') },
       {
         path: 'equipo',
-        canMatch: [roleGuard('admin')],
-        loadChildren: () => import('./features/admin/admin.routes'),
+        canMatch: [adminOnly],
+        loadComponent: () => import('./features/admin/team.page').then((m) => m.TeamPage),
+        title: 'Equipo · Concilia',
+      },
+      {
+        path: 'cuentas',
+        canMatch: [adminOnly],
+        loadComponent: () => import('./features/admin/accounts.page').then((m) => m.AccountsPage),
+        title: 'Cuentas bancarias · Concilia',
+      },
+      {
+        path: 'configuracion',
+        canMatch: [adminOnly],
+        loadComponent: () => import('./features/admin/settings.page').then((m) => m.SettingsPage),
+        title: 'Configuración · Concilia',
       },
       { path: 'sin-permiso', component: ForbiddenPage, title: 'Sin acceso · Concilia' },
       { path: '**', component: NotFoundPage, title: 'Página no encontrada · Concilia' },

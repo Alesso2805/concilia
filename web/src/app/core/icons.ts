@@ -1,7 +1,10 @@
 import { inject, provideAppInitializer } from '@angular/core';
 import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
+import accountBalance from '@material-symbols/svg-400/outlined/account_balance.svg';
 import accountCircle from '@material-symbols/svg-400/outlined/account_circle.svg';
+import add from '@material-symbols/svg-400/outlined/add.svg';
+import archive from '@material-symbols/svg-400/outlined/archive.svg';
 import block from '@material-symbols/svg-400/outlined/block.svg';
 import check from '@material-symbols/svg-400/outlined/check.svg';
 import contentCopy from '@material-symbols/svg-400/outlined/content_copy.svg';
@@ -17,11 +20,15 @@ import menu from '@material-symbols/svg-400/outlined/menu.svg';
 import personAdd from '@material-symbols/svg-400/outlined/person_add.svg';
 import personRemove from '@material-symbols/svg-400/outlined/person_remove.svg';
 import searchOff from '@material-symbols/svg-400/outlined/search_off.svg';
+import settings from '@material-symbols/svg-400/outlined/settings.svg';
 import swapHoriz from '@material-symbols/svg-400/outlined/swap_horiz.svg';
 
 // Bundled at build time (angular.json loader) so no icon font is downloaded.
 const ICONS = {
+  account_balance: accountBalance,
   account_circle: accountCircle,
+  add,
+  archive,
   block,
   check,
   content_copy: contentCopy,
@@ -37,6 +44,7 @@ const ICONS = {
   person_add: personAdd,
   person_remove: personRemove,
   search_off: searchOff,
+  settings,
   swap_horiz: swapHoriz,
 };
 
