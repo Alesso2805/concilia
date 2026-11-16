@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from datetime import date
 
 from concilia.matching.domain.amounts import CENTS_PER_SOL
 
@@ -46,3 +47,27 @@ def detraction(document: str, difference_cents: int, rate_bp: int) -> str:
         f"La descripción menciona {document} y la diferencia de "
         f"{format_pen(difference_cents)} corresponde a una detracción del {format_rate(rate_bp)}."
     )
+
+
+def same_customer(documents: Sequence[str], similarity: int) -> str:
+    return (
+        f"El cliente de {join_documents(documents)} coincide con la descripción "
+        f"(similitud {similarity}) y esos cobros suman el abono."
+    )
+
+
+def paid_in_parts(document: str, count: int, first: date, last: date) -> str:
+    return (
+        f"Los {count} abonos del cliente de {document}, del {first:%d/%m/%Y} "
+        f"al {last:%d/%m/%Y}, suman su saldo."
+    )
+
+
+def amount_and_date(document: str, similarity: int | None) -> str:
+    base = (
+        f"El monto coincide con el saldo de {document}, la fecha está dentro del plazo "
+        "y es el único candidato"
+    )
+    if similarity is None:
+        return f"{base}."
+    return f"{base}; además, el cliente coincide con la descripción (similitud {similarity})."

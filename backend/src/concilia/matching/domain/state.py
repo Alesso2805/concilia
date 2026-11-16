@@ -1,4 +1,6 @@
+from collections import defaultdict
 from collections.abc import Iterator, Sequence
+from functools import cached_property
 from uuid import UUID
 
 from concilia.matching.domain.model import (
@@ -11,6 +13,7 @@ from concilia.matching.domain.model import (
     Proposal,
     Rule,
 )
+from concilia.matching.domain.similarity import CustomerKey, SimilarityIndex, customer_key
 
 
 class RunState:
@@ -21,7 +24,21 @@ class RunState:
         self.receivables = tuple(sorted(engine_input.receivables, key=lambda r: (r.due_on, r.id)))
         self.proposals: list[Proposal] = []
         self._by_document = {r.doc_number_norm: r for r in self.receivables}
+        self._credits_by_id = {credit.id: credit for credit in self.credits}
+        self._by_customer: defaultdict[CustomerKey, list[OpenReceivable]] = defaultdict(list)
+        for receivable in self.receivables:
+            self._by_customer[customer_key(receivable)].append(receivable)
         self._used: set[UUID] = set()
+
+    @cached_property
+    def similarity(self) -> SimilarityIndex:
+        return SimilarityIndex(self.credits, self.receivables)
+
+    def credit(self, credit_id: UUID) -> Credit:
+        return self._credits_by_id[credit_id]
+
+    def receivables_of(self, customer: CustomerKey) -> Sequence[OpenReceivable]:
+        return self._by_customer.get(customer, [])
 
     def is_free(self, item: Credit | OpenReceivable) -> bool:
         return item.id not in self._used

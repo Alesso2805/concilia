@@ -1,7 +1,6 @@
 from concilia.matching.domain import explanations
 from concilia.matching.domain.amounts import detraction_rate, within_tolerance
 from concilia.matching.domain.model import (
-    Application,
     Credit,
     DifferenceReason,
     OpenReceivable,
@@ -19,10 +18,6 @@ def _mentioned(state: RunState, credit: Credit) -> list[OpenReceivable]:
     return [r for ref in credit.doc_refs if (r := state.free_receivable(ref)) is not None]
 
 
-def _full(receivable: OpenReceivable) -> Application:
-    return Application(receivable.id, receivable.available_cents)
-
-
 def exact(state: RunState) -> None:
     for credit in state.free_credits():
         matching = [
@@ -34,7 +29,7 @@ def exact(state: RunState) -> None:
                 rule=Rule.EXACT,
                 score=EXACT_SCORE,
                 credits=[credit],
-                applications=[_full(receivable)],
+                applications=[receivable.full_application()],
                 reason=None,
                 explanation=explanations.exact(receivable.doc_number_norm),
             )
@@ -50,7 +45,7 @@ def several_documents(state: RunState) -> None:
                 rule=Rule.SEVERAL_DOCUMENTS,
                 score=SEVERAL_DOCUMENTS_SCORE,
                 credits=[credit],
-                applications=[_full(r) for r in mentioned],
+                applications=[r.full_application() for r in mentioned],
                 reason=None,
                 explanation=explanations.several_documents([r.doc_number_norm for r in mentioned]),
             )
@@ -83,7 +78,7 @@ def reference_with_difference(state: RunState) -> None:
                 rule=Rule.REFERENCE_WITH_DIFFERENCE,
                 score=REFERENCE_WITH_DIFFERENCE_SCORE,
                 credits=[credit],
-                applications=[_full(receivable)],
+                applications=[receivable.full_application()],
                 reason=reason,
                 explanation=explanation,
             )
