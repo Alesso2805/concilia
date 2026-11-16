@@ -74,6 +74,7 @@ jobs:
           export CONCILIA_VERSION="$VERSION"
           docker compose -f docker-compose.yml -f docker-compose.prod.yml pull --quiet
           docker compose -f docker-compose.yml -f docker-compose.prod.yml up --detach --no-build --remove-orphans
+          docker image prune --all --force
           EOF
       - if: env.DEPLOY_HOST != ''
         name: The public site answers

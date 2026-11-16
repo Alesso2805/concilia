@@ -30,13 +30,15 @@ Without the `DEPLOY_*` secrets, it only publishes the images.
 
 **Monitoring.** `/api/health` now also queries the database and answers 503 when it cannot. A free external monitor polls it.
 
-The hosting provider and the domain are the owner's choice, since they are a monthly cost. Any provider with a 2 vCPU / 4 GB Ubuntu server fits.
+The hosting provider and the domain are the owner's choice, since they are a monthly cost. The owner chose Google Cloud's always-free `e2-micro` in `us-east1` (the free region closest to Lima) and a free DuckDNS subdomain, so the instance costs nothing beyond the AI. The stack uses about 310 MB of RAM at rest, so 1 GB with 2 GB of swap runs it. Any provider with a larger Ubuntu server fits as well. Moving to a bigger machine or to a domain of our own changes only the server and two settings, not the code.
 
 ## Consequences
 
 - Production runs the same files as local development and CI, apart from one override, so a working `docker compose up` locally is strong evidence for the deployment.
 - The server never builds anything: deployments are a pull and a restart, and a small server never runs out of memory compiling Angular.
 - One server is one point of failure. A short outage during deployments and server maintenance is acceptable for a portfolio demo.
+- The free machine has about a quarter of a vCPU sustained. Creating a demo and hashing passwords with Argon2id take noticeably longer than on a laptop, and a few visitors at once queue up.
+- DuckDNS is a free service run by volunteers. If it is down, the site is unreachable even though the server is up.
 - Backups on the same disk do not survive losing the server until they are copied elsewhere.
 
 ## Alternatives considered
