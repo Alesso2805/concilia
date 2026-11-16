@@ -427,7 +427,7 @@ class ImportService:
             months = {period_of(movement.booked_on) for movement in movements}
             if await store.periods.closed_periods(file.bank_account_id, months):
                 raise ClosedPeriodError
-            if await store.matches.any_active([movement.id for movement in movements], []):
+            if await store.matches.active([movement.id for movement in movements], []):
                 raise ActiveMatchesError
             await store.void_movements(file_id, now)
             await store.update_file(

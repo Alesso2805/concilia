@@ -10,7 +10,12 @@ class NoActiveMatches:
     def __init__(self, _connection: AsyncConnection) -> None:
         pass
 
-    async def any_active(
+    async def active(
         self, movement_ids: Sequence[UUID], receivable_ids: Sequence[UUID]
-    ) -> bool:
-        return False
+    ) -> set[UUID]:
+        return set()
+
+    async def pending(
+        self, movement_ids: Sequence[UUID], receivable_ids: Sequence[UUID]
+    ) -> set[UUID]:
+        return set()

@@ -1,4 +1,5 @@
 import json
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import UUID, uuid7
@@ -32,6 +33,21 @@ STATEMENT = (
     b"07/02/2027;TRANSF CLIENTE;500,00\n"
     b"08/02/2027;SIN MONTO;\n"
 )
+
+
+class AlwaysActive:
+    def __init__(self, _connection: object) -> None:
+        pass
+
+    async def active(
+        self, movement_ids: Sequence[UUID], receivable_ids: Sequence[UUID]
+    ) -> set[UUID]:
+        return {*movement_ids, *receivable_ids}
+
+    async def pending(
+        self, movement_ids: Sequence[UUID], receivable_ids: Sequence[UUID]
+    ) -> set[UUID]:
+        return {*movement_ids, *receivable_ids}
 
 
 @dataclass(frozen=True)

@@ -4,6 +4,12 @@ from uuid import UUID
 
 
 class ActiveMatchesQuery(Protocol):
-    async def any_active(
+    """Answered by the matching module; each method returns the given ids that qualify."""
+
+    async def active(
         self, movement_ids: Sequence[UUID], receivable_ids: Sequence[UUID]
-    ) -> bool: ...
+    ) -> set[UUID]: ...
+
+    async def pending(
+        self, movement_ids: Sequence[UUID], receivable_ids: Sequence[UUID]
+    ) -> set[UUID]: ...
