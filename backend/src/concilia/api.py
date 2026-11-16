@@ -49,7 +49,9 @@ from concilia.matching.infrastructure.inbox_sql import SqlInboxTransactions
 from concilia.matching.infrastructure.manual_sql import SqlManualTransactions
 from concilia.matching.infrastructure.queries import SqlMatchQueries
 from concilia.matching.infrastructure.runs_sql import SqlRunTransactions
-from concilia.periods.infrastructure.sql import SqlPeriodQueries
+from concilia.periods.api.routes import periods_router
+from concilia.periods.application.closing import PeriodService
+from concilia.periods.infrastructure.sql import SqlPeriodQueries, SqlPeriodTransactions
 from concilia.shared.infrastructure.clock import SystemClock
 from concilia.shared.infrastructure.db import create_engine
 from concilia.shared.infrastructure.jobs_api import jobs_router
@@ -178,6 +180,10 @@ def create_app(settings: ApiSettings | None = None, clock: Clock | None = None) 
     inbox = InboxService(SqlInboxTransactions(engine))
     app.include_router(inbox_router(inbox), dependencies=authenticated)
     app.include_router(decisions_router(decisions), dependencies=authenticated)
+    period_transactions = SqlPeriodTransactions(engine, SqlAuditRecorder, SqlMatchQueries)
+    app.include_router(
+        periods_router(PeriodService(period_transactions, clock)), dependencies=authenticated
+    )
     manual = ManualMatchService(SqlManualTransactions(engine, SqlAuditRecorder), decisions, clock)
     app.include_router(manual_router(manual), dependencies=authenticated)
     app.include_router(

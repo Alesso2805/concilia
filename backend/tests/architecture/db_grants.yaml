@@ -240,3 +240,6 @@ functions:
   matches_complete:
     security_definer: false
     execute: []
+  period_events_alternate:
+    security_definer: false
+    execute: []

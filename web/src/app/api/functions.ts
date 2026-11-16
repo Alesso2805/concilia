@@ -89,6 +89,8 @@ export type { GetOrganizationSettings$Params as GetOrganizationSettings$Params }
 export { getOrganizationSettings as getOrganizationSettings } from './fn/organization/get-organization-settings';
 export type { UpdateOrganizationSettings$Params as UpdateOrganizationSettings$Params } from './fn/organization/update-organization-settings';
 export { updateOrganizationSettings as updateOrganizationSettings } from './fn/organization/update-organization-settings';
+export type { DecidePeriod$Params as DecidePeriod$Params } from './fn/periods/decide-period';
+export { decidePeriod as decidePeriod } from './fn/periods/decide-period';
 export type { ListReceivables$Params as ListReceivables$Params } from './fn/receivables/list-receivables';
 export { listReceivables as listReceivables } from './fn/receivables/list-receivables';
 export type { CancelReceivable$Params as CancelReceivable$Params } from './fn/receivables/cancel-receivable';
