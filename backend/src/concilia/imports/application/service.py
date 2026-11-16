@@ -14,7 +14,14 @@ from concilia.banking.application.profile_config import (
 )
 from concilia.imports.application.matches import ActiveMatchesQuery
 from concilia.imports.domain.cells import Cell
-from concilia.imports.domain.model import FileStatus, ImportFile, ImportRow, RowPage, RowStatus
+from concilia.imports.domain.model import (
+    FilePage,
+    FileStatus,
+    ImportFile,
+    ImportRow,
+    RowPage,
+    RowStatus,
+)
 from concilia.imports.domain.statement import (
     FileError,
     RowError,
@@ -123,6 +130,13 @@ class ImportStore(Protocol):
     async def void_movements(self, file_id: UUID, now: datetime) -> None: ...
 
     async def pending_job(self, kind: str, file_id: UUID) -> UUID | None: ...
+
+    async def file_page(
+        self,
+        after: tuple[datetime, UUID] | None,
+        before: tuple[datetime, UUID] | None,
+        limit: int,
+    ) -> FilePage: ...
 
     async def enqueue(
         self,
@@ -293,6 +307,18 @@ class ImportService:
             if file.bank_account_id is not None and file.status != FileStatus.CONFIRMED:
                 duplicate = await store.confirmed_with_hash(file.bank_account_id, file.sha256)
             return FileSummary(file, await store.row_counts(file_id), duplicate)
+
+    async def files(
+        self,
+        principal: Principal,
+        *,
+        after: tuple[datetime, UUID] | None = None,
+        before: tuple[datetime, UUID] | None = None,
+        limit: int = 20,
+    ) -> FilePage:
+        organization_id = _member_organization(principal)
+        async with self._transactions.organization(organization_id) as store:
+            return await store.file_page(after, before, min(limit, PAGE_LIMIT))
 
     async def rows(
         self,

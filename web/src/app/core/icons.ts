@@ -23,6 +23,7 @@ import personRemove from '@material-symbols/svg-400/outlined/person_remove.svg';
 import searchOff from '@material-symbols/svg-400/outlined/search_off.svg';
 import settings from '@material-symbols/svg-400/outlined/settings.svg';
 import swapHoriz from '@material-symbols/svg-400/outlined/swap_horiz.svg';
+import uploadFile from '@material-symbols/svg-400/outlined/upload_file.svg';
 
 // Bundled at build time (angular.json loader) so no icon font is downloaded.
 const ICONS = {
@@ -48,6 +49,7 @@ const ICONS = {
   search_off: searchOff,
   settings,
   swap_horiz: swapHoriz,
+  upload_file: uploadFile,
 };
 
 export type IconName = keyof typeof ICONS;

@@ -13,7 +13,14 @@ from concilia.audit.application.recorder import AuditRecorder
 from concilia.banking.application.profile_config import ProfileKind
 from concilia.imports.application.matches import ActiveMatchesQuery
 from concilia.imports.application.service import ActiveProfile, LiveMovement
-from concilia.imports.domain.model import FileStatus, ImportFile, ImportRow, RowPage, RowStatus
+from concilia.imports.domain.model import (
+    FilePage,
+    FileStatus,
+    ImportFile,
+    ImportRow,
+    RowPage,
+    RowStatus,
+)
 from concilia.periods.application.queries import PeriodQueries
 from concilia.shared.infrastructure.db import lock_organization, organization_transaction
 from concilia.shared.infrastructure.jobs import enqueue
@@ -327,6 +334,38 @@ class SqlImportStore:
             )
         ).scalar_one_or_none()
         return found
+
+    async def file_page(
+        self,
+        after: tuple[datetime, UUID] | None,
+        before: tuple[datetime, UUID] | None,
+        limit: int,
+    ) -> FilePage:
+        backwards = before is not None and after is None
+        cursor = before if backwards else after
+        comparison, order = (">", "ASC") if backwards else ("<", "DESC")
+        condition = f"(created_at, id) {comparison} (:at, :id)" if cursor else "true"
+        rows = list(
+            await self._connection.execute(
+                text(
+                    f"""SELECT {FILE_COLUMNS} FROM import_files WHERE {condition}
+                        ORDER BY created_at {order}, id {order} LIMIT :limit"""  # noqa: S608
+                ),
+                {
+                    "at": cursor[0] if cursor else None,
+                    "id": cursor[1] if cursor else None,
+                    "limit": limit + 1,
+                },
+            )
+        )
+        more = len(rows) > limit
+        rows = rows[:limit]
+        if backwards:
+            rows.reverse()
+            return FilePage([_file(row) for row in rows], has_previous=more, has_next=True)
+        return FilePage(
+            [_file(row) for row in rows], has_previous=cursor is not None, has_next=more
+        )
 
     async def enqueue(
         self,
