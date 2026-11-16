@@ -15,6 +15,7 @@ A rule changes only together with its check, its meta-test and, when the archite
 | AR-07 | The API process never runs background work | AST test |
 | AR-08 | Logs carry only allowlisted fields and literal event names | AST test and logging tests |
 | AR-09 | The frontend runs without zone.js | Project file test |
+| AR-10 | The database catalog matches the declared tenancy and grants | Catalog test on PostgreSQL |
 
 Checks live in `backend/.importlinter` (contracts) and `backend/tests/architecture/` (AST tests and every meta-test). The import-linter contracts run in CI as `lint-imports`, and their meta-tests copy the package to a temporary directory, add one violating module, and assert that the named contract breaks.
 
@@ -98,6 +99,29 @@ Event names are string literals. A call on a logger (`log.info(...)`, `logger.bi
 
 **Check:** `zoneless_frontend` in `tests/architecture/test_frontend_rules.py`, which reads the real project files and has meta-tests for each of the four ways zone.js could return.
 
-## Rules still to come
+## AR-10 Database catalog
 
-- Database catalog rules (CN-03): forced RLS on every organization table, the closed list of tables without RLS, the per-role policies of `jobs` (the single exception to the uniform policy, [ADR-0002](adr/0002-multi-tenancy-with-rls.md)), `security_invoker` views, and grants that match `db_grants.yaml` exactly.
+After all migrations, the catalog of the `public` schema matches `backend/tests/architecture/db_grants.yaml` exactly:
+
+- **Declared tables.** Every table and view is declared, and every declared one exists. All are owned by `concilia_owner`.
+- **Closed list without RLS.** Only `users`, `sessions`, `rate_limits` and `alembic_version` (`rls: none`) have row-level security off.
+- **Uniform policy everywhere else.** Every other table has RLS enabled and forced, with exactly one policy for all commands whose `USING` and `WITH CHECK` are `organization_id = NULLIF(current_setting('app.org_id', true), '')::uuid` (`id` for `organizations`).
+- **`jobs` is the single exception** ([ADR-0002](adr/0002-multi-tenancy-with-rls.md)). It has exactly two policies: one for `concilia_app` with the organization expression, and one for `concilia_worker` with `true`.
+- **Views** are created with `security_invoker`.
+- **Exact grants.** Table and column privileges for `concilia_app`, `concilia_worker`, `concilia_backup` and `PUBLIC` are exactly the declared ones, nothing more and nothing less. They are read from the ACLs in `pg_class`, `pg_attribute` and `pg_proc`, including implicit defaults.
+- **Functions.** Every function is declared with its `SECURITY DEFINER` flag and its executors. `SECURITY DEFINER` functions pin `search_path = pg_catalog, public`.
+- **Roles.** `concilia_app` and `concilia_worker` have no `BYPASSRLS`, `concilia_owner` and `concilia_backup` have it, and no `concilia_*` role is a superuser.
+
+**Why:** project rules 3 and 4 and the role table in SPEC. Isolation must not depend on code review, and a table added by a later story must be noticed even if its author forgets it.
+
+**Check:** `tests/architecture/test_catalog.py` runs `catalog_violations` against PostgreSQL 17 in Testcontainers, migrated from scratch with the same role script that Docker Compose uses. Its meta-tests each apply one violation and roll it back:
+
+- a table without RLS;
+- RLS that is not forced;
+- a view without `security_invoker`;
+- an extra table, column or `PUBLIC` grant;
+- an extra executor of a function;
+- an additional policy;
+- an undeclared `SECURITY DEFINER` function.
+
+Each story that adds tables extends `db_grants.yaml` in the same pull request.
