@@ -99,6 +99,8 @@ export type { ListReceivables$Params as ListReceivables$Params } from './fn/rece
 export { listReceivables as listReceivables } from './fn/receivables/list-receivables';
 export type { CancelReceivable$Params as CancelReceivable$Params } from './fn/receivables/cancel-receivable';
 export { cancelReceivable as cancelReceivable } from './fn/receivables/cancel-receivable';
+export type { GetDashboard$Params as GetDashboard$Params } from './fn/reports/get-dashboard';
+export { getDashboard as getDashboard } from './fn/reports/get-dashboard';
 export type { GetHealth$Params as GetHealth$Params } from './fn/health/get-health';
 export { getHealth as getHealth } from './fn/health/get-health';
 export type { Register$Params as Register$Params } from './fn/registration/register';

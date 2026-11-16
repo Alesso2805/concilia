@@ -55,6 +55,9 @@ from concilia.matching.infrastructure.runs_sql import SqlRunTransactions
 from concilia.periods.api.routes import periods_router
 from concilia.periods.application.closing import PeriodService
 from concilia.periods.infrastructure.sql import SqlPeriodQueries, SqlPeriodTransactions
+from concilia.reporting.api.routes import reports_router
+from concilia.reporting.application.dashboard import DashboardService
+from concilia.reporting.infrastructure.dashboard_sql import SqlDashboardTransactions
 from concilia.shared.infrastructure.clock import SystemClock
 from concilia.shared.infrastructure.db import create_engine
 from concilia.shared.infrastructure.jobs_api import jobs_router
@@ -200,6 +203,10 @@ def create_app(settings: ApiSettings | None = None, clock: Clock | None = None) 
     )
     app.include_router(
         audit_router(AuditLogService(SqlAuditLogTransactions(engine))), dependencies=authenticated
+    )
+    app.include_router(
+        reports_router(DashboardService(SqlDashboardTransactions(engine), clock)),
+        dependencies=authenticated,
     )
     app.include_router(jobs_router(engine), dependencies=authenticated)
     return app

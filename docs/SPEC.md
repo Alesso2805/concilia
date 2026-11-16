@@ -219,6 +219,8 @@ Descartada, rechazada y revertida son finales; sus abonos y cobros quedan libres
 
 **Períodos.** Un período es un mes calendario por cuenta bancaria, según la fecha del movimiento. Está abierto hasta que un revisor lo cierra, y solo se cierra si no quedan coincidencias propuestas ni confirmadas con abonos de ese período y no es posterior al mes en curso (día de Lima). Cerrar y reabrir alternan (lo valida además un trigger bajo el bloqueo de la organización); reabrir exige motivo. En un período cerrado no se registran acciones, no se corre el motor y no se importan movimientos.
 
+**Panel y pendientes.** El panel es por cuenta y mes. Un abono está conciliado si está en una coincidencia aprobada; el porcentaje conciliado se da por monto y por cantidad sobre los abonos no anulados del mes. Los pendientes son los abonos no anulados de la cuenta, de ese mes o de meses anteriores, con fecha hasta el día de referencia (el último día del mes, o hoy si es el mes en curso), que no están en una coincidencia aprobada; se agrupan por días desde el abono hasta el día de referencia en 0-7, 8-30 y más de 30. Las diferencias por motivo suman, por el motivo de su confirmación, las coincidencias confirmadas o aprobadas del mes con diferencia (abonos menos aplicado).
+
 **Asistente de IA.**
 
 1. El analista elige un abono libre y pide ayuda.
