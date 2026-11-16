@@ -23,6 +23,8 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { RouterLink } from '@angular/router';
 
 import { BankAccountView } from '../../api/models/bank-account-view';
+import { CreditView } from '../../api/models/credit-view';
+import { UsageView } from '../../api/models/usage-view';
 import { CountsView } from '../../api/models/counts-view';
 import { CreditPageView } from '../../api/models/credit-page-view';
 import { EngineRunView } from '../../api/models/engine-run-view';
@@ -34,6 +36,8 @@ import { isFinished, JobTracker } from '../../core/jobs/job-tracker';
 import { KeysetPaginatorIntl, keysetLength } from '../../core/paging/keyset';
 import { SessionStore } from '../../core/session/session.store';
 import { BankingService } from '../admin/banking.service';
+import { AiService } from '../ai/ai.service';
+import { SuggestionDialog, SuggestionDialogData } from '../ai/suggestion.dialog';
 import { PeriodsService } from '../periods/periods.service';
 import { ReopenPeriodDialog } from '../periods/reopen-period.dialog';
 import { dayLabel, monthLabel, RULE_LABELS, TABS } from './labels';
@@ -90,6 +94,7 @@ export class InboxPage implements OnInit {
   private readonly matching = inject(MatchingService);
   private readonly banking = inject(BankingService);
   private readonly periodsApi = inject(PeriodsService);
+  private readonly ai = inject(AiService);
   private readonly jobs = inject(JobTracker);
   private readonly dialog = inject(MatDialog);
   private readonly session = inject(SessionStore);
@@ -99,7 +104,6 @@ export class InboxPage implements OnInit {
   readonly mes = input<string>();
 
   protected readonly tabs = TABS;
-  protected readonly creditColumns = ['date', 'description', 'operation', 'amount'];
   protected readonly matchColumns = [
     'date',
     'description',
@@ -156,6 +160,16 @@ export class InboxPage implements OnInit {
     return null;
   });
   protected readonly batching = signal(false);
+  protected readonly aiUsage = signal<UsageView | null>(null);
+  protected readonly canAskAi = computed(
+    () =>
+      this.session.roles().has('analyst') && !this.closed() && (this.aiUsage()?.available ?? false),
+  );
+  protected readonly creditColumns = computed(() =>
+    this.canAskAi()
+      ? ['date', 'description', 'operation', 'amount', 'ai']
+      : ['date', 'description', 'operation', 'amount'],
+  );
   protected readonly closing = signal(false);
   protected readonly canClose = computed(
     () =>
@@ -178,6 +192,7 @@ export class InboxPage implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
+    void this.loadAiUsage();
     try {
       const accounts = (await this.banking.accounts()).filter((account) => !account.archived_at);
       this.accounts.set(accounts);
@@ -314,6 +329,35 @@ export class InboxPage implements OnInit {
       this.error.set(matchingErrorMessage(error));
     } finally {
       this.batching.set(false);
+    }
+  }
+
+  protected async askAi(credit: CreditView): Promise<void> {
+    const usage = this.aiUsage();
+    if (!usage) {
+      return;
+    }
+    const accepted = await firstValueFrom(
+      this.dialog
+        .open<SuggestionDialog, SuggestionDialogData, boolean>(SuggestionDialog, {
+          data: { credit, usage },
+          autoFocus: 'dialog',
+          width: 'min(720px, 100vw)',
+        })
+        .afterClosed(),
+    );
+    void this.loadAiUsage();
+    if (accepted) {
+      this.notice.set('Se creó una propuesta a partir de la sugerencia de la IA.');
+      await this.refresh();
+    }
+  }
+
+  private async loadAiUsage(): Promise<void> {
+    try {
+      this.aiUsage.set(await this.ai.usage());
+    } catch {
+      this.aiUsage.set(null);
     }
   }
 

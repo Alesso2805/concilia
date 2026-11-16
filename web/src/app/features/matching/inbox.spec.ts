@@ -10,6 +10,8 @@ import { JobTracker } from '../../core/jobs/job-tracker';
 import { provideLocale } from '../../core/locale';
 import { SessionStore } from '../../core/session/session.store';
 import { BankingService } from '../admin/banking.service';
+import { AiService } from '../ai/ai.service';
+import { SuggestionDialog } from '../ai/suggestion.dialog';
 import { PeriodsService } from '../periods/periods.service';
 import { ReopenPeriodDialog } from '../periods/reopen-period.dialog';
 import { InboxPage } from './inbox.page';
@@ -30,6 +32,13 @@ const MATCH: MatchRowView = {
   credits_cents: 118_000,
   applied_cents: 118_000,
   difference_cents: 0,
+};
+const CREDIT = {
+  id: 'c1',
+  booked_on: '2027-02-07',
+  description: 'TRANSF CLIENTE',
+  operation_number: null,
+  amount_cents: 50_000,
 };
 const PAGE = { has_previous: false, has_next: false, previous_cursor: null, next_cursor: null };
 
@@ -56,7 +65,11 @@ describe('InboxPage', () => {
   let open: ReturnType<typeof vi.fn>;
   let periodsApi: Record<string, ReturnType<typeof vi.fn>>;
 
-  async function render(roles: string[], closed = false): Promise<HTMLElement> {
+  async function render(
+    roles: string[],
+    closed = false,
+    usage: object | null = null,
+  ): Promise<HTMLElement> {
     service = {
       periods: vi.fn(() =>
         Promise.resolve([
@@ -66,7 +79,7 @@ describe('InboxPage', () => {
       ),
       counts: vi.fn(() => Promise.resolve({ free: 2, proposed: 1, confirmed: 0, approved: 0 })),
       matches: vi.fn(() => Promise.resolve({ matches: [MATCH], ...PAGE })),
-      credits: vi.fn(() => Promise.resolve({ credits: [], ...PAGE })),
+      credits: vi.fn(() => Promise.resolve({ credits: [CREDIT], ...PAGE })),
       runEngine: vi.fn(() => Promise.resolve({ id: 'run1', job_id: 'j1' })),
       run: vi.fn(() => Promise.resolve({ id: 'run1', proposals_count: 1 })),
       decideBatch: vi.fn(() => Promise.resolve({ decided: 2, skipped: 1 })),
@@ -104,6 +117,7 @@ describe('InboxPage', () => {
         { provide: SessionStore, useValue: { roles: signal(new Set(roles)) } },
         { provide: MatDialog, useValue: { open } },
         { provide: PeriodsService, useValue: periodsApi },
+        { provide: AiService, useValue: { usage: () => Promise.resolve(usage) } },
       ],
     });
     fixture = TestBed.createComponent(InboxPage);
@@ -243,6 +257,34 @@ describe('InboxPage', () => {
     await settle(fixture);
 
     expect(text(fixture)).toContain('Quedan coincidencias propuestas o confirmadas en este mes');
+  });
+
+  it('offers analysts the AI on free credits when it is available', async () => {
+    interface AiInbox {
+      creditColumns(): string[];
+      askAi(credit: typeof CREDIT): Promise<void>;
+    }
+    const usage = { available: true, used_today: 3, daily_limit: 50 };
+    await render(['analyst'], false, usage);
+    const page = fixture.componentInstance as unknown as AiInbox;
+    expect(page.creditColumns()).toContain('ai');
+
+    await page.askAi(CREDIT);
+
+    expect(open).toHaveBeenCalledWith(SuggestionDialog, {
+      data: { credit: CREDIT, usage },
+      autoFocus: 'dialog',
+      width: 'min(720px, 100vw)',
+    });
+    for (const [roles, closed, available] of [
+      [['analyst'], false, false],
+      [['analyst'], true, true],
+      [['reviewer'], false, true],
+    ] as const) {
+      TestBed.resetTestingModule();
+      await render([...roles], closed, { ...usage, available });
+      expect((fixture.componentInstance as unknown as AiInbox).creditColumns()).not.toContain('ai');
+    }
   });
 
   it('names months in Spanish', () => {

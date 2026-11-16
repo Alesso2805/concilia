@@ -89,9 +89,24 @@ test('a visitor imports the third month of the demo from its sample files', asyn
   await expect(page.getByText('Importación confirmada')).toBeVisible();
 });
 
-test('the analyst confirms a proposal and the reviewer approves it', async ({ page }) => {
+test('the analyst asks the AI, confirms a proposal and the reviewer approves it', async ({
+  page,
+}) => {
   await page.goto('/demo');
-  await expect(page.getByRole('tab', { name: 'Libres (118)' })).toBeVisible();
+  await page.getByRole('tab', { name: 'Libres (118)' }).click();
+  await page
+    .getByRole('button', { name: /^Pedir ayuda a la IA para / })
+    .first()
+    .click();
+  const ai = page.getByRole('dialog', { name: 'Sugerencias de la IA' });
+  // The demo replays recorded answers; a credit without a recording says so.
+  await expect(
+    ai.getByText(/Sugerencia 1, confianza|Sin sugerencias en la demo/).first(),
+  ).toBeVisible({ timeout: 20_000 });
+  await expect(ai.getByText('En la demo, las respuestas de la IA son grabaciones.')).toBeVisible();
+  await expectAccessible(page);
+  await ai.getByRole('button', { name: 'Cerrar' }).click();
+
   await page.getByRole('button', { name: 'Correr el motor' }).click();
   // The run goes through the worker's queue and the 2-second job polling.
   await expect(page.getByText(/El motor propuso \d+ coincidencias\./)).toBeVisible({

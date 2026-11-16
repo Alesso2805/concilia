@@ -1,0 +1,125 @@
+<h2 mat-dialog-title>Sugerencias de la IA</h2>
+<mat-dialog-content>
+  <p class="ai__credit">
+    Abono del {{ day(data.credit.booked_on) }} por {{ pen(data.credit.amount_cents) }}:
+    {{ data.credit.description }}
+  </p>
+  <p class="ai__muted">
+    La IA solo sugiere: tú decides, el sistema recalcula los montos y un revisor aprueba.
+  </p>
+
+  @if (waiting()) {
+    <p class="ai__muted" aria-live="polite">La IA está revisando los cobros pendientes…</p>
+    <mat-progress-bar mode="indeterminate" aria-label="Esperando a la IA" />
+  }
+
+  @if (view(); as view) {
+    @if (view.valid === false) {
+      <p class="ai__muted">La IA respondió algo que no pudimos validar. Intenta de nuevo.</p>
+    } @else if (view.suggestions.length === 0) {
+      <p class="ai__muted">
+        {{ view.no_match_reason || 'La IA no encontró cobros que coincidan.' }}
+      </p>
+    } @else {
+      @for (item of view.suggestions; track item.index) {
+        <section class="ai__suggestion" [attr.aria-label]="heading(item)">
+          <h3 class="ai__title">{{ heading(item) }}</h3>
+          <p>{{ item.explanation }}</p>
+          <table class="ai__table">
+            <caption class="cdk-visually-hidden">
+              Cobros de la
+              {{
+                heading(item)
+              }}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Documento</th>
+                <th scope="col">Cliente</th>
+                <th scope="col" class="ai__amount">Aplicado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (receivable of item.receivables; track receivable.receivable_id) {
+                <tr>
+                  <th scope="row">{{ receivable.doc_number }}</th>
+                  <td>{{ receivable.customer_name }}</td>
+                  <td class="ai__amount">{{ pen(receivable.applied_cents) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          @if (item.difference_cents !== 0) {
+            <p>
+              Diferencia: {{ pen(item.difference_cents) }}
+              @if (item.difference_reason) {
+                (motivo sugerido: {{ reasonLabel(item.difference_reason) }})
+              }
+            </p>
+          }
+          @if (item.recomputed) {
+            <p class="ai__muted">El sistema recalculó los montos aplicados.</p>
+          }
+          @if (item.decision; as decision) {
+            <p class="ai__decided" role="status">
+              @if (decision.action === 'accept') {
+                Aceptada: se creó una propuesta.
+              } @else {
+                Rechazada: {{ decision.reason }}
+              }
+            </p>
+          } @else if (rejecting() === item.index) {
+            <mat-form-field appearance="outline" class="ai__reason">
+              <mat-label>Motivo del rechazo</mat-label>
+              <textarea matInput [formControl]="reason" maxlength="500"></textarea>
+            </mat-form-field>
+            <div class="ai__actions">
+              <button mat-button type="button" (click)="rejecting.set(null)">Cancelar</button>
+              <button
+                mat-stroked-button
+                type="button"
+                [disabled]="deciding()"
+                (click)="decide(item, 'reject')"
+              >
+                Rechazar con este motivo
+              </button>
+            </div>
+          } @else {
+            <div class="ai__actions">
+              <button
+                mat-stroked-button
+                type="button"
+                [disabled]="deciding()"
+                (click)="startRejecting(item.index)"
+              >
+                Rechazar
+              </button>
+              <button
+                mat-flat-button
+                type="button"
+                [disabled]="deciding()"
+                (click)="decide(item, 'accept')"
+              >
+                Aceptar
+              </button>
+            </div>
+          }
+        </section>
+      }
+    }
+  }
+
+  @if (error(); as message) {
+    <p class="ai__error" role="alert">{{ message }}</p>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <span class="ai__muted ai__usage">
+    @if (data.usage.daily_limit === null) {
+      En la demo, las respuestas de la IA son grabaciones.
+    } @else {
+      Consultas de hoy: {{ data.usage.used_today + 1 }} de {{ data.usage.daily_limit }}.
+    }
+  </span>
+  <button mat-button type="button" [mat-dialog-close]="false">Cerrar</button>
+</mat-dialog-actions>
