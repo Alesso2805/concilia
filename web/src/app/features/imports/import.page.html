@@ -3,6 +3,8 @@
 @if (summary(); as summary) {
   <h1 class="imports__title">{{ summary.file.filename }}</h1>
   <dl class="imports__facts">
+    <dt>Tipo</dt>
+    <dd>{{ texts().label }}</dd>
     <dt>Perfil</dt>
     <dd>{{ summary.file.profile_name }}</dd>
     <dt>Estado</dt>
@@ -31,7 +33,8 @@
   } @else if (summary.file.status === 'previewed') {
     @if (summary.duplicate_of) {
       <p class="imports__warning" role="status">
-        Ya confirmaste un archivo idéntico en esta cuenta. Si lo subiste por error, descártalo.
+        Ya confirmaste un archivo idéntico {{ texts().sameFile }}. Si lo subiste por error,
+        descártalo.
       </p>
     }
     <p>
@@ -44,15 +47,15 @@
         [disabled]="summary.counts['ok'] === 0 || waiting()"
         (click)="confirm()"
       >
-        Confirmar {{ summary.counts['ok'] }} movimientos
+        Confirmar {{ summary.counts['ok'] }} {{ texts().records }}
       </button>
       <button mat-stroked-button type="button" (click)="discard()">Descartar</button>
     </div>
     <mat-tab-group (selectedIndexChange)="selectTab($event)" mat-stretch-tabs="false">
-      @for (status of tabs; track status) {
-        <mat-tab [label]="tabLabel(status)">
+      @for (tab of texts().tabs; track tab.status) {
+        <mat-tab [label]="tabLabel(tab)">
           <ng-template matTabContent>
-            @if (rowsFor(status); as page) {
+            @if (rowsFor(tab.status); as page) {
               @if (page.rows.length > 0) {
                 <div class="imports__table">
                   <table mat-table [dataSource]="page.rows">
@@ -82,6 +85,22 @@
                       <th mat-header-cell *matHeaderCellDef scope="col">Operación</th>
                       <td mat-cell *matCellDef="let row">{{ row.operation_number ?? '—' }}</td>
                     </ng-container>
+                    <ng-container matColumnDef="document">
+                      <th mat-header-cell *matHeaderCellDef scope="col">Documento</th>
+                      <td mat-cell *matCellDef="let row">{{ row.doc_number }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="customer">
+                      <th mat-header-cell *matHeaderCellDef scope="col">Cliente</th>
+                      <td mat-cell *matCellDef="let row">{{ row.customer_name }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="due">
+                      <th mat-header-cell *matHeaderCellDef scope="col">Vencimiento</th>
+                      <td mat-cell *matCellDef="let row">{{ row.due_on | date: 'dd/MM/yyyy' }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="change">
+                      <th mat-header-cell *matHeaderCellDef scope="col">Detalle</th>
+                      <td mat-cell *matCellDef="let row">{{ change(row) }}</td>
+                    </ng-container>
                     <ng-container matColumnDef="amount">
                       <th mat-header-cell *matHeaderCellDef scope="col" class="imports__amount">
                         Monto
@@ -90,8 +109,8 @@
                         {{ amount(row) }}
                       </td>
                     </ng-container>
-                    <tr mat-header-row *matHeaderRowDef="columnsFor(status)"></tr>
-                    <tr mat-row *matRowDef="let row; columns: columnsFor(status)"></tr>
+                    <tr mat-header-row *matHeaderRowDef="columnsFor(tab.status)"></tr>
+                    <tr mat-row *matRowDef="let row; columns: columnsFor(tab.status)"></tr>
                   </table>
                   <mat-paginator
                     [length]="length()"
@@ -112,18 +131,18 @@
     </mat-tab-group>
   } @else if (summary.file.status === 'confirmed') {
     <p role="status">
-      Importación confirmada el {{ summary.file.confirmed_at | date: 'medium' }}. Sus movimientos ya
-      están disponibles para conciliar.
+      Importación confirmada el {{ summary.file.confirmed_at | date: 'medium' }}.
+      {{ texts().confirmed }}
     </p>
     <div class="imports__actions">
       <button mat-stroked-button type="button" (click)="voidImport()">Anular importación</button>
     </div>
   } @else if (summary.file.status === 'discarded') {
-    <p role="status">Esta vista previa se descartó; no se guardó ningún movimiento.</p>
+    <p role="status">Esta vista previa se descartó; no se guardó {{ texts().nothing }}.</p>
   } @else if (summary.file.status === 'voided') {
     <p role="status">
-      Esta importación se anuló el {{ summary.file.voided_at | date: 'medium' }}; sus movimientos ya
-      no cuentan.
+      Esta importación se anuló el {{ summary.file.voided_at | date: 'medium' }}.
+      {{ texts().voided }}
     </p>
   }
 } @else if (error(); as message) {
