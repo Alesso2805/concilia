@@ -32,6 +32,8 @@ class AuditAction(StrEnum):
     MATCH_APPROVED = "match.approved"
     MATCH_REJECTED = "match.rejected"
     MATCH_REVERTED = "match.reverted"
+    PERIOD_CLOSED = "period.closed"
+    PERIOD_REOPENED = "period.reopened"
 
 
 ALLOWED_METADATA_KEYS = frozenset({"source", "roles", "kind", "fields"})

@@ -50,6 +50,8 @@ export type { OpenReceivableView } from './models/open-receivable-view';
 export type { OrganizationSettingsRequest } from './models/organization-settings-request';
 export type { OrganizationSettingsView } from './models/organization-settings-view';
 export type { OrganizationView } from './models/organization-view';
+export type { PeriodEventRequest } from './models/period-event-request';
+export type { PeriodEventView } from './models/period-event-view';
 export type { PeriodView } from './models/period-view';
 export type { ReceivablePageView } from './models/receivable-page-view';
 export type { ReceivableRowView } from './models/receivable-row-view';

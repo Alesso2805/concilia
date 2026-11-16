@@ -97,7 +97,7 @@ async def test_periods_of_another_organization_are_invisible(
 @pytest.mark.parametrize(
     ("period", "action", "reason", "message"),
     [
-        (JANUARY, "reopen", None, "period_events_check"),
+        (JANUARY, "reopen", "Motivo", "period_not_closed"),
         (date(2027, 1, 15), "close", None, "period_events_period_check"),
         (JANUARY, "approve", None, "period_events_action_check"),
     ],
@@ -115,6 +115,42 @@ async def test_invalid_events_are_rejected(
 
     with pytest.raises(DBAPIError, match=message):
         await _event(app_engine, reviewer, account, period, action, reason)
+
+
+@pytest.mark.parametrize(
+    ("second", "reason", "message"),
+    [
+        ("close", None, "period_already_closed"),
+        ("reopen", None, "period_events_check"),
+    ],
+)
+async def test_closing_and_reopening_alternate(
+    owner_engine: AsyncEngine,
+    app_engine: AsyncEngine,
+    second: str,
+    reason: str | None,
+    message: str,
+) -> None:
+    reviewer = await create_member(owner_engine, NOW, organizations={"Andina": ["reviewer"]})
+    account = await _account(owner_engine, reviewer)
+    await _event(app_engine, reviewer, account, JANUARY, "close")
+
+    with pytest.raises(DBAPIError, match=message):
+        await _event(app_engine, reviewer, account, JANUARY, second, reason)
+
+
+async def test_a_reopened_month_closes_again(
+    owner_engine: AsyncEngine, app_engine: AsyncEngine
+) -> None:
+    reviewer = await create_member(owner_engine, NOW, organizations={"Andina": ["reviewer"]})
+    account = await _account(owner_engine, reviewer)
+    await _event(app_engine, reviewer, account, JANUARY, "close")
+    await _event(app_engine, reviewer, account, JANUARY, "reopen", "Faltó un abono")
+    await _event(app_engine, reviewer, account, JANUARY, "close")
+
+    with pytest.raises(DBAPIError, match="period_not_closed"):
+        await _event(app_engine, reviewer, account, FEBRUARY, "reopen", "Motivo")
+    assert await _closed(app_engine, reviewer, account, [JANUARY]) == {JANUARY}
 
 
 @pytest.mark.parametrize(

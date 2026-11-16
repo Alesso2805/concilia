@@ -1960,6 +1960,106 @@
         "title": "OrganizationView",
         "type": "object"
       },
+      "PeriodEventRequest": {
+        "properties": {
+          "action": {
+            "enum": [
+              "close",
+              "reopen"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "bank_account_id": {
+            "format": "uuid",
+            "title": "Bank Account Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "period": {
+            "format": "date",
+            "title": "Period",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "id",
+          "bank_account_id",
+          "period",
+          "action"
+        ],
+        "title": "PeriodEventRequest",
+        "type": "object"
+      },
+      "PeriodEventView": {
+        "properties": {
+          "action": {
+            "enum": [
+              "close",
+              "reopen"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "bank_account_id": {
+            "format": "uuid",
+            "title": "Bank Account Id",
+            "type": "string"
+          },
+          "decided_at": {
+            "format": "date-time",
+            "title": "Decided At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "period": {
+            "format": "date",
+            "title": "Period",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "id",
+          "bank_account_id",
+          "period",
+          "action",
+          "reason",
+          "decided_at"
+        ],
+        "title": "PeriodEventView",
+        "type": "object"
+      },
       "PeriodView": {
         "properties": {
           "closed": {
@@ -5125,6 +5225,48 @@
         "summary": "Update Organization Settings",
         "tags": [
           "organization"
+        ]
+      }
+    },
+    "/api/app/period-events": {
+      "post": {
+        "description": "Close or reopen the month of an account (`period` is its first day); reviewers only.\n\nClosing needs an open month, not later than the current one, with no proposed or\nconfirmed match; reopening needs a closed month and a reason. Idempotent on the\nclient-generated id. Errors: 403 `role_required`; 404 `not_found`; 409 `already_closed`,\n`not_closed` or `pending_matches`; 422 `invalid_period`, `future_period` or\n`reason_required`.",
+        "operationId": "decide_period",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PeriodEventRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeriodEventView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide Period",
+        "tags": [
+          "periods"
         ]
       }
     },
