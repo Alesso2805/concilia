@@ -26,7 +26,9 @@ async def create_organization(database_url: str, command: Registration, clock: C
         await engine.dispose()
 
 
-def _read_password() -> str:
+def read_password(*, from_stdin: bool) -> str:
+    if from_stdin:
+        return sys.stdin.readline().rstrip("\r\n")
     password = getpass.getpass("Admin password: ")
     if getpass.getpass("Repeat password: ") != password:
         raise SystemExit("passwords do not match")
@@ -40,10 +42,14 @@ def main(argv: list[str] | None = None) -> None:
     create.add_argument("--name", required=True)
     create.add_argument("--email", required=True)
     create.add_argument("--display-name", required=True)
+    create.add_argument(
+        "--password-stdin", action="store_true", help="read the password from standard input"
+    )
     arguments = parser.parse_args(argv)
 
+    password = read_password(from_stdin=arguments.password_stdin)
     command = Registration(
-        uuid7(), arguments.name, arguments.display_name, arguments.email, _read_password()
+        uuid7(), arguments.name, arguments.display_name, arguments.email, password
     )
     organization_id = asyncio.run(
         create_organization(os.environ["CONCILIA_MIGRATIONS_DATABASE_URL"], command, SystemClock())

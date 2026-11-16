@@ -1,4 +1,4 @@
-.PHONY: up down trust-ca create-org lint test openapi
+.PHONY: up down trust-ca create-org lint test e2e openapi
 
 CA_FILE := caddy-local-root.crt
 
@@ -26,6 +26,9 @@ lint:
 test:
 	cd backend && uv run pytest
 	cd web && npm run test:ci
+
+e2e:
+	cd web && npm run e2e
 
 openapi:
 	cd backend && uv run python -m concilia.openapi openapi.json
