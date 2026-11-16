@@ -25,6 +25,7 @@ from concilia.identity.infrastructure.team_sql import SqlTeamTransactions
 from concilia.imports.api.routes import imports_router
 from concilia.imports.application.service import ImportService
 from concilia.imports.infrastructure.jobs import ContentReader
+from concilia.imports.infrastructure.no_matches import NoActiveMatches
 from concilia.imports.infrastructure.sql import SqlImportTransactions
 from concilia.periods.infrastructure.sql import SqlPeriodQueries
 from concilia.shared.infrastructure.clock import SystemClock
@@ -113,7 +114,9 @@ def create_app(settings: ApiSettings | None = None, clock: Clock | None = None) 
         dependencies=authenticated,
     )
     imports = ImportService(
-        SqlImportTransactions(engine, SqlAuditRecorder, SqlPeriodQueries), ContentReader(), clock
+        SqlImportTransactions(engine, SqlAuditRecorder, SqlPeriodQueries, NoActiveMatches),
+        ContentReader(),
+        clock,
     )
     app.include_router(imports_router(imports), dependencies=authenticated)
     app.include_router(jobs_router(engine), dependencies=authenticated)

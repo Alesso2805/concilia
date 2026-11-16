@@ -1,7 +1,7 @@
 import json
 from collections.abc import AsyncIterator, Callable, Mapping
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 from uuid import UUID, uuid7
 
@@ -11,12 +11,14 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from concilia.audit.application.recorder import AuditRecorder
 from concilia.banking.application.profile_config import ProfileKind
-from concilia.imports.application.service import ActiveProfile
+from concilia.imports.application.matches import ActiveMatchesQuery
+from concilia.imports.application.service import ActiveProfile, LiveMovement
 from concilia.imports.domain.model import FileStatus, ImportFile, ImportRow, RowPage, RowStatus
 from concilia.periods.application.queries import PeriodQueries
 from concilia.shared.infrastructure.db import lock_organization, organization_transaction
 from concilia.shared.infrastructure.jobs import enqueue
 from concilia.shared.kernel.ids import IdConflictError
+from concilia.shared.kernel.normalization import extract_doc_refs, normalize_text
 
 FILE_COLUMNS = """id, kind, bank_account_id, import_profile_id, profile_snapshot, filename, sha256,
                   size_bytes, status, error_code, row_count, created_by, created_at, confirmed_at,
@@ -57,11 +59,16 @@ def _file(row: Any) -> ImportFile:
 
 class SqlImportStore:
     def __init__(
-        self, connection: AsyncConnection, audit: AuditRecorder, periods: PeriodQueries
+        self,
+        connection: AsyncConnection,
+        audit: AuditRecorder,
+        periods: PeriodQueries,
+        matches: ActiveMatchesQuery,
     ) -> None:
         self._connection = connection
         self.audit = audit
         self.periods = periods
+        self.matches = matches
 
     async def lock_organization(self, organization_id: UUID) -> None:
         await lock_organization(self._connection, organization_id)
@@ -242,6 +249,85 @@ class SqlImportStore:
         )
         return set(rows.scalars())
 
+    async def ok_rows(self, file_id: UUID) -> list[ImportRow]:
+        rows = await self._connection.execute(
+            text(
+                """SELECT row_number, status, parsed, error_code FROM import_rows
+                   WHERE import_file_id = :file AND status = 'ok' ORDER BY row_number"""
+            ),
+            {"file": file_id},
+        )
+        return [
+            ImportRow(row.row_number, RowStatus(row.status), dict(row.parsed), row.error_code)
+            for row in rows
+        ]
+
+    async def insert_movements(
+        self, organization_id: UUID, file: ImportFile, rows: list[ImportRow], now: datetime
+    ) -> None:
+        if not rows:
+            return
+        await self._connection.execute(
+            text(
+                """INSERT INTO bank_movements (id, organization_id, bank_account_id, import_file_id,
+                                               booked_on, amount_cents, description,
+                                               description_norm, operation_number, fingerprint,
+                                               doc_refs, created_at)
+                   VALUES (:id, :org, :account, :file, :booked_on, :amount,
+                           :description, :description_norm, :operation_number, :fingerprint,
+                           :doc_refs, :now)"""
+            ),
+            [
+                {
+                    "id": uuid7(),
+                    "org": organization_id,
+                    "account": file.bank_account_id,
+                    "file": file.id,
+                    "booked_on": date.fromisoformat(row.parsed["booked_on"]),
+                    "amount": row.parsed["amount_cents"],
+                    "description": row.parsed["description"],
+                    "description_norm": normalize_text(row.parsed["description"]),
+                    "operation_number": row.parsed.get("operation_number"),
+                    "fingerprint": row.parsed["fingerprint"],
+                    "doc_refs": extract_doc_refs(row.parsed["description"]),
+                    "now": now,
+                }
+                for row in rows
+            ],
+        )
+
+    async def live_movements(self, file_id: UUID) -> list[LiveMovement]:
+        rows = await self._connection.execute(
+            text(
+                """SELECT id, booked_on FROM bank_movements
+                   WHERE import_file_id = :file AND voided_at IS NULL"""
+            ),
+            {"file": file_id},
+        )
+        return [LiveMovement(row.id, row.booked_on) for row in rows]
+
+    async def void_movements(self, file_id: UUID, now: datetime) -> None:
+        await self._connection.execute(
+            text(
+                """UPDATE bank_movements SET voided_at = :now
+                   WHERE import_file_id = :file AND voided_at IS NULL"""
+            ),
+            {"file": file_id, "now": now},
+        )
+
+    async def pending_job(self, kind: str, file_id: UUID) -> UUID | None:
+        found: UUID | None = (
+            await self._connection.execute(
+                text(
+                    """SELECT id FROM jobs
+                       WHERE kind = :kind AND dedup_key = :key
+                         AND status IN ('queued', 'running')"""
+                ),
+                {"kind": kind, "key": f"{kind}:{file_id}"},
+            )
+        ).scalar_one_or_none()
+        return found
+
     async def enqueue(
         self,
         organization_id: UUID,
@@ -270,14 +356,19 @@ class SqlImportTransactions:
         engine: AsyncEngine,
         audit_factory: Callable[[AsyncConnection], AuditRecorder],
         periods_factory: Callable[[AsyncConnection], PeriodQueries],
+        matches_factory: Callable[[AsyncConnection], ActiveMatchesQuery],
     ) -> None:
         self._engine = engine
         self._audit_factory = audit_factory
         self._periods_factory = periods_factory
+        self._matches_factory = matches_factory
 
     def store(self, connection: AsyncConnection) -> SqlImportStore:
         return SqlImportStore(
-            connection, self._audit_factory(connection), self._periods_factory(connection)
+            connection,
+            self._audit_factory(connection),
+            self._periods_factory(connection),
+            self._matches_factory(connection),
         )
 
     @asynccontextmanager

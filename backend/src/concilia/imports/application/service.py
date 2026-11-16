@@ -2,7 +2,7 @@ import hashlib
 from collections.abc import Awaitable, Callable, Mapping
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Protocol
 from uuid import UUID, uuid7
 
@@ -12,6 +12,7 @@ from concilia.banking.application.profile_config import (
     StatementConfig,
     parse_config,
 )
+from concilia.imports.application.matches import ActiveMatchesQuery
 from concilia.imports.domain.cells import Cell
 from concilia.imports.domain.model import FileStatus, ImportFile, ImportRow, RowPage, RowStatus
 from concilia.imports.domain.statement import (
@@ -49,6 +50,24 @@ class FileTooLargeError(Exception):
     pass
 
 
+class DuplicateFileError(Exception):
+    pass
+
+
+class ClosedPeriodError(Exception):
+    pass
+
+
+class ActiveMatchesError(Exception):
+    pass
+
+
+@dataclass(frozen=True)
+class LiveMovement:
+    id: UUID
+    booked_on: date
+
+
 @dataclass(frozen=True)
 class ActiveProfile:
     id: UUID
@@ -61,6 +80,7 @@ class ActiveProfile:
 class ImportStore(Protocol):
     audit: AuditRecorder
     periods: PeriodQueries
+    matches: ActiveMatchesQuery
 
     async def lock_organization(self, organization_id: UUID) -> None: ...
 
@@ -91,6 +111,18 @@ class ImportStore(Protocol):
     async def row_counts(self, file_id: UUID) -> dict[RowStatus, int]: ...
 
     async def live_fingerprints(self, bank_account_id: UUID, candidates: list[str]) -> set[str]: ...
+
+    async def ok_rows(self, file_id: UUID) -> list[ImportRow]: ...
+
+    async def insert_movements(
+        self, organization_id: UUID, file: ImportFile, rows: list[ImportRow], now: datetime
+    ) -> None: ...
+
+    async def live_movements(self, file_id: UUID) -> list[LiveMovement]: ...
+
+    async def void_movements(self, file_id: UUID, now: datetime) -> None: ...
+
+    async def pending_job(self, kind: str, file_id: UUID) -> UUID | None: ...
 
     async def enqueue(
         self,
@@ -299,6 +331,84 @@ class ImportService:
                 AuditAction.IMPORT_DISCARDED,
                 file_id,
                 now,
+            )
+
+    async def request_confirm(self, principal: Principal, file_id: UUID) -> UUID:
+        organization_id = _organization(principal)
+        now = self._clock.now()
+        async with self._transactions.organization(organization_id) as store:
+            await store.lock_organization(organization_id)
+            file = await store.find_file(file_id)
+            if file is None:
+                raise NotFoundError
+            if file.status != FileStatus.PREVIEWED:
+                raise WrongStateError
+            if file.bank_account_id is not None and await store.confirmed_with_hash(
+                file.bank_account_id, file.sha256
+            ):
+                raise DuplicateFileError
+            pending = await store.pending_job("confirm_import", file_id)
+            if pending is not None:
+                return pending
+            return await store.enqueue(
+                organization_id,
+                "confirm_import",
+                {"import_file_id": str(file_id)},
+                principal.user_id,
+                now,
+            )
+
+    async def confirm(
+        self, organization_id: UUID, file_id: UUID, store: ImportStore, actor: UUID | None
+    ) -> None:
+        now = self._clock.now()
+        await store.lock_organization(organization_id)
+        file = await store.find_file(file_id)
+        if file is None or file.status != FileStatus.PREVIEWED or file.bank_account_id is None:
+            return
+        if await store.confirmed_with_hash(file.bank_account_id, file.sha256):
+            raise DuplicateFileError
+        rows = await store.ok_rows(file_id)
+        live = await store.live_fingerprints(
+            file.bank_account_id, [str(row.parsed["fingerprint"]) for row in rows]
+        )
+        months = {period_of(date.fromisoformat(row.parsed["booked_on"])) for row in rows}
+        closed = await store.periods.closed_periods(file.bank_account_id, months)
+        fresh = [
+            row
+            for row in rows
+            if row.parsed["fingerprint"] not in live
+            and period_of(date.fromisoformat(row.parsed["booked_on"])) not in closed
+        ]
+        await store.insert_movements(organization_id, file, fresh, now)
+        await store.delete_rows(file_id)
+        await store.update_file(file_id, status=FileStatus.CONFIRMED.value, confirmed_at=now)
+        await _audit(store, organization_id, actor, AuditAction.IMPORT_CONFIRMED, file_id, now)
+
+    async def void(self, principal: Principal, file_id: UUID, reason: str) -> None:
+        organization_id = _organization(principal)
+        now = self._clock.now()
+        async with self._transactions.organization(organization_id) as store:
+            await store.lock_organization(organization_id)
+            file = await store.find_file(file_id)
+            if file is None:
+                raise NotFoundError
+            if file.status == FileStatus.VOIDED:
+                return
+            if file.status != FileStatus.CONFIRMED or file.bank_account_id is None:
+                raise WrongStateError
+            movements = await store.live_movements(file_id)
+            months = {period_of(movement.booked_on) for movement in movements}
+            if await store.periods.closed_periods(file.bank_account_id, months):
+                raise ClosedPeriodError
+            if await store.matches.any_active([movement.id for movement in movements], []):
+                raise ActiveMatchesError
+            await store.void_movements(file_id, now)
+            await store.update_file(
+                file_id, status=FileStatus.VOIDED.value, voided_at=now, void_reason=reason.strip()
+            )
+            await _audit(
+                store, organization_id, principal.user_id, AuditAction.IMPORT_VOIDED, file_id, now
             )
 
     async def parse(

@@ -153,6 +153,20 @@
         "title": "ChooseOrganizationRequest",
         "type": "object"
       },
+      "ConfirmView": {
+        "properties": {
+          "job_id": {
+            "format": "uuid",
+            "title": "Job Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "title": "ConfirmView",
+        "type": "object"
+      },
       "CreateAccountRequest": {
         "properties": {
           "alias": {
@@ -1709,6 +1723,21 @@
         ],
         "title": "ValidationError",
         "type": "object"
+      },
+      "VoidRequest": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "VoidRequest",
+        "type": "object"
       }
     }
   },
@@ -2203,6 +2232,50 @@
         ]
       }
     },
+    "/api/app/imports/{file_id}/confirm": {
+      "post": {
+        "description": "Queue the confirmation of a preview. Analysts only.\n\nRepeating the request while the job is pending returns the same job.",
+        "operationId": "confirm_import",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Import",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
     "/api/app/imports/{file_id}/discard": {
       "post": {
         "description": "Discard a preview without saving any movement. Analysts only.",
@@ -2341,6 +2414,53 @@
           }
         },
         "summary": "List Import Rows",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/app/imports/{file_id}/void": {
+      "post": {
+        "description": "Void a confirmed statement and its movements. Analysts only.\n\nRefused if any movement is in a closed period or in an active match.",
+        "operationId": "void_import",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoidRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Void Import",
         "tags": [
           "imports"
         ]
