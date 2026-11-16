@@ -29,6 +29,36 @@ const FILE = {
   voided_at: null,
 };
 const COUNTS = { ok: 3, error: 1, duplicate: 0, closed_period: 0, conflict: 0 };
+const STATEMENT_ROW = {
+  kind: 'statement',
+  row_number: 2,
+  status: 'ok',
+  booked_on: '2027-01-05',
+  amount_cents: 118_000,
+  description: 'PAGO FACT F001-123',
+  operation_number: null,
+};
+const RECEIVABLE_ROW = {
+  kind: 'receivable',
+  row_number: 2,
+  status: 'ok',
+  action: 'update',
+  conflict: null,
+  customer_name: 'Comercial Andina SAC',
+  customer_tax_id: '20512345678',
+  doc_number: 'F001-123',
+  issued_on: '2027-01-02',
+  due_on: '2027-02-28',
+  amount_cents: 120_000,
+  previous_due_on: '2027-01-31',
+  previous_amount_cents: 118_000,
+};
+const RECEIVABLES_FILE = {
+  ...FILE,
+  kind: 'receivables' as const,
+  bank_account_id: null,
+  profile_name: 'Facturas',
+};
 
 async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
   await fixture.whenStable();
@@ -78,7 +108,8 @@ describe('ImportsPage', () => {
   it('asks for a profile when there is none', async () => {
     await render([]);
 
-    expect(text(fixture)).toContain('Todavía no hay perfiles de extracto.');
+    expect(text(fixture)).toContain('Todavía no hay perfiles de importación.');
+    expect(text(fixture)).toContain('Extracto');
     expect(text(fixture)).toContain('enero.csv');
   });
 
@@ -112,25 +143,14 @@ describe('ImportPage', () => {
   let service: Record<string, ReturnType<typeof vi.fn>>;
   let track: ReturnType<typeof vi.fn>;
 
-  async function render(summary: ImportSummaryView, job?: string): Promise<HTMLElement> {
+  async function render(
+    summary: ImportSummaryView,
+    job?: string,
+    rows: unknown[] = [STATEMENT_ROW],
+  ): Promise<HTMLElement> {
     service = {
       summary: vi.fn(() => Promise.resolve(summary)),
-      rows: vi.fn(() =>
-        Promise.resolve({
-          rows: [
-            {
-              row_number: 2,
-              status: 'ok',
-              booked_on: '2027-01-05',
-              amount_cents: 118_000,
-              description: 'PAGO FACT F001-123',
-              operation_number: null,
-            },
-          ],
-          has_previous: false,
-          has_next: false,
-        }),
-      ),
+      rows: vi.fn(() => Promise.resolve({ rows, has_previous: false, has_next: false })),
       confirm: vi.fn(() => Promise.resolve('j2')),
     };
     track = vi.fn(() => of({ id: 'j2', kind: 'confirm_import', status: 'done', progress: 100 }));
@@ -209,6 +229,31 @@ describe('ImportPage', () => {
     expect(text(fixture)).toContain('Anular importación');
   });
 
+  it('shows a receivables preview with what each row changes', async () => {
+    await render(
+      { file: RECEIVABLES_FILE, counts: { ...COUNTS, ok: 2, conflict: 1 }, duplicate_of: 'f0' },
+      undefined,
+      [RECEIVABLE_ROW],
+    );
+
+    expect(text(fixture)).toContain('Ya confirmaste un archivo idéntico en esta organización.');
+    expect(text(fixture)).toContain('Nuevos o con cambios (2)');
+    expect(text(fixture)).toContain('En conflicto (1)');
+    expect(text(fixture)).toContain('Comercial Andina SAC');
+    expect(text(fixture)).toContain('Antes: vence 31/01/2027, S/ 1,180.00');
+    expect(text(fixture)).toContain('Confirmar 2 cobros');
+  });
+
+  it('says what a voided receivables import did', async () => {
+    await render({
+      file: { ...RECEIVABLES_FILE, status: 'voided', voided_at: '2027-02-03T16:00:00Z' },
+      counts: COUNTS,
+      duplicate_of: null,
+    });
+
+    expect(text(fixture)).toContain('Los cobros que creó quedaron anulados.');
+  });
+
   it('reports a failed confirmation', async () => {
     const element = await render({ file: FILE, counts: COUNTS, duplicate_of: null });
     service['confirm'].mockImplementation(() =>
@@ -221,7 +266,7 @@ describe('ImportPage', () => {
     await settle(fixture);
 
     expect(element.querySelector('[role="alert"]')?.textContent).toContain(
-      'Ya confirmaste un archivo idéntico en esta cuenta.',
+      'Ya confirmaste un archivo idéntico.',
     );
   });
 });

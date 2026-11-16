@@ -21,9 +21,13 @@ import { ImportFileView } from '../../api/models/import-file-view';
 import { KeysetPaginatorIntl, keysetLength } from '../../core/paging/keyset';
 import { BankingService, ProfileView } from '../admin/banking.service';
 import { ImportsService, importErrorMessage } from './imports.service';
-import { STATUS_LABELS } from './labels';
+import { ImportKind, KIND_TEXTS, STATUS_LABELS } from './labels';
 
 const PAGE_SIZE = 10;
+const GROUP_LABELS: Record<ImportKind, string> = {
+  bank_statement: 'Extractos bancarios',
+  receivables: 'Cobros esperados',
+};
 
 @Component({
   selector: 'app-imports-page',
@@ -49,6 +53,14 @@ export class ImportsPage implements OnInit {
   private readonly router = inject(Router);
 
   protected readonly profiles = signal<ProfileView[]>([]);
+  protected readonly groups = computed(() =>
+    (['bank_statement', 'receivables'] as const)
+      .map((kind) => ({
+        label: GROUP_LABELS[kind],
+        profiles: this.profiles().filter((profile) => profile.kind === kind),
+      }))
+      .filter((group) => group.profiles.length > 0),
+  );
   protected readonly profile = new FormControl('', {
     nonNullable: true,
     validators: Validators.required,
@@ -63,14 +75,12 @@ export class ImportsPage implements OnInit {
   protected readonly length = computed(() =>
     keysetLength(this.pageIndex(), PAGE_SIZE, this.page()?.has_next ?? false),
   );
-  protected readonly columns = ['filename', 'profile', 'status', 'created'];
+  protected readonly columns = ['filename', 'kind', 'profile', 'status', 'created'];
 
   async ngOnInit(): Promise<void> {
     try {
       const profiles = await this.banking.profiles();
-      this.profiles.set(
-        profiles.filter((profile) => profile.kind === 'bank_statement' && !profile.archived_at),
-      );
+      this.profiles.set(profiles.filter((profile) => !profile.archived_at));
     } catch (error) {
       this.uploadError.set(importErrorMessage(error));
     }
@@ -79,6 +89,10 @@ export class ImportsPage implements OnInit {
 
   protected statusOf(file: ImportFileView): string {
     return STATUS_LABELS[file.status];
+  }
+
+  protected kindOf(file: ImportFileView): string {
+    return KIND_TEXTS[file.kind].label;
   }
 
   protected choose(event: Event): void {
@@ -91,7 +105,7 @@ export class ImportsPage implements OnInit {
     const file = this.file();
     if (this.profile.invalid || !file) {
       this.profile.markAsTouched();
-      this.uploadError.set(file ? null : 'Elige el archivo del extracto.');
+      this.uploadError.set(file ? null : 'Elige el archivo.');
       return;
     }
     this.uploading.set(true);

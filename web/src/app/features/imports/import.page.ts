@@ -30,6 +30,7 @@ import {
 
 import { ErrorRowView } from '../../api/models/error-row-view';
 import { ImportSummaryView } from '../../api/models/import-summary-view';
+import { ReceivableRowView } from '../../api/models/receivable-row-view';
 import { RowPageView } from '../../api/models/row-page-view';
 import { StatementRowView } from '../../api/models/statement-row-view';
 import { formatPen } from '../../core/format/amounts';
@@ -44,11 +45,10 @@ import {
   fileErrorMessage,
   importErrorMessage,
 } from './imports.service';
-import { STATUS_LABELS, TAB_LABELS } from './labels';
-import { VoidDialog } from './void.dialog';
+import { KIND_TEXTS, KindTexts, PreviewTab, STATUS_LABELS } from './labels';
+import { VoidData, VoidDialog } from './void.dialog';
 
 const PAGE_SIZE = 25;
-const TABS: readonly PreviewStatus[] = ['ok', 'error', 'duplicate', 'closed_period'];
 const PROCESSING = new Set(['uploaded', 'parsing']);
 
 @Component({
@@ -84,7 +84,9 @@ export class ImportPage implements OnInit {
   protected readonly rows = signal<{ status: PreviewStatus; page: RowPageView } | null>(null);
   protected readonly pageIndex = signal(0);
   protected readonly pageSize = PAGE_SIZE;
-  protected readonly tabs = TABS;
+  protected readonly texts = computed<KindTexts>(
+    () => KIND_TEXTS[this.summary()?.file.kind ?? 'bank_statement'],
+  );
   protected readonly length = computed(() =>
     keysetLength(this.pageIndex(), PAGE_SIZE, this.rows()?.page.has_next ?? false),
   );
@@ -108,16 +110,30 @@ export class ImportPage implements OnInit {
     return STATUS_LABELS[summary.file.status];
   }
 
-  protected tabLabel(status: PreviewStatus): string {
-    return `${TAB_LABELS[status]} (${this.summary()?.counts[status] ?? 0})`;
+  protected tabLabel(tab: PreviewTab): string {
+    return `${tab.label} (${this.summary()?.counts[tab.status] ?? 0})`;
   }
 
   protected fileError(summary: ImportSummaryView): string {
     return fileErrorMessage(summary.file.error_code);
   }
 
-  protected amount(row: StatementRowView): string {
+  protected amount(row: StatementRowView | ReceivableRowView): string {
     return formatPen(row.amount_cents);
+  }
+
+  protected change(row: ReceivableRowView): string {
+    if (row.conflict === 'cancelled') {
+      return 'El cobro está anulado';
+    }
+    if (row.conflict === 'active_matches') {
+      return 'El cobro está en una conciliación';
+    }
+    if (row.action === 'update' && row.previous_due_on && row.previous_amount_cents !== null) {
+      const due = row.previous_due_on.split('-').reverse().join('/');
+      return `Antes: vence ${due}, ${formatPen(row.previous_amount_cents)}`;
+    }
+    return row.action === 'unchanged' ? 'Sin cambios' : 'Nuevo';
   }
 
   protected reason(row: ErrorRowView): string {
@@ -130,13 +146,16 @@ export class ImportPage implements OnInit {
   }
 
   protected columnsFor(status: PreviewStatus): string[] {
-    return status === 'error'
-      ? ['row', 'reason', 'cells']
+    if (status === 'error') {
+      return ['row', 'reason', 'cells'];
+    }
+    return this.summary()?.file.kind === 'receivables'
+      ? ['row', 'document', 'customer', 'due', 'amount', 'change']
       : ['row', 'date', 'description', 'operation', 'amount'];
   }
 
   protected async selectTab(index: number): Promise<void> {
-    this.tab.set(TABS[index]);
+    this.tab.set(this.texts().tabs[index].status);
     this.pageIndex.set(0);
     this.rows.set(null);
     await this.loadRows({});
@@ -163,7 +182,7 @@ export class ImportPage implements OnInit {
   protected async discard(): Promise<void> {
     const data: ConfirmData = {
       title: '¿Descartar esta vista previa?',
-      message: 'No se guardará ningún movimiento. Podrás volver a subir el archivo.',
+      message: `No se guardará ${this.texts().nothing}. Podrás volver a subir el archivo.`,
       action: 'Descartar',
       run: () => this.imports.discard(this.id()),
       describeError: importErrorMessage,
@@ -174,8 +193,9 @@ export class ImportPage implements OnInit {
   }
 
   protected async voidImport(): Promise<void> {
+    const data: VoidData = { fileId: this.id(), effect: this.texts().voidEffect };
     await this.afterDialog(
-      this.dialog.open<VoidDialog, string, boolean>(VoidDialog, { data: this.id() }).afterClosed(),
+      this.dialog.open<VoidDialog, VoidData, boolean>(VoidDialog, { data }).afterClosed(),
     );
   }
 

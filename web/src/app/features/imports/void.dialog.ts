@@ -7,6 +7,11 @@ import { MatInputModule } from '@angular/material/input';
 
 import { ImportsService, importErrorMessage } from './imports.service';
 
+export interface VoidData {
+  fileId: string;
+  effect: string;
+}
+
 @Component({
   selector: 'app-void-dialog',
   imports: [
@@ -20,10 +25,7 @@ import { ImportsService, importErrorMessage } from './imports.service';
     <h2 mat-dialog-title>¿Anular esta importación?</h2>
     <form [formGroup]="form" (ngSubmit)="confirm()" novalidate>
       <mat-dialog-content class="void">
-        <p>
-          Sus movimientos dejarán de contar y podrás volver a importar el archivo. Queda registrado
-          en la auditoría.
-        </p>
+        <p>{{ data.effect }} Queda registrado en la auditoría.</p>
         <mat-form-field appearance="outline">
           <mat-label>Motivo</mat-label>
           <textarea matInput formControlName="reason" maxlength="500" required></textarea>
@@ -55,7 +57,7 @@ import { ImportsService, importErrorMessage } from './imports.service';
 export class VoidDialog {
   private readonly imports = inject(ImportsService);
   private readonly dialog = inject<MatDialogRef<VoidDialog, boolean>>(MatDialogRef);
-  private readonly fileId = inject<string>(MAT_DIALOG_DATA);
+  protected readonly data = inject<VoidData>(MAT_DIALOG_DATA);
 
   protected readonly form = new FormGroup({
     reason: new FormControl('', {
@@ -75,7 +77,7 @@ export class VoidDialog {
     this.running.set(true);
     this.error.set(null);
     try {
-      await this.imports.void(this.fileId, reason);
+      await this.imports.void(this.data.fileId, reason);
       this.dialog.close(true);
     } catch (error) {
       this.error.set(importErrorMessage(error));
