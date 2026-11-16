@@ -13,6 +13,7 @@ A rule changes only together with its check, its meta-test and, when the archite
 | AR-05 | Only the clock implementation reads the wall clock, in Python or SQL | AST test |
 | AR-06 | Money and scores are never floats | AST test |
 | AR-07 | The API process never runs background work | AST test |
+| AR-08 | Logs carry only allowlisted fields and literal event names | AST test and logging tests |
 
 Checks live in `backend/.importlinter` (contracts) and `backend/tests/architecture/` (AST tests and every meta-test). The import-linter contracts run in CI as `lint-imports`, and their meta-tests copy the package to a temporary directory, add one violating module, and assert that the named contract breaks.
 
@@ -72,8 +73,23 @@ Nothing imports FastAPI's or Starlette's `BackgroundTasks` or `BackgroundTask`. 
 
 **Check:** `no_background_tasks`.
 
+## AR-08 Logs without customer data
+
+All logging goes through structlog, configured in `concilia.shared.infrastructure.logging`, which is the only module that imports the standard `logging` package. That configuration also routes third-party loggers (Uvicorn, SQLAlchemy) through the same processors. Two processors run on every record:
+
+- Keep only the fields in `ALLOWED_FIELDS` (identifiers, codes, counts, timings). Every other field is dropped, and only its name is recorded in `dropped_fields`.
+- Replace any exception with its type and its frames (`file:line in function`). Exception messages, stack text and local values are never written.
+
+Event names are string literals. A call on a logger (`log.info(...)`, `logger.bind(...).error(...)`) must not use an f-string, a variable, or formatting arguments as its event, because the event text bypasses the field allowlist.
+
+**Why:** project rule 12. Logs and errors never contain customer names, descriptions, references, amounts, prompts or AI responses.
+
+**Check:**
+
+- `log_events_are_literals` enforces literal events and the single `logging` import.
+- `tests/unit/shared/test_logging.py` covers dropped fields, exceptions and third-party loggers, plus a Hypothesis property: no field outside the allowlist ever reaches the output.
+
 ## Rules still to come
 
-- Logging with an allowlist of fields (CN-02).
 - No zone.js in the frontend (CN-02).
 - Database catalog rules (CN-03): forced RLS on every organization table, the closed list of tables without RLS, the per-role policies of `jobs` (the single exception to the uniform policy, [ADR-0002](adr/0002-multi-tenancy-with-rls.md)), `security_invoker` views, and grants that match `db_grants.yaml` exactly.

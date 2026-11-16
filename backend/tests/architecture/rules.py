@@ -32,6 +32,9 @@ SQL_CLOCK = re.compile(
 MONEY_NAME = re.compile(
     r"cents|amount|balance|applied|difference|tolerance|detraction|score", re.IGNORECASE
 )
+LOGGING_SETUP = "concilia.shared.infrastructure.logging"
+LOG_METHODS = frozenset({"debug", "info", "warning", "warn", "error", "exception", "critical"})
+LOGGER_FACTORIES = frozenset({"get_logger", "getLogger", "bind", "new"})
 BACKGROUND_TASK_NAMES = frozenset({"BackgroundTasks", "BackgroundTask"})
 TASK_SPAWNERS = frozenset({"create_task", "ensure_future", "TaskGroup"})
 
@@ -144,6 +147,40 @@ def no_float_money(files: Iterable[SourceFile]) -> list[str]:
             for name, annotation in _annotated_names(node):
                 if MONEY_NAME.search(name) and _mentions_float(annotation):
                     violations.append(f"{source.module}:{line} types {name} as float")
+    return violations
+
+
+def _is_logger(node: ast.expr) -> bool:
+    if isinstance(node, ast.Name):
+        return "log" in node.id.lower()
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute | ast.Name):
+        name = node.func.attr if isinstance(node.func, ast.Attribute) else node.func.id
+        return name in LOGGER_FACTORIES
+    return False
+
+
+def log_events_are_literals(files: Iterable[SourceFile]) -> list[str]:
+    violations = []
+    for source in files:
+        if source.module != LOGGING_SETUP:
+            violations += [
+                f"{source.module}:{imported.line} imports {imported.module}"
+                for imported in imports_of(source)
+                if imported.module.split(".")[0] == "logging"
+            ]
+        for node in ast.walk(source.tree):
+            if not (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr in LOG_METHODS
+                and _is_logger(node.func.value)
+            ):
+                continue
+            first = node.args[0] if node.args else None
+            if not (isinstance(first, ast.Constant) and isinstance(first.value, str)):
+                violations.append(f"{source.module}:{node.lineno} logs a non-literal event")
+            elif len(node.args) > 1:
+                violations.append(f"{source.module}:{node.lineno} formats the event with args")
     return violations
 
 
