@@ -53,6 +53,8 @@ export type { ListMatches$Params as ListMatches$Params } from './fn/inbox/list-m
 export { listMatches as listMatches } from './fn/inbox/list-matches';
 export type { GetMatch$Params as GetMatch$Params } from './fn/inbox/get-match';
 export { getMatch as getMatch } from './fn/inbox/get-match';
+export type { DecideMatch$Params as DecideMatch$Params } from './fn/inbox/decide-match';
+export { decideMatch as decideMatch } from './fn/inbox/decide-match';
 export type { CreateInvitation$Params as CreateInvitation$Params } from './fn/team/create-invitation';
 export { createInvitation as createInvitation } from './fn/team/create-invitation';
 export type { AcceptInvitation$Params as AcceptInvitation$Params } from './fn/team/accept-invitation';

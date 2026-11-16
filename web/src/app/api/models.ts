@@ -8,6 +8,8 @@ export type { BankAccountView } from './models/bank-account-view';
 export type { BodyUploadImport } from './models/body-upload-import';
 export type { CancelRequest } from './models/cancel-request';
 export type { ChooseOrganizationRequest } from './models/choose-organization-request';
+export type { ConciliaMatchingApiDecisionsDecisionView } from './models/concilia-matching-api-decisions-decision-view';
+export type { ConciliaMatchingApiInboxDecisionView } from './models/concilia-matching-api-inbox-decision-view';
 export type { ConfirmView } from './models/confirm-view';
 export type { CountsView } from './models/counts-view';
 export type { CreateAccountRequest } from './models/create-account-request';
@@ -17,7 +19,7 @@ export type { CreateStatementProfileRequest } from './models/create-statement-pr
 export type { CreditPageView } from './models/credit-page-view';
 export type { CreditView } from './models/credit-view';
 export type { DateFormat } from './models/date-format';
-export type { DecisionView } from './models/decision-view';
+export type { DecisionRequestBody } from './models/decision-request-body';
 export type { DemoView } from './models/demo-view';
 export type { EngineRunRequest } from './models/engine-run-request';
 export type { EngineRunView } from './models/engine-run-view';

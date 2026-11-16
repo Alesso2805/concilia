@@ -26,6 +26,11 @@ class AuditAction(StrEnum):
     RECEIVABLE_CANCELLED = "receivable.cancelled"
     ENGINE_RUN_REQUESTED = "engine_run.requested"
     DEMO_ROLE_SWITCHED = "demo.role_switched"
+    MATCH_CONFIRMED = "match.confirmed"
+    MATCH_DISCARDED = "match.discarded"
+    MATCH_APPROVED = "match.approved"
+    MATCH_REJECTED = "match.rejected"
+    MATCH_REVERTED = "match.reverted"
 
 
 ALLOWED_METADATA_KEYS = frozenset({"source", "roles", "kind", "fields"})

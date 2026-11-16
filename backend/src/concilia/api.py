@@ -36,10 +36,13 @@ from concilia.imports.api.routes import imports_router
 from concilia.imports.application.service import ImportService
 from concilia.imports.infrastructure.jobs import ContentReader
 from concilia.imports.infrastructure.sql import SqlImportTransactions
+from concilia.matching.api.decisions import decisions_router
 from concilia.matching.api.inbox import inbox_router
 from concilia.matching.api.routes import engine_runs_router
+from concilia.matching.application.decisions import MatchDecisionService
 from concilia.matching.application.inbox import InboxService
 from concilia.matching.application.runs import EngineRunService
+from concilia.matching.infrastructure.decisions_sql import SqlDecisionTransactions
 from concilia.matching.infrastructure.inbox_sql import SqlInboxTransactions
 from concilia.matching.infrastructure.queries import SqlMatchQueries
 from concilia.matching.infrastructure.runs_sql import SqlRunTransactions
@@ -166,6 +169,8 @@ def create_app(settings: ApiSettings | None = None, clock: Clock | None = None) 
     )
     inbox = InboxService(SqlInboxTransactions(engine))
     app.include_router(inbox_router(inbox), dependencies=authenticated)
+    decisions = MatchDecisionService(SqlDecisionTransactions(engine, SqlAuditRecorder), clock)
+    app.include_router(decisions_router(decisions), dependencies=authenticated)
     app.include_router(
         demo_app_router(
             sessions,
