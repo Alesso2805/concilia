@@ -58,7 +58,7 @@ export class SessionStore {
     this.restoring = Promise.resolve(null);
   }
 
-  private refresh(): Promise<SessionView | null> {
+  refresh(): Promise<SessionView | null> {
     this.restoring = null;
     return this.restore();
   }

@@ -9,6 +9,11 @@ export const routes: Routes = [
   { path: 'iniciar-sesion', loadChildren: () => import('./features/auth/auth.routes') },
   { path: 'error', component: ErrorPage, title: 'Error · Concilia' },
   {
+    path: 'invitacion',
+    loadComponent: () => import('./features/auth/invitation.page').then((m) => m.InvitationPage),
+    title: 'Invitación · Concilia',
+  },
+  {
     path: '',
     canMatch: [organizationGuard],
     loadComponent: () => import('./core/layout/shell.component').then((m) => m.ShellComponent),
