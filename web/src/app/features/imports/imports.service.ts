@@ -4,16 +4,19 @@ import { firstValueFrom } from 'rxjs';
 
 import { Api } from '../../api/api';
 import {
+  cancelReceivable,
   confirmImport,
   discardImport,
   getImport,
   listImportRows,
   listImports,
+  listReceivables,
   uploadImport,
   voidImport,
 } from '../../api/functions';
 import { FilePageView } from '../../api/models/file-page-view';
 import { ImportSummaryView } from '../../api/models/import-summary-view';
+import { ReceivablePageView } from '../../api/models/receivable-page-view';
 import { RowPageView } from '../../api/models/row-page-view';
 import { UploadView } from '../../api/models/upload-view';
 import { newId } from '../../core/ids';
@@ -37,6 +40,7 @@ const FILE_MESSAGES: Record<string, string> = {
 
 const ACTION_MESSAGES: Record<string, string> = {
   active_matches: 'No se puede anular: hay movimientos o cobros en conciliaciones en curso.',
+  invalid_document: 'Escribe un número de documento como F001-123.',
   closed_period: 'No se puede anular: hay movimientos en un período cerrado.',
   duplicate_file: 'Ya confirmaste un archivo idéntico.',
   not_found: 'Esta importación ya no existe.',
@@ -123,5 +127,20 @@ export class ImportsService {
 
   void(fileId: string, reason: string): Promise<void> {
     return firstValueFrom(this.api.invoke(voidImport, { file_id: fileId, body: { reason } }));
+  }
+
+  receivables(query: {
+    cancelled: boolean;
+    document?: string | null;
+    after?: string | null;
+    before?: string | null;
+  }): Promise<ReceivablePageView> {
+    return firstValueFrom(this.api.invoke(listReceivables, { limit: 20, ...query }));
+  }
+
+  cancelReceivable(receivableId: string, reason: string): Promise<void> {
+    return firstValueFrom(
+      this.api.invoke(cancelReceivable, { receivable_id: receivableId, body: { reason } }),
+    );
   }
 }

@@ -150,4 +150,23 @@ test('an analyst imports receivables and previews what a second file changes', a
   await page.getByRole('button', { name: 'Descartar' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Descartar' }).click();
   await expect(page.getByText('no se guardó ningún cobro')).toBeVisible();
+
+  await page
+    .getByRole('navigation', { name: 'Principal' })
+    .getByRole('link', { name: 'Cobros' })
+    .click();
+  await expect(page.getByRole('heading', { name: 'Cobros esperados', level: 1 })).toBeVisible();
+  await page.getByLabel('Número de documento').fill(second);
+  await page.getByRole('button', { name: 'Buscar' }).click();
+  await expect(page.getByRole('table')).toContainText('Gloria SA');
+  await expect(page.getByRole('table')).not.toContainText('Comercial Andina SAC');
+  await expectAccessible(page);
+  await page.getByRole('button', { name: `Anular el cobro ${second}` }).click();
+  await page.getByRole('dialog').getByLabel('Motivo').fill('Nota de crédito');
+  await expectAccessible(page);
+  await page.getByRole('dialog').getByRole('button', { name: 'Anular cobro' }).click();
+  await expect(page.getByText('No hay cobros con ese número de documento')).toBeVisible();
+  await page.getByRole('tab', { name: 'Anulados' }).click();
+  await expect(page.getByRole('table')).toContainText('Nota de crédito');
+  await expectAccessible(page);
 });

@@ -20,6 +20,7 @@ import logout from '@material-symbols/svg-400/outlined/logout.svg';
 import menu from '@material-symbols/svg-400/outlined/menu.svg';
 import personAdd from '@material-symbols/svg-400/outlined/person_add.svg';
 import personRemove from '@material-symbols/svg-400/outlined/person_remove.svg';
+import receiptLong from '@material-symbols/svg-400/outlined/receipt_long.svg';
 import searchOff from '@material-symbols/svg-400/outlined/search_off.svg';
 import settings from '@material-symbols/svg-400/outlined/settings.svg';
 import swapHoriz from '@material-symbols/svg-400/outlined/swap_horiz.svg';
@@ -46,6 +47,7 @@ const ICONS = {
   menu,
   person_add: personAdd,
   person_remove: personRemove,
+  receipt_long: receiptLong,
   search_off: searchOff,
   settings,
   swap_horiz: swapHoriz,

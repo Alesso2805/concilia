@@ -46,7 +46,7 @@ import {
   importErrorMessage,
 } from './imports.service';
 import { KIND_TEXTS, KindTexts, PreviewTab, STATUS_LABELS } from './labels';
-import { VoidData, VoidDialog } from './void.dialog';
+import { ReasonData, ReasonDialog } from './reason.dialog';
 
 const PAGE_SIZE = 25;
 const PROCESSING = new Set(['uploaded', 'parsing']);
@@ -193,9 +193,14 @@ export class ImportPage implements OnInit {
   }
 
   protected async voidImport(): Promise<void> {
-    const data: VoidData = { fileId: this.id(), effect: this.texts().voidEffect };
+    const data: ReasonData = {
+      title: '¿Anular esta importación?',
+      message: this.texts().voidEffect,
+      action: 'Anular importación',
+      run: (reason) => this.imports.void(this.id(), reason),
+    };
     await this.afterDialog(
-      this.dialog.open<VoidDialog, VoidData, boolean>(VoidDialog, { data }).afterClosed(),
+      this.dialog.open<ReasonDialog, ReasonData, boolean>(ReasonDialog, { data }).afterClosed(),
     );
   }
 
