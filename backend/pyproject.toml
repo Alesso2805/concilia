@@ -78,6 +78,7 @@ python_version = "3.14"
 files = ["src", "tests", "migrations/env.py"]
 mypy_path = ["src", "."]
 explicit_package_bases = true
+plugins = ["pydantic.mypy"]
 
 [tool.alembic]
 script_location = "%(here)s/migrations"
