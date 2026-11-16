@@ -46,6 +46,7 @@ services:
       CONCILIA_RATE_LIMIT_SECRET: ${CONCILIA_RATE_LIMIT_SECRET:-local-rate-limit-secret}
       CONCILIA_REGISTRATION_ENABLED: ${CONCILIA_REGISTRATION_ENABLED:-false}
       CONCILIA_DEMO_TTL_HOURS: ${CONCILIA_DEMO_TTL_HOURS:-0}
+      FORWARDED_ALLOW_IPS: 10.89.47.10
       CONCILIA_AI_ENABLED: ${CONCILIA_AI_ENABLED:-true}
       CONCILIA_AI_MODEL: ${CONCILIA_AI_MODEL:-gpt-6-luna}
       CONCILIA_AI_GLOBAL_DAILY_LIMIT: ${CONCILIA_AI_GLOBAL_DAILY_LIMIT:-200}
@@ -77,6 +78,15 @@ services:
       - caddy_config:/config
     depends_on:
       - api
+    networks:
+      default:
+        ipv4_address: 10.89.47.10
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 10.89.47.0/24
 
 volumes:
   db_data:
