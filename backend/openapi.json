@@ -59,6 +59,37 @@
         "title": "AccountRequest",
         "type": "object"
       },
+      "AgeBucket": {
+        "enum": [
+          "0-7",
+          "8-30",
+          "31+"
+        ],
+        "title": "AgeBucket",
+        "type": "string"
+      },
+      "AgeView": {
+        "properties": {
+          "bucket": {
+            "$ref": "#/components/schemas/AgeBucket"
+          },
+          "cents": {
+            "title": "Cents",
+            "type": "integer"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "bucket",
+          "count",
+          "cents"
+        ],
+        "title": "AgeView",
+        "type": "object"
+      },
       "ApplicationBody": {
         "properties": {
           "applied_cents": {
@@ -658,6 +689,30 @@
         "title": "CreditPageView",
         "type": "object"
       },
+      "CreditTotalsView": {
+        "properties": {
+          "approved": {
+            "$ref": "#/components/schemas/TallyView"
+          },
+          "confirmed": {
+            "$ref": "#/components/schemas/TallyView"
+          },
+          "free": {
+            "$ref": "#/components/schemas/TallyView"
+          },
+          "proposed": {
+            "$ref": "#/components/schemas/TallyView"
+          }
+        },
+        "required": [
+          "free",
+          "proposed",
+          "confirmed",
+          "approved"
+        ],
+        "title": "CreditTotalsView",
+        "type": "object"
+      },
       "CreditView": {
         "properties": {
           "amount_cents": {
@@ -698,6 +753,51 @@
           "amount_cents"
         ],
         "title": "CreditView",
+        "type": "object"
+      },
+      "DashboardView": {
+        "properties": {
+          "closed": {
+            "title": "Closed",
+            "type": "boolean"
+          },
+          "credits": {
+            "$ref": "#/components/schemas/CreditTotalsView"
+          },
+          "differences": {
+            "items": {
+              "$ref": "#/components/schemas/DifferenceView"
+            },
+            "title": "Differences",
+            "type": "array"
+          },
+          "pending": {
+            "items": {
+              "$ref": "#/components/schemas/AgeView"
+            },
+            "title": "Pending",
+            "type": "array"
+          },
+          "period": {
+            "format": "date",
+            "title": "Period",
+            "type": "string"
+          },
+          "reference_date": {
+            "format": "date",
+            "title": "Reference Date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "period",
+          "reference_date",
+          "closed",
+          "credits",
+          "pending",
+          "differences"
+        ],
+        "title": "DashboardView",
         "type": "object"
       },
       "DateFormat": {
@@ -864,6 +964,39 @@
           "organization_id"
         ],
         "title": "DemoView",
+        "type": "object"
+      },
+      "DifferenceReason": {
+        "enum": [
+          "commission",
+          "detraction",
+          "rounding",
+          "overpayment",
+          "other"
+        ],
+        "title": "DifferenceReason",
+        "type": "string"
+      },
+      "DifferenceView": {
+        "properties": {
+          "cents": {
+            "title": "Cents",
+            "type": "integer"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/DifferenceReason"
+          }
+        },
+        "required": [
+          "reason",
+          "count",
+          "cents"
+        ],
+        "title": "DifferenceView",
         "type": "object"
       },
       "EngineRunRequest": {
@@ -3401,6 +3534,24 @@
         "title": "SwitchedView",
         "type": "object"
       },
+      "TallyView": {
+        "properties": {
+          "cents": {
+            "title": "Cents",
+            "type": "integer"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "count",
+          "cents"
+        ],
+        "title": "TallyView",
+        "type": "object"
+      },
       "TeamView": {
         "properties": {
           "invitations": {
@@ -5811,6 +5962,60 @@
         "summary": "Cancel Receivable",
         "tags": [
           "receivables"
+        ]
+      }
+    },
+    "/api/app/reports/dashboard": {
+      "get": {
+        "description": "The state of one account and month (`period` is its first day), for every role.\n\n`credits`: the month's credits by status (reconciled means approved). `pending`: credits\nnot yet approved, of this and earlier months, booked up to `reference_date` (the last\nday of the month, or today in the current month), by days before it. `differences`:\nconfirmed or approved matches of the month with a difference, by reason; `cents` is\ncredits minus applied. 403 `role_required`; 404 `not_found`; 422 `invalid_period`.",
+        "operationId": "get_dashboard",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "bank_account_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Bank Account Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "period",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "Period",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Dashboard",
+        "tags": [
+          "reports"
         ]
       }
     },
