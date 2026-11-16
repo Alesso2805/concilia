@@ -37,6 +37,16 @@ export type { ListImportRows$Params as ListImportRows$Params } from './fn/import
 export { listImportRows as listImportRows } from './fn/imports/list-import-rows';
 export type { VoidImport$Params as VoidImport$Params } from './fn/imports/void-import';
 export { voidImport as voidImport } from './fn/imports/void-import';
+export type { GetInboxCounts$Params as GetInboxCounts$Params } from './fn/inbox/get-inbox-counts';
+export { getInboxCounts as getInboxCounts } from './fn/inbox/get-inbox-counts';
+export type { ListFreeCredits$Params as ListFreeCredits$Params } from './fn/inbox/list-free-credits';
+export { listFreeCredits as listFreeCredits } from './fn/inbox/list-free-credits';
+export type { ListInboxPeriods$Params as ListInboxPeriods$Params } from './fn/inbox/list-inbox-periods';
+export { listInboxPeriods as listInboxPeriods } from './fn/inbox/list-inbox-periods';
+export type { ListMatches$Params as ListMatches$Params } from './fn/inbox/list-matches';
+export { listMatches as listMatches } from './fn/inbox/list-matches';
+export type { GetMatch$Params as GetMatch$Params } from './fn/inbox/get-match';
+export { getMatch as getMatch } from './fn/inbox/get-match';
 export type { CreateInvitation$Params as CreateInvitation$Params } from './fn/team/create-invitation';
 export { createInvitation as createInvitation } from './fn/team/create-invitation';
 export type { AcceptInvitation$Params as AcceptInvitation$Params } from './fn/team/accept-invitation';
