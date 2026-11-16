@@ -139,6 +139,21 @@
         "title": "Body_upload_import",
         "type": "object"
       },
+      "CancelRequest": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "CancelRequest",
+        "type": "object"
+      },
       "ChooseOrganizationRequest": {
         "properties": {
           "organization_id": {
@@ -945,6 +960,56 @@
         "title": "OrganizationView",
         "type": "object"
       },
+      "ReceivablePageView": {
+        "properties": {
+          "has_next": {
+            "title": "Has Next",
+            "type": "boolean"
+          },
+          "has_previous": {
+            "title": "Has Previous",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "previous_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Cursor"
+          },
+          "receivables": {
+            "items": {
+              "$ref": "#/components/schemas/ReceivableView"
+            },
+            "title": "Receivables",
+            "type": "array"
+          }
+        },
+        "required": [
+          "receivables",
+          "has_previous",
+          "has_next",
+          "previous_cursor",
+          "next_cursor"
+        ],
+        "title": "ReceivablePageView",
+        "type": "object"
+      },
       "ReceivableRowView": {
         "properties": {
           "action": {
@@ -1069,6 +1134,90 @@
           "previous_amount_cents"
         ],
         "title": "ReceivableRowView",
+        "type": "object"
+      },
+      "ReceivableView": {
+        "properties": {
+          "amount_cents": {
+            "title": "Amount Cents",
+            "type": "integer"
+          },
+          "cancel_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancel Reason"
+          },
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "customer_name": {
+            "title": "Customer Name",
+            "type": "string"
+          },
+          "customer_tax_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Tax Id"
+          },
+          "doc_number": {
+            "title": "Doc Number",
+            "type": "string"
+          },
+          "due_on": {
+            "format": "date",
+            "title": "Due On",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "import_file_id": {
+            "format": "uuid",
+            "title": "Import File Id",
+            "type": "string"
+          },
+          "issued_on": {
+            "format": "date",
+            "title": "Issued On",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "import_file_id",
+          "customer_name",
+          "customer_tax_id",
+          "doc_number",
+          "issued_on",
+          "due_on",
+          "amount_cents",
+          "cancelled_at",
+          "cancel_reason"
+        ],
+        "title": "ReceivableView",
         "type": "object"
       },
       "ReceivablesColumns": {
@@ -2960,6 +3109,141 @@
         "summary": "Update Organization Settings",
         "tags": [
           "organization"
+        ]
+      }
+    },
+    "/api/app/receivables": {
+      "get": {
+        "description": "Receivables by due date, oldest first, by keyset cursor (no total, no jump to the end).\n\n`cancelled=true` lists only cancelled receivables; otherwise only live ones.",
+        "operationId": "list_receivables",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cancelled",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Cancelled",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "exclusiveMinimum": 0,
+              "maximum": 100,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceivablePageView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Receivables",
+        "tags": [
+          "receivables"
+        ]
+      }
+    },
+    "/api/app/receivables/{receivable_id}/cancel": {
+      "post": {
+        "description": "Cancel a receivable with a reason. Analysts only; repeating it changes nothing.\n\nRefused if the receivable is in a proposed or confirmed match; what is already approved\nstays applied.",
+        "operationId": "cancel_receivable",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "receivable_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Receivable Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Receivable",
+        "tags": [
+          "receivables"
         ]
       }
     },

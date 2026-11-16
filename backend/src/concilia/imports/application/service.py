@@ -27,6 +27,8 @@ from concilia.imports.domain.model import (
     FileStatus,
     ImportFile,
     ImportRow,
+    Receivable,
+    ReceivablePage,
     RowPage,
     RowStatus,
 )
@@ -111,6 +113,16 @@ class ImportStore(ReceivableStore, Protocol):
     async def receivable_ids_of_file(self, file_id: UUID) -> list[UUID]: ...
 
     async def cancel_receivables(self, ids: list[UUID], reason: str, now: datetime) -> None: ...
+
+    async def find_receivable(self, receivable_id: UUID) -> Receivable | None: ...
+
+    async def receivable_page(
+        self,
+        cancelled: bool,
+        after: tuple[date, UUID] | None,
+        before: tuple[date, UUID] | None,
+        limit: int,
+    ) -> ReceivablePage: ...
 
     async def insert_file(
         self, organization_id: UUID, file: ImportFile, content: bytes
@@ -441,6 +453,46 @@ class ImportService:
             await _audit(
                 store, organization_id, principal.user_id, AuditAction.IMPORT_VOIDED, file_id, now
             )
+
+    async def cancel_receivable(
+        self, principal: Principal, receivable_id: UUID, reason: str
+    ) -> None:
+        organization_id = _organization(principal)
+        now = self._clock.now()
+        async with self._transactions.organization(organization_id) as store:
+            await store.lock_organization(organization_id)
+            receivable = await store.find_receivable(receivable_id)
+            if receivable is None:
+                raise NotFoundError
+            if receivable.cancelled_at is not None:
+                return
+            if await store.matches.pending([], [receivable_id]):
+                raise ActiveMatchesError
+            await store.cancel_receivables([receivable_id], reason.strip(), now)
+            await store.audit.record(
+                AuditEvent(
+                    id=uuid7(),
+                    organization_id=organization_id,
+                    actor_user_id=principal.user_id,
+                    action=AuditAction.RECEIVABLE_CANCELLED,
+                    entity="receivable",
+                    entity_id=receivable_id,
+                    at=now,
+                )
+            )
+
+    async def receivables(
+        self,
+        principal: Principal,
+        *,
+        cancelled: bool = False,
+        after: tuple[date, UUID] | None = None,
+        before: tuple[date, UUID] | None = None,
+        limit: int = 20,
+    ) -> ReceivablePage:
+        organization_id = _member_organization(principal)
+        async with self._transactions.organization(organization_id) as store:
+            return await store.receivable_page(cancelled, after, before, min(limit, PAGE_LIMIT))
 
     async def parse(
         self, organization_id: UUID, file_id: UUID, store: ImportStore, progress: ProgressReporter
