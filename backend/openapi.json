@@ -30,6 +30,89 @@
         "title": "AcceptedInvitationView",
         "type": "object"
       },
+      "AccountRequest": {
+        "properties": {
+          "alias": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Alias",
+            "type": "string"
+          },
+          "bank": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Bank",
+            "type": "string"
+          },
+          "number_last4": {
+            "maxLength": 4,
+            "minLength": 4,
+            "title": "Number Last4",
+            "type": "string"
+          }
+        },
+        "required": [
+          "bank",
+          "alias",
+          "number_last4"
+        ],
+        "title": "AccountRequest",
+        "type": "object"
+      },
+      "BankAccountView": {
+        "properties": {
+          "alias": {
+            "title": "Alias",
+            "type": "string"
+          },
+          "archived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          },
+          "bank": {
+            "title": "Bank",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "currency": {
+            "const": "PEN",
+            "title": "Currency",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "number_last4": {
+            "title": "Number Last4",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "bank",
+          "currency",
+          "alias",
+          "number_last4",
+          "created_at",
+          "archived_at"
+        ],
+        "title": "BankAccountView",
+        "type": "object"
+      },
       "ChooseOrganizationRequest": {
         "properties": {
           "organization_id": {
@@ -42,6 +125,109 @@
           "organization_id"
         ],
         "title": "ChooseOrganizationRequest",
+        "type": "object"
+      },
+      "CreateAccountRequest": {
+        "properties": {
+          "alias": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Alias",
+            "type": "string"
+          },
+          "bank": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Bank",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "number_last4": {
+            "maxLength": 4,
+            "minLength": 4,
+            "title": "Number Last4",
+            "type": "string"
+          }
+        },
+        "required": [
+          "bank",
+          "alias",
+          "number_last4",
+          "id"
+        ],
+        "title": "CreateAccountRequest",
+        "type": "object"
+      },
+      "CreateReceivablesProfileRequest": {
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/ReceivablesConfig"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "receivables",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "config",
+          "id"
+        ],
+        "title": "CreateReceivablesProfileRequest",
+        "type": "object"
+      },
+      "CreateStatementProfileRequest": {
+        "properties": {
+          "bank_account_id": {
+            "format": "uuid",
+            "title": "Bank Account Id",
+            "type": "string"
+          },
+          "config": {
+            "$ref": "#/components/schemas/StatementConfig"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "bank_statement",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "config",
+          "id",
+          "bank_account_id"
+        ],
+        "title": "CreateStatementProfileRequest",
         "type": "object"
       },
       "CreatedInvitationView": {
@@ -67,6 +253,24 @@
         ],
         "title": "CreatedInvitationView",
         "type": "object"
+      },
+      "DateFormat": {
+        "enum": [
+          "DD/MM/YYYY",
+          "DD-MM-YYYY",
+          "DD/MM/YY",
+          "YYYY-MM-DD"
+        ],
+        "title": "DateFormat",
+        "type": "string"
+      },
+      "FileFormat": {
+        "enum": [
+          "csv",
+          "xlsx"
+        ],
+        "title": "FileFormat",
+        "type": "string"
       },
       "HTTPValidationError": {
         "properties": {
@@ -287,6 +491,77 @@
         "title": "NewAccountRequest",
         "type": "object"
       },
+      "OrganizationSettingsRequest": {
+        "properties": {
+          "detraction_rates_bp": {
+            "items": {
+              "exclusiveMinimum": 0.0,
+              "maximum": 10000.0,
+              "type": "integer"
+            },
+            "maxItems": 5,
+            "title": "Detraction Rates Bp",
+            "type": "array"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "tolerance_bp": {
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Tolerance Bp",
+            "type": "integer"
+          },
+          "tolerance_min_cents": {
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Tolerance Min Cents",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "tolerance_min_cents",
+          "tolerance_bp",
+          "detraction_rates_bp"
+        ],
+        "title": "OrganizationSettingsRequest",
+        "type": "object"
+      },
+      "OrganizationSettingsView": {
+        "properties": {
+          "detraction_rates_bp": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Detraction Rates Bp",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "tolerance_bp": {
+            "title": "Tolerance Bp",
+            "type": "integer"
+          },
+          "tolerance_min_cents": {
+            "title": "Tolerance Min Cents",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "tolerance_min_cents",
+          "tolerance_bp",
+          "detraction_rates_bp"
+        ],
+        "title": "OrganizationSettingsView",
+        "type": "object"
+      },
       "OrganizationView": {
         "properties": {
           "id": {
@@ -317,6 +592,251 @@
           "roles"
         ],
         "title": "OrganizationView",
+        "type": "object"
+      },
+      "ReceivablesColumns": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Amount",
+            "type": "string"
+          },
+          "customer_name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Customer Name",
+            "type": "string"
+          },
+          "customer_tax_id": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Tax Id"
+          },
+          "doc_number": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Doc Number",
+            "type": "string"
+          },
+          "due_on": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Due On",
+            "type": "string"
+          },
+          "issued_on": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Issued On",
+            "type": "string"
+          }
+        },
+        "required": [
+          "customer_name",
+          "doc_number",
+          "issued_on",
+          "due_on",
+          "amount"
+        ],
+        "title": "ReceivablesColumns",
+        "type": "object"
+      },
+      "ReceivablesConfig": {
+        "additionalProperties": false,
+        "properties": {
+          "columns": {
+            "$ref": "#/components/schemas/ReceivablesColumns"
+          },
+          "date_format": {
+            "$ref": "#/components/schemas/DateFormat"
+          },
+          "decimal_separator": {
+            "default": ".",
+            "enum": [
+              ".",
+              ","
+            ],
+            "title": "Decimal Separator",
+            "type": "string"
+          },
+          "delimiter": {
+            "default": ",",
+            "enum": [
+              ",",
+              ";",
+              "\t",
+              "|"
+            ],
+            "title": "Delimiter",
+            "type": "string"
+          },
+          "encoding": {
+            "default": "utf-8",
+            "enum": [
+              "utf-8",
+              "latin-1"
+            ],
+            "title": "Encoding",
+            "type": "string"
+          },
+          "format": {
+            "$ref": "#/components/schemas/FileFormat"
+          },
+          "sheet": {
+            "anyOf": [
+              {
+                "maxLength": 31,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sheet"
+          },
+          "skip_rows": {
+            "default": 0,
+            "maximum": 50.0,
+            "minimum": 0.0,
+            "title": "Skip Rows",
+            "type": "integer"
+          },
+          "thousands_separator": {
+            "default": "",
+            "enum": [
+              "",
+              ",",
+              ".",
+              " "
+            ],
+            "title": "Thousands Separator",
+            "type": "string"
+          },
+          "version": {
+            "const": 1,
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "format",
+          "date_format",
+          "columns"
+        ],
+        "title": "ReceivablesConfig",
+        "type": "object"
+      },
+      "ReceivablesProfileRequest": {
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/ReceivablesConfig"
+          },
+          "kind": {
+            "const": "receivables",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "config"
+        ],
+        "title": "ReceivablesProfileRequest",
+        "type": "object"
+      },
+      "ReceivablesProfileView": {
+        "properties": {
+          "archived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          },
+          "config": {
+            "$ref": "#/components/schemas/ReceivablesConfig"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "receivables",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "config",
+          "created_at",
+          "archived_at"
+        ],
+        "title": "ReceivablesProfileView",
+        "type": "object"
+      },
+      "ReceivablesTemplateView": {
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/ReceivablesConfig"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "const": "receivables",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "kind",
+          "config"
+        ],
+        "title": "ReceivablesTemplateView",
         "type": "object"
       },
       "RegistrationRequest": {
@@ -443,6 +963,280 @@
         "title": "SessionView",
         "type": "object"
       },
+      "StatementColumns": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "credit": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credit"
+          },
+          "date": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Date",
+            "type": "string"
+          },
+          "debit": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Debit"
+          },
+          "description": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Description",
+            "type": "string"
+          },
+          "operation_number": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operation Number"
+          }
+        },
+        "required": [
+          "date",
+          "description"
+        ],
+        "title": "StatementColumns",
+        "type": "object"
+      },
+      "StatementConfig": {
+        "additionalProperties": false,
+        "properties": {
+          "columns": {
+            "$ref": "#/components/schemas/StatementColumns"
+          },
+          "date_format": {
+            "$ref": "#/components/schemas/DateFormat"
+          },
+          "decimal_separator": {
+            "default": ".",
+            "enum": [
+              ".",
+              ","
+            ],
+            "title": "Decimal Separator",
+            "type": "string"
+          },
+          "delimiter": {
+            "default": ",",
+            "enum": [
+              ",",
+              ";",
+              "\t",
+              "|"
+            ],
+            "title": "Delimiter",
+            "type": "string"
+          },
+          "encoding": {
+            "default": "utf-8",
+            "enum": [
+              "utf-8",
+              "latin-1"
+            ],
+            "title": "Encoding",
+            "type": "string"
+          },
+          "format": {
+            "$ref": "#/components/schemas/FileFormat"
+          },
+          "sheet": {
+            "anyOf": [
+              {
+                "maxLength": 31,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sheet"
+          },
+          "skip_rows": {
+            "default": 0,
+            "maximum": 50.0,
+            "minimum": 0.0,
+            "title": "Skip Rows",
+            "type": "integer"
+          },
+          "thousands_separator": {
+            "default": "",
+            "enum": [
+              "",
+              ",",
+              ".",
+              " "
+            ],
+            "title": "Thousands Separator",
+            "type": "string"
+          },
+          "version": {
+            "const": 1,
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "format",
+          "date_format",
+          "columns"
+        ],
+        "title": "StatementConfig",
+        "type": "object"
+      },
+      "StatementProfileRequest": {
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/StatementConfig"
+          },
+          "kind": {
+            "const": "bank_statement",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "config"
+        ],
+        "title": "StatementProfileRequest",
+        "type": "object"
+      },
+      "StatementProfileView": {
+        "properties": {
+          "archived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          },
+          "bank_account_id": {
+            "format": "uuid",
+            "title": "Bank Account Id",
+            "type": "string"
+          },
+          "config": {
+            "$ref": "#/components/schemas/StatementConfig"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "bank_statement",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "bank_account_id",
+          "name",
+          "config",
+          "created_at",
+          "archived_at"
+        ],
+        "title": "StatementProfileView",
+        "type": "object"
+      },
+      "StatementTemplateView": {
+        "properties": {
+          "bank": {
+            "title": "Bank",
+            "type": "string"
+          },
+          "config": {
+            "$ref": "#/components/schemas/StatementConfig"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "const": "bank_statement",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "bank",
+          "kind",
+          "config"
+        ],
+        "title": "StatementTemplateView",
+        "type": "object"
+      },
       "TeamView": {
         "properties": {
           "invitations": {
@@ -515,6 +1309,405 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/app/bank-accounts": {
+      "get": {
+        "description": "List the organization's bank accounts, archived ones included.",
+        "operationId": "list_bank_accounts",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BankAccountView"
+                  },
+                  "title": "Response List Bank Accounts",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Bank Accounts",
+        "tags": [
+          "banking"
+        ]
+      },
+      "post": {
+        "description": "Register a PEN bank account. Admins only; idempotent on the client-generated id.",
+        "operationId": "create_bank_account",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankAccountView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Bank Account",
+        "tags": [
+          "banking"
+        ]
+      }
+    },
+    "/api/app/bank-accounts/{account_id}": {
+      "put": {
+        "description": "Change the bank, alias or last four digits of an active account. Admins only.",
+        "operationId": "update_bank_account",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Account Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Bank Account",
+        "tags": [
+          "banking"
+        ]
+      }
+    },
+    "/api/app/bank-accounts/{account_id}/archive": {
+      "post": {
+        "description": "Archive an account so it takes no new imports. Admins only.",
+        "operationId": "archive_bank_account",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Account Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive Bank Account",
+        "tags": [
+          "banking"
+        ]
+      }
+    },
+    "/api/app/import-profiles": {
+      "get": {
+        "description": "List the organization's import profiles, archived ones included.",
+        "operationId": "list_import_profiles",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "discriminator": {
+                      "mapping": {
+                        "bank_statement": "#/components/schemas/StatementProfileView",
+                        "receivables": "#/components/schemas/ReceivablesProfileView"
+                      },
+                      "propertyName": "kind"
+                    },
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/StatementProfileView"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ReceivablesProfileView"
+                      }
+                    ]
+                  },
+                  "title": "Response List Import Profiles",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Import Profiles",
+        "tags": [
+          "banking"
+        ]
+      },
+      "post": {
+        "description": "Create an import profile. Admins only; idempotent on the client-generated id.",
+        "operationId": "create_import_profile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "discriminator": {
+                  "mapping": {
+                    "bank_statement": "#/components/schemas/CreateStatementProfileRequest",
+                    "receivables": "#/components/schemas/CreateReceivablesProfileRequest"
+                  },
+                  "propertyName": "kind"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateStatementProfileRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CreateReceivablesProfileRequest"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "discriminator": {
+                    "mapping": {
+                      "bank_statement": "#/components/schemas/StatementProfileView",
+                      "receivables": "#/components/schemas/ReceivablesProfileView"
+                    },
+                    "propertyName": "kind"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/StatementProfileView"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ReceivablesProfileView"
+                    }
+                  ],
+                  "title": "Response Create Import Profile"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Import Profile",
+        "tags": [
+          "banking"
+        ]
+      }
+    },
+    "/api/app/import-profiles/{profile_id}": {
+      "put": {
+        "description": "Rename an active profile or change its file layout. Admins only.",
+        "operationId": "update_import_profile",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "profile_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Profile Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "discriminator": {
+                  "mapping": {
+                    "bank_statement": "#/components/schemas/StatementProfileRequest",
+                    "receivables": "#/components/schemas/ReceivablesProfileRequest"
+                  },
+                  "propertyName": "kind"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/StatementProfileRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ReceivablesProfileRequest"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Import Profile",
+        "tags": [
+          "banking"
+        ]
+      }
+    },
+    "/api/app/import-profiles/{profile_id}/archive": {
+      "post": {
+        "description": "Archive a profile so it is no longer offered for imports. Admins only.",
+        "operationId": "archive_import_profile",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "profile_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Profile Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive Import Profile",
+        "tags": [
+          "banking"
+        ]
+      }
+    },
+    "/api/app/import-templates": {
+      "get": {
+        "description": "Example profiles to copy. Bank layouts must be checked against a real file.",
+        "operationId": "list_import_templates",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "discriminator": {
+                      "mapping": {
+                        "bank_statement": "#/components/schemas/StatementTemplateView",
+                        "receivables": "#/components/schemas/ReceivablesTemplateView"
+                      },
+                      "propertyName": "kind"
+                    },
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/StatementTemplateView"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ReceivablesTemplateView"
+                      }
+                    ]
+                  },
+                  "title": "Response List Import Templates",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Import Templates",
+        "tags": [
+          "banking"
+        ]
+      }
+    },
     "/api/app/invitations": {
       "post": {
         "description": "Invite someone by email. The token is returned only when the invitation is created.\n\nIdempotent on the client-generated id.",
@@ -648,6 +1841,61 @@
         "summary": "Logout",
         "tags": [
           "session"
+        ]
+      }
+    },
+    "/api/app/organization": {
+      "get": {
+        "description": "Name, difference tolerance and detraction rates used by the matching engine.",
+        "operationId": "get_organization_settings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationSettingsView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Organization Settings",
+        "tags": [
+          "organization"
+        ]
+      },
+      "put": {
+        "description": "Change the organization settings. Admins only.\n\nAmounts are in cents and rates in basis points.",
+        "operationId": "update_organization_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizationSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Organization Settings",
+        "tags": [
+          "organization"
         ]
       }
     },

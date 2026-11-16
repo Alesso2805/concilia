@@ -40,7 +40,7 @@ def clock() -> FixedClock:
 
 @pytest.fixture
 async def app(database: DatabaseUrls, clock: FixedClock) -> AsyncIterator[FastAPI]:
-    app = build_app(database.for_role("concilia_app"), clock, login_max_per_ip=10_000)
+    app = build_app(database.for_role("concilia_app"), clock)
     yield app
     await app.state.engine.dispose()
 

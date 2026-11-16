@@ -3,12 +3,9 @@ from typing import Annotated, Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
+from concilia.banking.domain.model import ProfileKind
+
 ColumnName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)]
-
-
-class ProfileKind(StrEnum):
-    BANK_STATEMENT = "bank_statement"
-    RECEIVABLES = "receivables"
 
 
 class FileFormat(StrEnum):

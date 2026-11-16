@@ -12,9 +12,16 @@ class AuditAction(StrEnum):
     INVITATION_ACCEPTED = "invitation.accepted"
     MEMBER_ROLES_CHANGED = "member.roles_changed"
     MEMBER_REMOVED = "member.removed"
+    ORGANIZATION_SETTINGS_CHANGED = "organization.settings_changed"
+    BANK_ACCOUNT_CREATED = "bank_account.created"
+    BANK_ACCOUNT_UPDATED = "bank_account.updated"
+    BANK_ACCOUNT_ARCHIVED = "bank_account.archived"
+    IMPORT_PROFILE_CREATED = "import_profile.created"
+    IMPORT_PROFILE_UPDATED = "import_profile.updated"
+    IMPORT_PROFILE_ARCHIVED = "import_profile.archived"
 
 
-ALLOWED_METADATA_KEYS = frozenset({"source", "roles"})
+ALLOWED_METADATA_KEYS = frozenset({"source", "roles", "kind", "fields"})
 
 
 class AuditMetadataError(ValueError):

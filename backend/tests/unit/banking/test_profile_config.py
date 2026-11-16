@@ -3,8 +3,9 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from concilia.banking.application.profile_config import ProfileKind, parse_config
+from concilia.banking.application.profile_config import parse_config
 from concilia.banking.application.templates import TEMPLATES
+from concilia.banking.domain.model import ProfileKind
 
 STATEMENT: dict[str, Any] = {
     "format": "csv",
