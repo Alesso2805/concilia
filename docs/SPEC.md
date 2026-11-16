@@ -192,6 +192,7 @@ Un cobro anulado (`cancelled_at`) no es candidato. Ningún saldo disponible pued
 - Cada propuesta guarda la regla, el puntaje, el motivo sugerido y una explicación por plantilla (por ejemplo: "La descripción menciona F001-123 y el monto coincide").
 - R5 solo ve abonos del período en que corre; un cobro pagado en partes en dos meses se concilia a mano (limitación del MVP).
 - El motor no corre sobre un período cerrado.
+- Una corrida se pide con el id del cliente para `engine_runs` y se procesa como trabajo `run_engine`; mientras otra corrida de la misma cuenta y mes esté en cola o en curso, la nueva se rechaza. Si el mes se cierra antes de que el trabajo empiece, el trabajo falla con `closed_period` sin proponer nada.
 
 **Diferencias y pagos parciales.** En toda coincidencia: diferencia = suma de sus abonos − suma de lo aplicado. Cada aplicado es mayor que 0 y no supera el saldo disponible de su cobro.
 

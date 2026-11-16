@@ -319,6 +319,107 @@
         "title": "DateFormat",
         "type": "string"
       },
+      "EngineRunRequest": {
+        "properties": {
+          "bank_account_id": {
+            "format": "uuid",
+            "title": "Bank Account Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "period": {
+            "format": "date",
+            "title": "Period",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "bank_account_id",
+          "period"
+        ],
+        "title": "EngineRunRequest",
+        "type": "object"
+      },
+      "EngineRunView": {
+        "properties": {
+          "bank_account_id": {
+            "format": "uuid",
+            "title": "Bank Account Id",
+            "type": "string"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "job_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
+          },
+          "period": {
+            "format": "date",
+            "title": "Period",
+            "type": "string"
+          },
+          "proposals_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proposals Count"
+          },
+          "rules_version": {
+            "title": "Rules Version",
+            "type": "integer"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "bank_account_id",
+          "period",
+          "job_id",
+          "rules_version",
+          "proposals_count",
+          "started_at",
+          "finished_at"
+        ],
+        "title": "EngineRunView",
+        "type": "object"
+      },
       "ErrorRowView": {
         "properties": {
           "cells": {
@@ -2228,6 +2329,92 @@
         "summary": "Archive Bank Account",
         "tags": [
           "banking"
+        ]
+      }
+    },
+    "/api/app/engine-runs": {
+      "post": {
+        "description": "Queue the matching engine over the free credits of one account and month.\n\nAnalysts only; `period` is the first day of the month. Idempotent on the\nclient-generated id. 409 `closed_period` for a closed month and `run_in_progress` while\nanother run of the same account and month is queued or running.",
+        "operationId": "request_engine_run",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EngineRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EngineRunView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Request Engine Run",
+        "tags": [
+          "matching"
+        ]
+      }
+    },
+    "/api/app/engine-runs/{run_id}": {
+      "get": {
+        "description": "An engine run; `finished_at` and `proposals_count` are set when it ends.",
+        "operationId": "get_engine_run",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EngineRunView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Engine Run",
+        "tags": [
+          "matching"
         ]
       }
     },
