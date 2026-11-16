@@ -1,0 +1,53 @@
+[importlinter]
+root_package = concilia
+
+[importlinter:contract:module-order]
+name = AR-01 Modules import only earlier modules
+type = layers
+layers =
+    concilia.demo
+    concilia.reporting
+    concilia.ai
+    concilia.matching
+    concilia.imports
+    concilia.periods
+    concilia.banking
+    concilia.identity
+    concilia.audit
+    concilia.shared.infrastructure
+    concilia.shared.kernel
+
+[importlinter:contract:composition-roots]
+name = AR-01 No module imports a composition root
+type = forbidden
+source_modules =
+    concilia.shared
+    concilia.audit
+    concilia.identity
+    concilia.banking
+    concilia.periods
+    concilia.imports
+    concilia.matching
+    concilia.ai
+    concilia.reporting
+    concilia.demo
+forbidden_modules =
+    concilia.api
+
+[importlinter:contract:module-layers]
+name = AR-02 Layers inside each business module
+type = layers
+containers =
+    concilia.audit
+    concilia.identity
+    concilia.banking
+    concilia.periods
+    concilia.imports
+    concilia.matching
+    concilia.ai
+    concilia.reporting
+    concilia.demo
+layers =
+    api | infrastructure
+    application
+    domain
