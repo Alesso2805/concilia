@@ -20,4 +20,4 @@ RUN uv sync --locked --no-dev --no-editable
 RUN useradd --system --uid 10001 --no-create-home concilia
 USER concilia
 
-CMD ["uvicorn", "concilia.api:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
+CMD ["uvicorn", "concilia.api:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]

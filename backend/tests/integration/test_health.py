@@ -1,14 +1,17 @@
-import httpx
+from datetime import UTC, datetime
+
 import pytest
 
-from concilia.api import create_app
+from tests.support.api import api_client, build_app
+from tests.support.clock import FixedClock
+from tests.support.database import DatabaseUrls
 
 pytestmark = pytest.mark.anyio
 
 
-async def test_health_reports_ok() -> None:
-    transport = httpx.ASGITransport(app=create_app())
-    async with httpx.AsyncClient(transport=transport, base_url="https://test") as client:
+async def test_health_reports_ok(database: DatabaseUrls) -> None:
+    clock = FixedClock(datetime(2026, 11, 23, tzinfo=UTC))
+    async with api_client(build_app(database.for_role("concilia_app"), clock)) as client:
         response = await client.get("/api/health")
 
     assert response.status_code == 200
