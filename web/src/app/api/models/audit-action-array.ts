@@ -34,5 +34,6 @@ export const AUDIT_ACTION: AuditAction[] = [
   'match.rejected',
   'match.reverted',
   'period.closed',
-  'period.reopened'
+  'period.reopened',
+  'export.requested'
 ];

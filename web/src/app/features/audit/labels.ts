@@ -31,6 +31,7 @@ export const ACTION_LABELS: Record<AuditAction, string> = {
   'match.reverted': 'Revirtió una coincidencia',
   'period.closed': 'Cerró un mes',
   'period.reopened': 'Reabrió un mes',
+  'export.requested': 'Pidió el reporte en Excel',
 };
 
 export const ENTITY_LABELS: Record<AuditEntity, string> = {
@@ -45,6 +46,7 @@ export const ENTITY_LABELS: Record<AuditEntity, string> = {
   engine_run: 'Corrida del motor',
   match: 'Coincidencia',
   period_event: 'Cierre de mes',
+  export: 'Reporte en Excel',
 };
 
 const SOURCE_LABELS: Record<string, string> = {

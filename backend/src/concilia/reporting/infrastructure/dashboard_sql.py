@@ -12,7 +12,8 @@ from concilia.shared.infrastructure.db import organization_transaction
 # Each live credit with the status of its active match, or `free`; a trigger keeps a credit in
 # at most one active match.
 CREDITS = """
-    SELECT b.booked_on, b.amount_cents, coalesce(active.status, 'free') AS status
+    SELECT b.id, b.booked_on, b.description, b.operation_number, b.amount_cents,
+           coalesce(active.status, 'free') AS status
     FROM bank_movements b
     LEFT JOIN LATERAL (
         SELECT s.status FROM match_items i JOIN match_status s ON s.match_id = i.match_id

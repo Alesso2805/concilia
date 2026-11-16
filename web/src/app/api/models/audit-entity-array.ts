@@ -17,5 +17,6 @@ export const AUDIT_ENTITY: AuditEntity[] = [
   'receivable',
   'engine_run',
   'match',
-  'period_event'
+  'period_event',
+  'export'
 ];

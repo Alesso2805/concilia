@@ -156,6 +156,13 @@ tables:
       concilia_worker:
         UPDATE: [finished_at, proposals_count]
 
+  exports:
+    rls: organization
+    privileges:
+      concilia_app: [INSERT, SELECT]
+      concilia_worker: [INSERT, SELECT]
+      concilia_backup: [SELECT]
+
   matches:
     rls: organization
     privileges:

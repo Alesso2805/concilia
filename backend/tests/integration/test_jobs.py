@@ -240,7 +240,14 @@ async def test_rerunning_a_job_after_a_crash_duplicates_nothing(
 
 
 async def test_every_worker_handler_has_a_rerun_test(worker_engine: AsyncEngine) -> None:
-    covered: set[str] = {"noop", "cleanup", "parse_import", "confirm_import", "run_engine"}
+    covered: set[str] = {
+        "noop",
+        "cleanup",
+        "parse_import",
+        "confirm_import",
+        "run_engine",
+        "export_period",
+    }
     registered: dict[str, Handler] = handlers(worker_engine, FixedClock(NOW))
 
     assert set(registered) == covered
