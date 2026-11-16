@@ -23,6 +23,12 @@ RLS_TABLES = (
     "import_rows",
     "bank_movements",
     "receivables",
+    "engine_runs",
+    "matches",
+    "match_items",
+    "match_decisions",
+    "match_status",
+    "receivable_balances",
     "audit_events",
     "jobs",
 )
@@ -44,6 +50,10 @@ async def _create_tenant(owner_engine: AsyncEngine, name: str) -> Tenant:
         "account": uuid7(),
         "profile": uuid7(),
         "file": uuid7(),
+        "movement": uuid7(),
+        "receivable": uuid7(),
+        "run": uuid7(),
+        "match": uuid7(),
         "now": NOW,
     }
     async with owner_engine.begin() as connection:
@@ -77,13 +87,27 @@ async def _create_tenant(owner_engine: AsyncEngine, name: str) -> Tenant:
             """INSERT INTO bank_movements (id, organization_id, bank_account_id, import_file_id,
                                            booked_on, amount_cents, description, description_norm,
                                            fingerprint, doc_refs, created_at)
-               VALUES (gen_random_uuid(), :org, :account, :file, '2027-01-05', 100, 'PAGO',
+               VALUES (:movement, :org, :account, :file, '2027-01-05', 100, 'PAGO',
                        'PAGO', repeat('b', 64), '{}', :now)""",
             """INSERT INTO receivables (id, organization_id, import_file_id, customer_name,
                                         customer_name_norm, doc_number, doc_number_norm, issued_on,
                                         due_on, amount_cents, created_at, updated_at)
-               VALUES (gen_random_uuid(), :org, :file, 'Cliente', 'CLIENTE', 'F001-1', 'F001-1',
+               VALUES (:receivable, :org, :file, 'Cliente', 'CLIENTE', 'F001-1', 'F001-1',
                        '2027-01-01', '2027-01-31', 100, :now, :now)""",
+            """INSERT INTO engine_runs (id, organization_id, bank_account_id, period,
+                                          rules_version, started_at)
+               VALUES (:run, :org, :account, '2027-01-01', 1, :now)""",
+            """INSERT INTO matches (id, organization_id, bank_account_id, source, rule, score,
+                                      explanation, engine_run_id, created_at)
+               VALUES (:match, :org, :account, 'engine', 'R1', 100, 'Exacta', :run, :now)""",
+            """INSERT INTO match_items (id, organization_id, match_id, bank_movement_id)
+               VALUES (gen_random_uuid(), :org, :match, :movement)""",
+            """INSERT INTO match_items (id, organization_id, match_id, receivable_id,
+                                          applied_cents)
+               VALUES (gen_random_uuid(), :org, :match, :receivable, 100)""",
+            """INSERT INTO match_decisions (id, organization_id, match_id, action, decided_by,
+                                              decided_at)
+               VALUES (gen_random_uuid(), :org, :match, 'confirm', :user, :now)""",
             """INSERT INTO audit_events (id, organization_id, actor_user_id, action, entity, at)
                VALUES (gen_random_uuid(), :org, :user, 'test.created', 'organization', :now)""",
             """INSERT INTO jobs (id, organization_id, kind, run_after, created_at)
