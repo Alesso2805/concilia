@@ -10,6 +10,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { map } from 'rxjs';
 
+import { DemoTour } from '../../features/demo/demo-tour.component';
 import { LOGIN_PATH, ORGANIZATION_PICKER_PATH } from '../session/paths';
 import { Role, roleLabel } from '../session/roles';
 import { SessionStore } from '../session/session.store';
@@ -23,6 +24,7 @@ const DEMO_LANDING = '/bandeja';
 @Component({
   selector: 'app-shell',
   imports: [
+    DemoTour,
     RouterLink,
     RouterLinkActive,
     RouterOutlet,

@@ -107,6 +107,13 @@
           </button>
         </mat-menu>
       </mat-toolbar>
+      @if (organization(); as organization) {
+        @if (organization.is_demo) {
+          @defer (on immediate) {
+            <app-demo-tour [organizationId]="organization.id" />
+          }
+        }
+      }
     </header>
     <main id="contenido" class="shell__content" tabindex="-1">
       <router-outlet />

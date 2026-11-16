@@ -1,0 +1,57 @@
+.tour__notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 8px 16px;
+  background: var(--mat-sys-tertiary-container);
+  color: var(--mat-sys-on-tertiary-container);
+}
+
+.tour__toggle {
+  margin-inline-start: auto;
+}
+
+.tour {
+  padding: 12px 16px 16px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface-container-low);
+}
+
+.tour__title {
+  margin: 0 0 8px;
+  font: var(--mat-sys-title-medium);
+}
+
+.tour__steps {
+  margin: 0;
+  padding-inline-start: 24px;
+}
+
+.tour__step {
+  margin: 4px 0;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.tour__step--current {
+  color: var(--mat-sys-on-surface);
+}
+
+.tour__name {
+  font-weight: 500;
+}
+
+.tour__role {
+  margin-inline-start: 4px;
+}
+
+.tour__text {
+  margin: 4px 0 8px;
+  max-width: 72ch;
+}
+
+.tour__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}

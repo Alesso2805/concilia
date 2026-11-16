@@ -12,6 +12,14 @@ test('a visitor enters a demo, the reviewer reopens and closes a month and reads
     page.getByRole('heading', { name: 'Bandeja de conciliación', level: 1 }),
   ).toBeVisible();
   await expect(page.getByText('Demo', { exact: true })).toBeVisible();
+  await expect(page.getByText('Demo con datos ficticios:')).toBeVisible();
+  await page.getByRole('button', { name: 'Recorrido guiado' }).click();
+  const tour = page.getByRole('region', { name: /Recorrido: paso 1 de 7/ });
+  await expect(tour.getByRole('link', { name: 'Ir a Importaciones' })).toBeVisible();
+  await tour.getByRole('button', { name: 'Siguiente' }).click();
+  await expect(page.getByRole('heading', { name: 'Recorrido: paso 2 de 7' })).toBeVisible();
+  await expectAccessible(page);
+  await page.getByRole('button', { name: 'Ocultar el recorrido' }).click();
   await expect(page.getByRole('tab', { name: 'Libres (118)' })).toBeVisible();
   await page.getByText('Mes', { exact: true }).click();
   await page.getByRole('option', { name: 'octubre de 2026 (cerrado)' }).click();
