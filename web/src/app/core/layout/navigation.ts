@@ -12,6 +12,7 @@ const EVERYONE: readonly Role[] = ['admin', 'analyst', 'reviewer'];
 
 export const NAVIGATION: readonly NavigationItem[] = [
   { path: '/', label: 'Inicio', icon: 'home', roles: EVERYONE },
+  { path: '/equipo', label: 'Equipo', icon: 'group', roles: ['admin'] },
 ];
 
 export function visibleItems(

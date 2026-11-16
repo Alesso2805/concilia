@@ -1,0 +1,48 @@
+<h2 mat-dialog-title>Invitar a una persona</h2>
+@if (link(); as link) {
+  <mat-dialog-content class="dialog">
+    <p>
+      Envía este enlace a la persona invitada. Vale por 7 días y un solo uso.
+      <strong>Cópialo ahora: no se volverá a mostrar.</strong>
+    </p>
+    <mat-form-field appearance="outline">
+      <mat-label>Enlace de invitación</mat-label>
+      <input matInput readonly [value]="link" />
+    </mat-form-field>
+    <p class="dialog__status" aria-live="polite">{{ copied() ? 'Enlace copiado.' : '' }}</p>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button
+      mat-stroked-button
+      type="button"
+      [cdkCopyToClipboard]="link"
+      (cdkCopyToClipboardCopied)="copied.set($event)"
+    >
+      <mat-icon svgIcon="content_copy" />
+      Copiar enlace
+    </button>
+    <button mat-flat-button type="button" [mat-dialog-close]="true">Listo</button>
+  </mat-dialog-actions>
+} @else {
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <mat-dialog-content class="dialog">
+      <mat-form-field appearance="outline">
+        <mat-label>Correo</mat-label>
+        <input matInput type="email" formControlName="email" autocomplete="off" required />
+        @if (form.controls.email.hasError('required')) {
+          <mat-error>Ingresa el correo.</mat-error>
+        } @else if (form.controls.email.hasError('email')) {
+          <mat-error>Revisa el formato del correo.</mat-error>
+        }
+      </mat-form-field>
+      <app-role-picker [group]="form.controls.roles" />
+      @if (error(); as message) {
+        <p class="dialog__error" role="alert">{{ message }}</p>
+      }
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button type="button" [mat-dialog-close]="false">Cancelar</button>
+      <button mat-flat-button type="submit" [disabled]="sending()">Crear invitación</button>
+    </mat-dialog-actions>
+  </form>
+}

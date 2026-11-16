@@ -1,0 +1,39 @@
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.page-header__title {
+  margin: 0;
+  font: var(--mat-sys-headline-small);
+}
+
+.team__section {
+  margin-top: 24px;
+  overflow-x: auto;
+}
+
+.team__actions {
+  text-align: end;
+  white-space: nowrap;
+}
+
+.team__hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.team__error {
+  color: var(--mat-sys-error);
+}
+
+.team__empty {
+  color: var(--mat-sys-on-surface-variant);
+}

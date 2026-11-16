@@ -18,9 +18,11 @@ import { ERROR_PATH, routes } from './app.routes';
 import { sessionInterceptor } from './core/http/session.interceptor';
 import { XSRF_COOKIE, XSRF_HEADER } from './core/http/xsrf';
 import { provideIcons } from './core/icons';
+import { provideLocale } from './core/locale';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideLocale(),
     provideBrowserGlobalErrorListeners(),
     provideRouter(
       routes,
