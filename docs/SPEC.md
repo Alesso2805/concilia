@@ -317,7 +317,7 @@ Diez sprints de una semana (de lunes a domingo, salvo S2), planificados a unos 1
 | Sprint | Fechas | Objetivo | Historias, en orden | Pts |
 | --- | --- | --- | --- | --- |
 | S0 | 16 – 22 nov 2026 | Decisiones, monorepo con CI y base segura | CN-01, 02, 03 | 10 |
-| S1 | 23 – 29 nov | Publicado, con inicio de sesión y el motor de conciliación | CN-04, 05, 11 | 10 |
+| S1 | 23 – 29 nov | Inicio de sesión y el motor de conciliación | CN-05, 11 | 8 |
 | S2 | 30 nov – 5 dic (6 días) | Aplicación Angular base, equipo y configuración | CN-06, 07, 08 | 10 |
 | Pausa | 6 – 20 dic | — | — | — |
 | S3 | 21 – 27 dic | Importación de extractos | CN-09 | 5 |
@@ -328,6 +328,7 @@ Diez sprints de una semana (de lunes a domingo, salvo S2), planificados a unos 1
 | S7 | 18 – 24 ene | Manual y en lote, cierre de mes y auditoría | CN-15, 16, 19 | 9 |
 | S8 | 25 – 31 ene | Panel, Excel y motor de IA | CN-17, 18, 20 | 10 |
 | S9 | 1 – 7 feb | IA en la interfaz, recorrido guiado y cierre de portafolio | CN-21, 23, 24 | 9 |
+| Final | después de S9 | Publicación: servidor con dominio, HTTPS y despliegue automático | CN-04 | 2 |
 
 **Puertas de decisión**
 
