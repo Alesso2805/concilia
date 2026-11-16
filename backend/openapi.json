@@ -182,6 +182,34 @@
         "title": "ConfirmView",
         "type": "object"
       },
+      "CountsView": {
+        "properties": {
+          "approved": {
+            "title": "Approved",
+            "type": "integer"
+          },
+          "confirmed": {
+            "title": "Confirmed",
+            "type": "integer"
+          },
+          "free": {
+            "title": "Free",
+            "type": "integer"
+          },
+          "proposed": {
+            "title": "Proposed",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "free",
+          "proposed",
+          "confirmed",
+          "approved"
+        ],
+        "title": "CountsView",
+        "type": "object"
+      },
       "CreateAccountRequest": {
         "properties": {
           "alias": {
@@ -309,6 +337,98 @@
         "title": "CreatedInvitationView",
         "type": "object"
       },
+      "CreditPageView": {
+        "properties": {
+          "credits": {
+            "items": {
+              "$ref": "#/components/schemas/CreditView"
+            },
+            "title": "Credits",
+            "type": "array"
+          },
+          "has_next": {
+            "title": "Has Next",
+            "type": "boolean"
+          },
+          "has_previous": {
+            "title": "Has Previous",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "previous_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Cursor"
+          }
+        },
+        "required": [
+          "credits",
+          "has_previous",
+          "has_next",
+          "previous_cursor",
+          "next_cursor"
+        ],
+        "title": "CreditPageView",
+        "type": "object"
+      },
+      "CreditView": {
+        "properties": {
+          "amount_cents": {
+            "title": "Amount Cents",
+            "type": "integer"
+          },
+          "booked_on": {
+            "format": "date",
+            "title": "Booked On",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "operation_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operation Number"
+          }
+        },
+        "required": [
+          "id",
+          "booked_on",
+          "description",
+          "operation_number",
+          "amount_cents"
+        ],
+        "title": "CreditView",
+        "type": "object"
+      },
       "DateFormat": {
         "enum": [
           "DD/MM/YYYY",
@@ -318,6 +438,80 @@
         ],
         "title": "DateFormat",
         "type": "string"
+      },
+      "DecisionView": {
+        "properties": {
+          "action": {
+            "enum": [
+              "confirm",
+              "discard",
+              "approve",
+              "reject",
+              "revert"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "decided_at": {
+            "format": "date-time",
+            "title": "Decided At",
+            "type": "string"
+          },
+          "decided_by": {
+            "title": "Decided By",
+            "type": "string"
+          },
+          "difference_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Note"
+          },
+          "difference_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "commission",
+                  "detraction",
+                  "rounding",
+                  "overpayment",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Reason"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "action",
+          "reason",
+          "difference_reason",
+          "difference_note",
+          "decided_by",
+          "decided_at"
+        ],
+        "title": "DecisionView",
+        "type": "object"
       },
       "EngineRunRequest": {
         "properties": {
@@ -885,6 +1079,363 @@
         "title": "LoginView",
         "type": "object"
       },
+      "MatchDetailView": {
+        "properties": {
+          "applied_cents": {
+            "title": "Applied Cents",
+            "type": "integer"
+          },
+          "bank_account_id": {
+            "format": "uuid",
+            "title": "Bank Account Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "credits": {
+            "items": {
+              "$ref": "#/components/schemas/CreditView"
+            },
+            "title": "Credits",
+            "type": "array"
+          },
+          "credits_cents": {
+            "title": "Credits Cents",
+            "type": "integer"
+          },
+          "decisions": {
+            "items": {
+              "$ref": "#/components/schemas/DecisionView"
+            },
+            "title": "Decisions",
+            "type": "array"
+          },
+          "difference_cents": {
+            "title": "Difference Cents",
+            "type": "integer"
+          },
+          "explanation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Explanation"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "receivables": {
+            "items": {
+              "$ref": "#/components/schemas/MatchedReceivableView"
+            },
+            "title": "Receivables",
+            "type": "array"
+          },
+          "rule": {
+            "anyOf": [
+              {
+                "enum": [
+                  "R1",
+                  "R2",
+                  "R3",
+                  "R4",
+                  "R5",
+                  "R6"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "source": {
+            "enum": [
+              "engine",
+              "ai",
+              "manual"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "proposed",
+              "confirmed",
+              "approved",
+              "discarded",
+              "rejected",
+              "reverted"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "suggested_difference_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "commission",
+                  "detraction",
+                  "rounding",
+                  "overpayment",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Difference Reason"
+          }
+        },
+        "required": [
+          "id",
+          "bank_account_id",
+          "source",
+          "rule",
+          "score",
+          "status",
+          "suggested_difference_reason",
+          "explanation",
+          "created_at",
+          "credits",
+          "receivables",
+          "decisions",
+          "credits_cents",
+          "applied_cents",
+          "difference_cents"
+        ],
+        "title": "MatchDetailView",
+        "type": "object"
+      },
+      "MatchPageView": {
+        "properties": {
+          "has_next": {
+            "title": "Has Next",
+            "type": "boolean"
+          },
+          "has_previous": {
+            "title": "Has Previous",
+            "type": "boolean"
+          },
+          "matches": {
+            "items": {
+              "$ref": "#/components/schemas/MatchRowView"
+            },
+            "title": "Matches",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "previous_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Cursor"
+          }
+        },
+        "required": [
+          "matches",
+          "has_previous",
+          "has_next",
+          "previous_cursor",
+          "next_cursor"
+        ],
+        "title": "MatchPageView",
+        "type": "object"
+      },
+      "MatchRowView": {
+        "properties": {
+          "applied_cents": {
+            "title": "Applied Cents",
+            "type": "integer"
+          },
+          "booked_on": {
+            "format": "date",
+            "title": "Booked On",
+            "type": "string"
+          },
+          "credits_cents": {
+            "title": "Credits Cents",
+            "type": "integer"
+          },
+          "customers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Customers",
+            "type": "array"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "difference_cents": {
+            "title": "Difference Cents",
+            "type": "integer"
+          },
+          "documents": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Documents",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "rule": {
+            "anyOf": [
+              {
+                "enum": [
+                  "R1",
+                  "R2",
+                  "R3",
+                  "R4",
+                  "R5",
+                  "R6"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "source": {
+            "enum": [
+              "engine",
+              "ai",
+              "manual"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "proposed",
+              "confirmed",
+              "approved",
+              "discarded",
+              "rejected",
+              "reverted"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "rule",
+          "score",
+          "status",
+          "booked_on",
+          "description",
+          "documents",
+          "customers",
+          "credits_cents",
+          "applied_cents",
+          "difference_cents"
+        ],
+        "title": "MatchRowView",
+        "type": "object"
+      },
+      "MatchedReceivableView": {
+        "properties": {
+          "amount_cents": {
+            "title": "Amount Cents",
+            "type": "integer"
+          },
+          "applied_cents": {
+            "title": "Applied Cents",
+            "type": "integer"
+          },
+          "available_cents": {
+            "title": "Available Cents",
+            "type": "integer"
+          },
+          "customer_name": {
+            "title": "Customer Name",
+            "type": "string"
+          },
+          "doc_number": {
+            "title": "Doc Number",
+            "type": "string"
+          },
+          "due_on": {
+            "format": "date",
+            "title": "Due On",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "doc_number",
+          "customer_name",
+          "due_on",
+          "amount_cents",
+          "applied_cents",
+          "available_cents"
+        ],
+        "title": "MatchedReceivableView",
+        "type": "object"
+      },
       "MemberView": {
         "properties": {
           "display_name": {
@@ -1059,6 +1610,30 @@
           "roles"
         ],
         "title": "OrganizationView",
+        "type": "object"
+      },
+      "PeriodView": {
+        "properties": {
+          "closed": {
+            "title": "Closed",
+            "type": "boolean"
+          },
+          "credits": {
+            "title": "Credits",
+            "type": "integer"
+          },
+          "period": {
+            "format": "date",
+            "title": "Period",
+            "type": "string"
+          }
+        },
+        "required": [
+          "period",
+          "closed",
+          "credits"
+        ],
+        "title": "PeriodView",
         "type": "object"
       },
       "ReceivablePageView": {
@@ -3064,6 +3639,244 @@
         ]
       }
     },
+    "/api/app/inbox/counts": {
+      "get": {
+        "description": "How many free credits and proposed, confirmed and approved matches a month has.",
+        "operationId": "get_inbox_counts",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "bank_account_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Bank Account Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "First day of the month",
+            "in": "query",
+            "name": "period",
+            "required": true,
+            "schema": {
+              "description": "First day of the month",
+              "format": "date",
+              "title": "Period",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountsView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Inbox Counts",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/app/inbox/credits": {
+      "get": {
+        "description": "Credits of the month in no active match, by date (keyset pagination).",
+        "operationId": "list_free_credits",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "bank_account_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Bank Account Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "First day of the month",
+            "in": "query",
+            "name": "period",
+            "required": true,
+            "schema": {
+              "description": "First day of the month",
+              "format": "date",
+              "title": "Period",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_amount_cents",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Min Amount Cents"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_amount_cents",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Max Amount Cents"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "exclusiveMinimum": 0,
+              "maximum": 100,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditPageView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Free Credits",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/app/inbox/periods": {
+      "get": {
+        "description": "The months with live credits in an account, newest first, and whether each is closed.",
+        "operationId": "list_inbox_periods",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "bank_account_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Bank Account Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PeriodView"
+                  },
+                  "title": "Response List Inbox Periods",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Inbox Periods",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
     "/api/app/invitations": {
       "post": {
         "description": "Invite someone by email. The token is returned only when the invitation is created.\n\nIdempotent on the client-generated id.",
@@ -3241,6 +4054,241 @@
         "summary": "Logout",
         "tags": [
           "session"
+        ]
+      }
+    },
+    "/api/app/matches": {
+      "get": {
+        "description": "Matches of the month in one status, in the order they were created (engine proposals\ncome out rule by rule). The amount filters apply to the sum of the credits.",
+        "operationId": "list_matches",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "bank_account_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Bank Account Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "First day of the month",
+            "in": "query",
+            "name": "period",
+            "required": true,
+            "schema": {
+              "description": "First day of the month",
+              "format": "date",
+              "title": "Period",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "default": "proposed",
+              "enum": [
+                "proposed",
+                "confirmed",
+                "approved"
+              ],
+              "title": "Status",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "rule",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "R1",
+                    "R2",
+                    "R3",
+                    "R4",
+                    "R5",
+                    "R6"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rule"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_score",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 100,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Min Score"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_amount_cents",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Min Amount Cents"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_amount_cents",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Max Amount Cents"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "exclusiveMinimum": 0,
+              "maximum": 100,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchPageView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Matches",
+        "tags": [
+          "inbox"
+        ]
+      }
+    },
+    "/api/app/matches/{match_id}": {
+      "get": {
+        "description": "A match with its credits, receivables, applied amounts, difference and decisions.",
+        "operationId": "get_match",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "match_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Match Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchDetailView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Match",
+        "tags": [
+          "inbox"
         ]
       }
     },

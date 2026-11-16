@@ -32,7 +32,7 @@ ERRORS: dict[type[Exception], tuple[int, str]] = {
 HANDLED: tuple[type[Exception], ...] = (ClientIdError, *ERRORS)
 
 
-def _http_error(error: Exception) -> HTTPException:
+def http_error(error: Exception) -> HTTPException:
     if isinstance(error, ClientIdError):
         return HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, error.code)
     code, detail = ERRORS[type(error)]
@@ -86,7 +86,7 @@ def engine_runs_router(service: EngineRunService) -> APIRouter:
         try:
             run, created = await service.request(principal, request)
         except HANDLED as error:
-            raise _http_error(error) from None
+            raise http_error(error) from None
         if not created:
             response.status_code = status.HTTP_200_OK
         return _view(run)
@@ -97,6 +97,6 @@ def engine_runs_router(service: EngineRunService) -> APIRouter:
         try:
             return _view(await service.find(principal, run_id))
         except HANDLED as error:
-            raise _http_error(error) from None
+            raise http_error(error) from None
 
     return router
