@@ -21,7 +21,7 @@ class SuggestionOutput(_Strict):
     candidates: list[str] = Field(min_length=1, max_length=10)
     applied: list[AppliedPair] | None
     confidence: Confidence
-    explanation: str = Field(min_length=1, max_length=1000)
+    explanation: str = Field(min_length=1, max_length=500)
     difference_reason: Reason | None
 
 

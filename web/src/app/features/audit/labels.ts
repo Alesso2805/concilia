@@ -33,6 +33,8 @@ export const ACTION_LABELS: Record<AuditAction, string> = {
   'period.reopened': 'Reabrió un mes',
   'export.requested': 'Pidió el reporte en Excel',
   'ai_suggestion.requested': 'Pidió sugerencias a la IA',
+  'ai_suggestion.accepted': 'Aceptó una sugerencia de la IA',
+  'ai_suggestion.rejected': 'Rechazó una sugerencia de la IA',
 };
 
 export const ENTITY_LABELS: Record<AuditEntity, string> = {

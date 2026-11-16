@@ -5,6 +5,10 @@ export type { RequestSuggestion$Params as RequestSuggestion$Params } from './fn/
 export { requestSuggestion as requestSuggestion } from './fn/ai/request-suggestion';
 export type { GetSuggestion$Params as GetSuggestion$Params } from './fn/ai/get-suggestion';
 export { getSuggestion as getSuggestion } from './fn/ai/get-suggestion';
+export type { DecideSuggestion$Params as DecideSuggestion$Params } from './fn/ai/decide-suggestion';
+export { decideSuggestion as decideSuggestion } from './fn/ai/decide-suggestion';
+export type { GetAiUsage$Params as GetAiUsage$Params } from './fn/ai/get-ai-usage';
+export { getAiUsage as getAiUsage } from './fn/ai/get-ai-usage';
 export type { ListAuditEvents$Params as ListAuditEvents$Params } from './fn/audit/list-audit-events';
 export { listAuditEvents as listAuditEvents } from './fn/audit/list-audit-events';
 export type { ListAuditActors$Params as ListAuditActors$Params } from './fn/audit/list-audit-actors';

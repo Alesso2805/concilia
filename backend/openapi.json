@@ -141,7 +141,9 @@
           "period.closed",
           "period.reopened",
           "export.requested",
-          "ai_suggestion.requested"
+          "ai_suggestion.requested",
+          "ai_suggestion.accepted",
+          "ai_suggestion.rejected"
         ],
         "title": "AuditAction",
         "type": "string"
@@ -813,148 +815,6 @@
         ],
         "title": "DateFormat",
         "type": "string"
-      },
-      "DecisionRequestBody": {
-        "properties": {
-          "action": {
-            "enum": [
-              "confirm",
-              "discard",
-              "approve",
-              "reject",
-              "revert"
-            ],
-            "title": "Action",
-            "type": "string"
-          },
-          "difference_note": {
-            "anyOf": [
-              {
-                "maxLength": 500,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Difference Note"
-          },
-          "difference_reason": {
-            "anyOf": [
-              {
-                "enum": [
-                  "commission",
-                  "detraction",
-                  "rounding",
-                  "overpayment",
-                  "other"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Difference Reason"
-          },
-          "id": {
-            "format": "uuid",
-            "title": "Id",
-            "type": "string"
-          },
-          "reason": {
-            "anyOf": [
-              {
-                "maxLength": 500,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reason"
-          }
-        },
-        "required": [
-          "id",
-          "action"
-        ],
-        "title": "DecisionRequestBody",
-        "type": "object"
-      },
-      "DecisionView": {
-        "properties": {
-          "action": {
-            "enum": [
-              "confirm",
-              "discard",
-              "approve",
-              "reject",
-              "revert"
-            ],
-            "title": "Action",
-            "type": "string"
-          },
-          "decided_at": {
-            "format": "date-time",
-            "title": "Decided At",
-            "type": "string"
-          },
-          "decided_by": {
-            "title": "Decided By",
-            "type": "string"
-          },
-          "difference_note": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Difference Note"
-          },
-          "difference_reason": {
-            "anyOf": [
-              {
-                "enum": [
-                  "commission",
-                  "detraction",
-                  "rounding",
-                  "overpayment",
-                  "other"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Difference Reason"
-          },
-          "reason": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reason"
-          }
-        },
-        "required": [
-          "action",
-          "reason",
-          "difference_reason",
-          "difference_note",
-          "decided_by",
-          "decided_at"
-        ],
-        "title": "DecisionView",
-        "type": "object"
       },
       "DemoView": {
         "properties": {
@@ -1783,7 +1643,7 @@
           },
           "decisions": {
             "items": {
-              "$ref": "#/components/schemas/DecisionView"
+              "$ref": "#/components/schemas/concilia__matching__api__inbox__DecisionView"
             },
             "title": "Decisions",
             "type": "array"
@@ -3641,6 +3501,16 @@
             "title": "Confidence",
             "type": "string"
           },
+          "decision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/concilia__ai__api__routes__DecisionView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "difference_cents": {
             "title": "Difference Cents",
             "type": "integer"
@@ -3685,6 +3555,7 @@
         },
         "required": [
           "index",
+          "decision",
           "receivables",
           "difference_cents",
           "difference_reason",
@@ -3912,6 +3783,36 @@
         "title": "UploadView",
         "type": "object"
       },
+      "UsageView": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "daily_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Limit"
+          },
+          "used_today": {
+            "title": "Used Today",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "available",
+          "used_today",
+          "daily_limit"
+        ],
+        "title": "UsageView",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -3965,6 +3866,249 @@
           "reason"
         ],
         "title": "VoidRequest",
+        "type": "object"
+      },
+      "concilia__ai__api__routes__DecisionRequestBody": {
+        "properties": {
+          "action": {
+            "enum": [
+              "accept",
+              "reject"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "index": {
+            "maximum": 2.0,
+            "minimum": 0.0,
+            "title": "Index",
+            "type": "integer"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "id",
+          "index",
+          "action"
+        ],
+        "title": "DecisionRequestBody",
+        "type": "object"
+      },
+      "concilia__ai__api__routes__DecisionView": {
+        "properties": {
+          "action": {
+            "enum": [
+              "accept",
+              "reject"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "decided_at": {
+            "format": "date-time",
+            "title": "Decided At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "match_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Id"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "id",
+          "index",
+          "action",
+          "reason",
+          "match_id",
+          "decided_at"
+        ],
+        "title": "DecisionView",
+        "type": "object"
+      },
+      "concilia__matching__api__decisions__DecisionRequestBody": {
+        "properties": {
+          "action": {
+            "enum": [
+              "confirm",
+              "discard",
+              "approve",
+              "reject",
+              "revert"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "difference_note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Note"
+          },
+          "difference_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "commission",
+                  "detraction",
+                  "rounding",
+                  "overpayment",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Reason"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "id",
+          "action"
+        ],
+        "title": "DecisionRequestBody",
+        "type": "object"
+      },
+      "concilia__matching__api__inbox__DecisionView": {
+        "properties": {
+          "action": {
+            "enum": [
+              "confirm",
+              "discard",
+              "approve",
+              "reject",
+              "revert"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "decided_at": {
+            "format": "date-time",
+            "title": "Decided At",
+            "type": "string"
+          },
+          "decided_by": {
+            "title": "Decided By",
+            "type": "string"
+          },
+          "difference_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Note"
+          },
+          "difference_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "commission",
+                  "detraction",
+                  "rounding",
+                  "overpayment",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Reason"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "action",
+          "reason",
+          "difference_reason",
+          "difference_note",
+          "decided_by",
+          "decided_at"
+        ],
+        "title": "DecisionView",
         "type": "object"
       }
     }
@@ -4056,6 +4200,82 @@
           }
         },
         "summary": "Get Suggestion",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/app/ai/suggestions/{suggestion_id}/decisions": {
+      "post": {
+        "description": "An analyst accepts one suggestion (by its `index`), which creates a proposed match\nwith source `ai` for the normal confirm and approve flow, or rejects it with a reason.\nIdempotent on the client id. 403 `role_required`; 404 `not_found`; 409\n`already_decided`, `invalid_suggestion`, `credit_not_free`, `insufficient_balance` or\n`id_conflict`; 422 `reason_required`.",
+        "operationId": "decide_suggestion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "suggestion_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Suggestion Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/concilia__ai__api__routes__DecisionRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/concilia__ai__api__routes__DecisionView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide Suggestion",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/app/ai/usage": {
+      "get": {
+        "description": "Whether this organization can ask the AI now and how many requests it made today\n(Lima day); `daily_limit` is null in demo organizations.",
+        "operationId": "get_ai_usage",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Ai Usage",
         "tags": [
           "ai"
         ]
@@ -6191,7 +6411,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DecisionRequestBody"
+                "$ref": "#/components/schemas/concilia__matching__api__decisions__DecisionRequestBody"
               }
             }
           },

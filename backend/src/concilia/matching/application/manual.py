@@ -15,6 +15,7 @@ from concilia.shared.kernel.ids import create_or_replay, validate_client_id
 from concilia.shared.kernel.principal import Principal
 
 __all__ = [
+    "AiOrigin",
     "CreditNotFreeError",
     "InsufficientBalanceError",
     "ManualApplication",
@@ -58,6 +59,15 @@ class StoredManualMatch:
     match: ManualMatch
 
 
+@dataclass(frozen=True)
+class AiOrigin:
+    """Where a match accepted from an AI suggestion came from."""
+
+    ai_suggestion_id: UUID
+    explanation: str
+    suggested_difference_reason: DifferenceReason | None
+
+
 class ManualStore(DecisionStore, Protocol):
     async def credit_facts(self, credit_ids: list[UUID]) -> list[CreditFacts]: ...
 
@@ -66,7 +76,11 @@ class ManualStore(DecisionStore, Protocol):
     async def find_manual_match(self, match_id: UUID) -> StoredManualMatch | None: ...
 
     async def insert_manual_match(
-        self, organization_id: UUID, stored: StoredManualMatch, now: datetime
+        self,
+        organization_id: UUID,
+        stored: StoredManualMatch,
+        now: datetime,
+        origin: AiOrigin | None = None,
     ) -> None: ...
 
 
@@ -170,3 +184,29 @@ class ManualMatchService:
             for receivable in receivables
         ):
             raise InsufficientBalanceError
+
+    async def propose_from_ai(
+        self,
+        store: ManualStore,
+        organization_id: UUID,
+        stored: StoredManualMatch,
+        origin: AiOrigin,
+        now: datetime,
+    ) -> None:
+        """A proposal from an accepted AI suggestion, created by the analyst who accepted it and
+        left for the normal flow; the caller holds the organization lock."""
+        check_manual_match(stored.match)
+        await self._check_items(store, stored.bank_account_id, stored.match)
+        await store.insert_manual_match(organization_id, stored, now, origin)
+        await store.audit.record(
+            AuditEvent(
+                id=uuid7(),
+                organization_id=organization_id,
+                actor_user_id=stored.created_by,
+                action=AuditAction.MATCH_CREATED,
+                entity="match",
+                entity_id=stored.id,
+                at=now,
+                metadata={"source": "ai"},
+            )
+        )
