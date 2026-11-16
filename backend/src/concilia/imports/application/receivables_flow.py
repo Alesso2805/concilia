@@ -75,14 +75,14 @@ def _classified(
         return RowStatus.OK, {**parsed, "action": "create"}
     if existing.cancelled:
         return RowStatus.CONFLICT, {**parsed, "conflict": "cancelled"}
-    if existing.id in active:
-        return RowStatus.CONFLICT, {**parsed, "conflict": "active_matches"}
     unchanged = (existing.due_on.isoformat(), existing.amount_cents) == (
         parsed["due_on"],
         parsed["amount_cents"],
     )
     if unchanged:
         return RowStatus.DUPLICATE, {**parsed, "action": "unchanged"}
+    if existing.id in active:
+        return RowStatus.CONFLICT, {**parsed, "conflict": "active_matches"}
     return RowStatus.OK, {
         **parsed,
         "action": "update",

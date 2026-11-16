@@ -72,15 +72,16 @@ def _existing(amount_cents: int, cancelled: bool = False) -> ExistingReceivable:
 
 
 async def test_rows_are_classified_against_the_stored_receivables() -> None:
-    busy = _existing(100)
+    busy, settled = _existing(100), _existing(700)
     store = Store(
         {
             "F001-2": _existing(200),
             "F001-3": _existing(300),
             "F001-4": _existing(999, cancelled=True),
             "F001-5": busy,
+            "F001-7": settled,
         },
-        {busy.id},
+        {busy.id, settled.id},
     )
     lines: list[ReceivableLine | RowError] = [
         _line(2, "F001-1", 100),
@@ -89,6 +90,7 @@ async def test_rows_are_classified_against_the_stored_receivables() -> None:
         _line(5, "F001-4", 400),
         _line(6, "F001-5", 500),
         RowError(7, "missing_amount", ("Gloria SA", "F001-6", "")),
+        _line(8, "F001-7", 700),
     ]
 
     rows = await classify_receivables(store, lines)
@@ -103,6 +105,7 @@ async def test_rows_are_classified_against_the_stored_receivables() -> None:
         (RowStatus.CONFLICT, "cancelled"),
         (RowStatus.CONFLICT, "active_matches"),
         (RowStatus.ERROR, "missing_amount"),
+        (RowStatus.DUPLICATE, "unchanged"),
     ]
     assert rows[2].parsed["previous_amount_cents"] == 300
 
