@@ -38,7 +38,12 @@ class IdentityStore(Protocol):
     ) -> None: ...
 
     async def insert_organization(
-        self, organization_id: UUID, name: str, now: datetime
+        self,
+        organization_id: UUID,
+        name: str,
+        now: datetime,
+        *,
+        demo_expires_at: datetime | None = None,
     ) -> None: ...
 
     async def insert_membership(

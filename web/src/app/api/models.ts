@@ -18,6 +18,7 @@ export type { CreditPageView } from './models/credit-page-view';
 export type { CreditView } from './models/credit-view';
 export type { DateFormat } from './models/date-format';
 export type { DecisionView } from './models/decision-view';
+export type { DemoView } from './models/demo-view';
 export type { EngineRunRequest } from './models/engine-run-request';
 export type { EngineRunView } from './models/engine-run-view';
 export type { ErrorRowView } from './models/error-row-view';

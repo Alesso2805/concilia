@@ -6,11 +6,15 @@ from typing import Literal
 from fastapi import Depends, FastAPI
 from fastapi.routing import APIRoute
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncConnection
 
 from concilia.audit.infrastructure.sql import SqlAuditRecorder
 from concilia.banking.api.routes import banking_router
 from concilia.banking.application.service import BankingService
-from concilia.banking.infrastructure.sql import SqlBankingTransactions
+from concilia.banking.infrastructure.sql import SqlBankingStore, SqlBankingTransactions
+from concilia.demo.api.routes import demo_router
+from concilia.demo.application.creation import DemoPolicy, DemoService, DemoStores
+from concilia.demo.infrastructure.sql import SqlDemoTransactions
 from concilia.identity.api.registration import registration_router
 from concilia.identity.api.sessions import WebSecurity, session_routers
 from concilia.identity.api.settings import settings_router
@@ -20,7 +24,11 @@ from concilia.identity.application.sessions import LoginPolicy, SessionService
 from concilia.identity.application.settings import SettingsService
 from concilia.identity.application.team import TeamService
 from concilia.identity.infrastructure.passwords import Argon2PasswordHasher
-from concilia.identity.infrastructure.sql import SqlIdentityTransactions, SqlRateLimiter
+from concilia.identity.infrastructure.sql import (
+    SqlIdentityStore,
+    SqlIdentityTransactions,
+    SqlRateLimiter,
+)
 from concilia.identity.infrastructure.team_sql import SqlTeamTransactions
 from concilia.imports.api.receivables import receivables_router
 from concilia.imports.api.routes import imports_router
@@ -120,15 +128,41 @@ def create_app(settings: ApiSettings | None = None, clock: Clock | None = None) 
         banking_router(BankingService(SqlBankingTransactions(engine, SqlAuditRecorder), clock)),
         dependencies=authenticated,
     )
-    imports = ImportService(
-        SqlImportTransactions(engine, SqlAuditRecorder, SqlPeriodQueries, SqlMatchQueries),
-        ContentReader(),
-        clock,
+    import_transactions = SqlImportTransactions(
+        engine, SqlAuditRecorder, SqlPeriodQueries, SqlMatchQueries
     )
+    imports = ImportService(import_transactions, ContentReader(), clock)
     app.include_router(imports_router(imports), dependencies=authenticated)
     app.include_router(receivables_router(imports), dependencies=authenticated)
-    runs = EngineRunService(SqlRunTransactions(engine, SqlAuditRecorder, SqlPeriodQueries), clock)
+    run_transactions = SqlRunTransactions(engine, SqlAuditRecorder, SqlPeriodQueries)
+    runs = EngineRunService(run_transactions, clock)
     app.include_router(engine_runs_router(runs), dependencies=authenticated)
+
+    def demo_stores(connection: AsyncConnection) -> DemoStores:
+        return DemoStores(
+            SqlIdentityStore(connection, SqlAuditRecorder(connection)),
+            SqlBankingStore(connection, SqlAuditRecorder(connection)),
+            import_transactions.store(connection),
+            run_transactions.store(connection),
+        )
+
+    demo = DemoService(
+        SqlDemoTransactions(engine, demo_stores),
+        runs,
+        ContentReader(),
+        SqlRateLimiter(engine),
+        clock,
+        policy=DemoPolicy(
+            ttl=timedelta(hours=settings.demo_ttl_hours) if settings.demo_ttl_hours else None,
+            max_per_ip_per_day=settings.demo_max_per_ip_per_day,
+            max_per_day=settings.demo_max_per_day,
+        ),
+        key_secret=settings.rate_limit_secret.get_secret_value().encode(),
+    )
+    app.include_router(
+        demo_router(demo, sessions, routers.set_session_cookies),
+        dependencies=[Depends(routers.require_same_origin)],
+    )
     inbox = InboxService(SqlInboxTransactions(engine))
     app.include_router(inbox_router(inbox), dependencies=authenticated)
     app.include_router(jobs_router(engine), dependencies=authenticated)

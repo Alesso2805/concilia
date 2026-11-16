@@ -55,7 +55,7 @@ def receivables_layout(config: ReceivablesConfig) -> ReceivablesLayout:
     )
 
 
-def _parsed(line: ReceivableLine) -> dict[str, Any]:
+def receivable_parsed(line: ReceivableLine) -> dict[str, Any]:
     return {
         "customer_name": line.customer_name,
         "customer_name_norm": line.customer_name_norm,
@@ -105,7 +105,9 @@ async def classify_receivables(
                 ImportRow(line.row_number, RowStatus.ERROR, {"cells": list(line.cells)}, line.code)
             )
             continue
-        status, parsed = _classified(_parsed(line), existing.get(line.doc_number_norm), active)
+        status, parsed = _classified(
+            receivable_parsed(line), existing.get(line.doc_number_norm), active
+        )
         rows.append(ImportRow(line.row_number, status, parsed))
     return rows
 

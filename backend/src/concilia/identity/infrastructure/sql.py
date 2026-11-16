@@ -101,12 +101,22 @@ class SqlIdentityStore:
             id=organization_id,
         )
 
-    async def insert_organization(self, organization_id: UUID, name: str, now: datetime) -> None:
+    async def insert_organization(
+        self,
+        organization_id: UUID,
+        name: str,
+        now: datetime,
+        *,
+        demo_expires_at: datetime | None = None,
+    ) -> None:
         try:
             await self._execute(
-                "INSERT INTO organizations (id, name, created_at) VALUES (:id, :name, :now)",
+                """INSERT INTO organizations (id, name, is_demo, demo_expires_at, created_at)
+                   VALUES (:id, :name, :is_demo, :expires, :now)""",
                 id=organization_id,
                 name=name,
+                is_demo=demo_expires_at is not None,
+                expires=demo_expires_at,
                 now=now,
             )
         except IntegrityError as error:

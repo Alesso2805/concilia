@@ -15,6 +15,7 @@ from concilia.banking.application.profile_config import (
     parse_config,
 )
 from concilia.imports.application.matches import ActiveMatchesQuery
+from concilia.imports.application.parsing import statement_layout, statement_parsed
 from concilia.imports.application.receivables_flow import (
     ReceivableStore,
     apply_receivables,
@@ -36,7 +37,6 @@ from concilia.imports.domain.receivables import read_receivables
 from concilia.imports.domain.statement import (
     FileError,
     RowError,
-    StatementLayout,
     StatementLine,
     fingerprints,
     read_statement,
@@ -225,32 +225,6 @@ def _member_organization(principal: Principal) -> UUID:
     if principal.organization_id is None:
         raise NotAllowedError
     return principal.organization_id
-
-
-def _layout(config: StatementConfig) -> StatementLayout:
-    columns = config.columns
-    return StatementLayout(
-        date=columns.date,
-        description=columns.description,
-        operation_number=columns.operation_number,
-        amount=columns.amount,
-        debit=columns.debit,
-        credit=columns.credit,
-        skip_rows=config.skip_rows,
-        date_format=config.date_format.value,
-        decimal_separator=config.decimal_separator,
-        thousands_separator=config.thousands_separator,
-    )
-
-
-def _parsed(line: StatementLine, fingerprint: str) -> dict[str, Any]:
-    return {
-        "booked_on": line.booked_on.isoformat(),
-        "amount_cents": line.amount_cents,
-        "description": line.description,
-        "operation_number": line.operation_number,
-        "fingerprint": fingerprint,
-    }
 
 
 def _filename(raw: str) -> str:
@@ -522,7 +496,7 @@ class ImportService:
                 receivables = read_receivables(cells, receivables_layout(config))
                 rows = await classify_receivables(store, receivables)
             elif isinstance(config, StatementConfig) and file.bank_account_id is not None:
-                statement = read_statement(cells, _layout(config))
+                statement = read_statement(cells, statement_layout(config))
                 rows = await self._classify(store, file.bank_account_id, statement)
             else:
                 raise WrongStateError
@@ -560,7 +534,7 @@ class ImportService:
                 if period_of(line.booked_on) in closed
                 else RowStatus.OK
             )
-            rows.append(ImportRow(line.row_number, status, _parsed(line, fingerprint)))
+            rows.append(ImportRow(line.row_number, status, statement_parsed(line, fingerprint)))
         return rows
 
 
