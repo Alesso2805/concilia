@@ -1,6 +1,6 @@
 import { expect, expectAccessible, test } from './fixtures';
 
-test('a visitor enters a demo, reviews its months and the reviewer reopens and closes one', async ({
+test('a visitor enters a demo, the reviewer reopens and closes a month and reads the panel', async ({
   page,
 }) => {
   await page.goto('/iniciar-sesion');
@@ -45,6 +45,20 @@ test('a visitor enters a demo, reviews its months and the reviewer reopens and c
   await page.getByRole('button', { name: 'Cerrar mes' }).click();
   await expect(page.getByText('Cerraste octubre de 2026.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Reabrir mes' })).toBeVisible();
+
+  await navigation.getByRole('link', { name: 'Panel' }).click();
+  await expect(page.getByRole('heading', { name: 'Panel', level: 1 })).toBeVisible();
+  await page.getByRole('combobox', { name: 'Mes' }).click();
+  await page.getByRole('option', { name: 'octubre de 2026 (cerrado)' }).click();
+  await expect(page.getByText('Conciliado por monto')).toBeVisible();
+  const byStatus = page.getByRole('region', { name: 'Abonos del mes por estado' });
+  await expect(
+    byStatus.getByRole('img', { name: /^Abonos del mes por estado/ }).first(),
+  ).toBeVisible();
+  await expectAccessible(page);
+  await byStatus.getByRole('button', { name: 'Ver como tabla' }).click();
+  await expect(byStatus.getByRole('rowheader', { name: 'Conciliados' })).toBeVisible();
+  await expectAccessible(page);
 });
 
 test('a visitor imports the third month of the demo from its sample files', async ({ page }) => {

@@ -1,0 +1,84 @@
+<h1 class="reports__title">Panel</h1>
+
+@if (accounts(); as accounts) {
+  @if (accounts.length === 0) {
+    <p class="reports__muted">
+      Todavía no hay cuentas bancarias. Pide a quien administra tu organización que registre una.
+    </p>
+  } @else {
+    <div class="reports__bar">
+      <mat-form-field class="reports__field" appearance="outline">
+        <mat-label>Cuenta</mat-label>
+        <mat-select [value]="accountId()" (selectionChange)="selectAccount($event.value)">
+          @for (account of accounts; track account.id) {
+            <mat-option [value]="account.id">
+              {{ account.bank }} · {{ account.alias }} ({{ account.number_last4 }})
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      @if (periods().length > 0) {
+        <mat-form-field class="reports__field" appearance="outline">
+          <mat-label>Mes</mat-label>
+          <mat-select [value]="month()?.period" (selectionChange)="selectPeriod($event.value)">
+            @for (period of periods(); track period.period) {
+              <mat-option [value]="period.period">{{ periodLabel(period) }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+    </div>
+  }
+}
+
+@if (error(); as message) {
+  <p class="reports__error" role="alert">{{ message }}</p>
+}
+
+@if (accounts()?.length && periods().length === 0) {
+  <p class="reports__muted">Esta cuenta todavía no tiene abonos importados.</p>
+}
+
+@if (dashboard(); as view) {
+  @if (reconciled(); as share) {
+    <dl class="reports__figures">
+      <div class="reports__figure">
+        <dt>Conciliado por monto</dt>
+        <dd>{{ share.byAmount }}</dd>
+      </div>
+      <div class="reports__figure">
+        <dt>Conciliado por cantidad</dt>
+        <dd>{{ share.byCount }}</dd>
+      </div>
+      <div class="reports__figure">
+        <dt>Abonos del mes</dt>
+        <dd>{{ share.totalCount }}</dd>
+      </div>
+    </dl>
+  }
+  <p class="reports__muted">
+    {{ monthLabel(view.period) }}{{ view.closed ? ' (cerrado)' : '' }}. Conciliado quiere decir
+    aprobado. La antigüedad de los pendientes se mide al {{ day(view.reference_date) }}.
+  </p>
+
+  <div class="reports__charts">
+    <app-chart-card
+      heading="Abonos del mes por estado"
+      category="Estado"
+      [rows]="statusRows()"
+      empty="Este mes no tiene abonos."
+    />
+    <app-chart-card
+      heading="Pendientes por antigüedad"
+      category="Antigüedad"
+      [rows]="pendingRows()"
+      empty="No hay abonos pendientes de aprobar hasta esta fecha."
+    />
+    <app-chart-card
+      heading="Diferencias por motivo"
+      category="Motivo"
+      [rows]="differenceRows()"
+      empty="Este mes no tiene diferencias confirmadas."
+    />
+  </div>
+}
