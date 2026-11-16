@@ -102,10 +102,19 @@ describe('ShellComponent', () => {
     expect(element.textContent).not.toContain('Ver como');
   });
 
-  it('marks a demo organization', async () => {
+  it('marks a demo organization and says its data is fictitious', async () => {
     const element = await render(sessionIn(DEMO));
+    await fixture.whenStable();
 
     expect(element.querySelector('.shell__badge')?.textContent).toBe('Demo');
+    expect(element.textContent).toContain('Demo con datos ficticios');
+  });
+
+  it('shows no fictitious data notice outside a demo', async () => {
+    const element = await render(sessionIn(ANDINA));
+    await fixture.whenStable();
+
+    expect(element.textContent).not.toContain('Demo con datos ficticios');
   });
 
   it('offers to switch only with several organizations', async () => {
