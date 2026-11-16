@@ -9,9 +9,13 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from concilia.ai.api.routes import ai_router
+from concilia.ai.application.decisions import SuggestionDecisionService
 from concilia.ai.application.service import LlmChooser, SuggestionService
 from concilia.ai.infrastructure.clients import llm_clients
-from concilia.ai.infrastructure.sql import SqlSuggestionTransactions
+from concilia.ai.infrastructure.sql import (
+    SqlSuggestionDecisionTransactions,
+    SqlSuggestionTransactions,
+)
 from concilia.audit.api.routes import audit_router
 from concilia.audit.application.log import AuditLogService
 from concilia.audit.infrastructure.log_sql import SqlAuditLogTransactions
@@ -53,7 +57,7 @@ from concilia.matching.application.manual import ManualMatchService
 from concilia.matching.application.runs import EngineRunService
 from concilia.matching.infrastructure.decisions_sql import SqlDecisionTransactions
 from concilia.matching.infrastructure.inbox_sql import SqlInboxTransactions
-from concilia.matching.infrastructure.manual_sql import SqlManualTransactions
+from concilia.matching.infrastructure.manual_sql import SqlManualStore, SqlManualTransactions
 from concilia.matching.infrastructure.queries import SqlMatchQueries
 from concilia.matching.infrastructure.runs_sql import SqlRunTransactions
 from concilia.periods.api.routes import periods_router
@@ -229,6 +233,15 @@ def create_app(
             clock,
             global_daily_limit=settings.ai_global_daily_limit,
         )
-        app.include_router(ai_router(suggestions), dependencies=authenticated)
+        suggestion_decisions = SuggestionDecisionService(
+            SqlSuggestionDecisionTransactions(
+                engine,
+                SqlAuditRecorder,
+                lambda connection: SqlManualStore(connection, SqlAuditRecorder(connection)),
+            ),
+            manual,
+            clock,
+        )
+        app.include_router(ai_router(suggestions, suggestion_decisions), dependencies=authenticated)
     app.include_router(jobs_router(engine), dependencies=authenticated)
     return app

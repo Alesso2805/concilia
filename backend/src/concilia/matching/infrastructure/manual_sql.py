@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from concilia.audit.application.recorder import AuditRecorder
 from concilia.matching.application.manual import (
+    AiOrigin,
     CreditFacts,
     ReceivableFacts,
     StoredManualMatch,
@@ -79,18 +80,32 @@ class SqlManualStore(SqlDecisionStore):
         )
 
     async def insert_manual_match(
-        self, organization_id: UUID, stored: StoredManualMatch, now: datetime
+        self,
+        organization_id: UUID,
+        stored: StoredManualMatch,
+        now: datetime,
+        origin: AiOrigin | None = None,
     ) -> None:
         await self._connection.execute(
             text(
-                """INSERT INTO matches (id, organization_id, bank_account_id, source, created_by,
-                                        created_at)
-                   VALUES (:id, :org, :account, 'manual', :created_by, :now)"""
+                """INSERT INTO matches (id, organization_id, bank_account_id, source,
+                                        ai_suggestion_id, explanation,
+                                        suggested_difference_reason, created_by, created_at)
+                   VALUES (:id, :org, :account, :source, :ai_suggestion_id, :explanation,
+                           :reason, :created_by, :now)"""
             ),
             {
                 "id": stored.id,
                 "org": organization_id,
                 "account": stored.bank_account_id,
+                "source": "ai" if origin else "manual",
+                "ai_suggestion_id": origin.ai_suggestion_id if origin else None,
+                "explanation": origin.explanation if origin else None,
+                "reason": (
+                    origin.suggested_difference_reason.value
+                    if origin and origin.suggested_difference_reason
+                    else None
+                ),
                 "created_by": stored.created_by,
                 "now": now,
             },

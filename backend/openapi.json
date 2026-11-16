@@ -141,7 +141,9 @@
           "period.closed",
           "period.reopened",
           "export.requested",
-          "ai_suggestion.requested"
+          "ai_suggestion.requested",
+          "ai_suggestion.accepted",
+          "ai_suggestion.rejected"
         ],
         "title": "AuditAction",
         "type": "string"
@@ -3630,6 +3632,107 @@
         "title": "SuggestedReceivableView",
         "type": "object"
       },
+      "SuggestionDecisionBody": {
+        "properties": {
+          "action": {
+            "enum": [
+              "accept",
+              "reject"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "index": {
+            "maximum": 2.0,
+            "minimum": 0.0,
+            "title": "Index",
+            "type": "integer"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "id",
+          "index",
+          "action"
+        ],
+        "title": "SuggestionDecisionBody",
+        "type": "object"
+      },
+      "SuggestionDecisionView": {
+        "properties": {
+          "action": {
+            "enum": [
+              "accept",
+              "reject"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "decided_at": {
+            "format": "date-time",
+            "title": "Decided At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "match_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Id"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "id",
+          "index",
+          "action",
+          "reason",
+          "match_id",
+          "decided_at"
+        ],
+        "title": "SuggestionDecisionView",
+        "type": "object"
+      },
       "SuggestionItemView": {
         "properties": {
           "confidence": {
@@ -3640,6 +3743,16 @@
             ],
             "title": "Confidence",
             "type": "string"
+          },
+          "decision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SuggestionDecisionView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "difference_cents": {
             "title": "Difference Cents",
@@ -3685,6 +3798,7 @@
         },
         "required": [
           "index",
+          "decision",
           "receivables",
           "difference_cents",
           "difference_reason",
@@ -3912,6 +4026,36 @@
         "title": "UploadView",
         "type": "object"
       },
+      "UsageView": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "daily_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Limit"
+          },
+          "used_today": {
+            "title": "Used Today",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "available",
+          "used_today",
+          "daily_limit"
+        ],
+        "title": "UsageView",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -4056,6 +4200,82 @@
           }
         },
         "summary": "Get Suggestion",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/app/ai/suggestions/{suggestion_id}/decisions": {
+      "post": {
+        "description": "An analyst accepts one suggestion (by its `index`), which creates a proposed match\nwith source `ai` for the normal confirm and approve flow, or rejects it with a reason.\nIdempotent on the client id. 403 `role_required`; 404 `not_found`; 409\n`already_decided`, `invalid_suggestion`, `credit_not_free`, `insufficient_balance` or\n`id_conflict`; 422 `reason_required`.",
+        "operationId": "decide_suggestion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "suggestion_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Suggestion Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuggestionDecisionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuggestionDecisionView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide Suggestion",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/app/ai/usage": {
+      "get": {
+        "description": "Whether this organization can ask the AI now and how many requests it made today\n(Lima day); `daily_limit` is null in demo organizations.",
+        "operationId": "get_ai_usage",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Ai Usage",
         "tags": [
           "ai"
         ]

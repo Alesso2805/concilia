@@ -36,6 +36,8 @@ class AuditAction(StrEnum):
     PERIOD_REOPENED = "period.reopened"
     EXPORT_REQUESTED = "export.requested"
     AI_SUGGESTION_REQUESTED = "ai_suggestion.requested"
+    AI_SUGGESTION_ACCEPTED = "ai_suggestion.accepted"
+    AI_SUGGESTION_REJECTED = "ai_suggestion.rejected"
 
 
 class AuditEntity(StrEnum):

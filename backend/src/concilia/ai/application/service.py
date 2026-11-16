@@ -23,20 +23,39 @@ from concilia.shared.kernel.principal import Principal
 
 __all__ = [
     "AiError",
+    "DecisionAction",
+    "FoundSuggestion",
     "LlmChooser",
     "LlmError",
     "ReceivableLabel",
     "StoredSuggestion",
+    "SuggestionDecision",
     "SuggestionRequest",
     "SuggestionService",
     "SuggestionStore",
     "SuggestionTransactions",
+    "Usage",
 ]
 
 ORGANIZATION_DAILY_LIMIT = 50
 KIND = "ai_suggest"
 
 type JobStatus = Literal["queued", "running", "done", "failed"]
+
+
+type DecisionAction = Literal["accept", "reject"]
+
+
+@dataclass(frozen=True)
+class SuggestionDecision:
+    id: UUID
+    ai_suggestion_id: UUID
+    suggestion_index: int
+    action: DecisionAction
+    reason: str | None
+    match_id: UUID | None
+    decided_by: UUID
+    decided_at: datetime
 
 
 class AiError(Exception):
@@ -84,6 +103,21 @@ class ReceivableLabel:
     customer_name: str
 
 
+@dataclass(frozen=True)
+class FoundSuggestion:
+    request: SuggestionRequest
+    suggestion: StoredSuggestion | None
+    labels: dict[UUID, ReceivableLabel]
+    decisions: list[SuggestionDecision]
+
+
+@dataclass(frozen=True)
+class Usage:
+    available: bool
+    used_today: int
+    daily_limit: int | None
+
+
 class LlmChooser(Protocol):
     def for_organization(self, is_demo: bool) -> LlmClient | None: ...
 
@@ -116,6 +150,8 @@ class SuggestionStore(Protocol):
     async def find_suggestion(self, job_id: UUID) -> StoredSuggestion | None: ...
 
     async def receivable_labels(self, ids: Sequence[UUID]) -> dict[UUID, ReceivableLabel]: ...
+
+    async def decisions_of(self, ai_suggestion_id: UUID) -> list[SuggestionDecision]: ...
 
     async def insert_suggestion(
         self, organization_id: UUID, suggestion: StoredSuggestion
@@ -207,9 +243,21 @@ class SuggestionService:
                 same_content=same_content,
             )
 
-    async def find(
-        self, principal: Principal, request_id: UUID
-    ) -> tuple[SuggestionRequest, StoredSuggestion | None, dict[UUID, ReceivableLabel]]:
+    async def usage(self, principal: Principal) -> Usage:
+        """Whether the organization can ask the AI and how many requests it made today (Lima);
+        demo organizations have no daily limit."""
+        organization_id = _member_organization(principal)
+        today = self._clock.today_lima()
+        since, until = lima_day_start(today), lima_day_start(today + timedelta(days=1))
+        async with self._transactions.organization(organization_id) as store:
+            is_demo = await store.is_demo(organization_id)
+            return Usage(
+                available=self._llm.for_organization(is_demo=is_demo) is not None,
+                used_today=await store.organization_usage(since, until),
+                daily_limit=None if is_demo else ORGANIZATION_DAILY_LIMIT,
+            )
+
+    async def find(self, principal: Principal, request_id: UUID) -> FoundSuggestion:
         organization_id = _member_organization(principal)
         async with self._transactions.organization(organization_id) as store:
             request = await store.find_request(request_id)
@@ -218,7 +266,12 @@ class SuggestionService:
             suggestion = await store.find_suggestion(request_id)
             shown = suggestion.server_applied if suggestion and suggestion.server_applied else []
             ids = [item.receivable_id for server in shown for item in server.applied]
-            return request, suggestion, await store.receivable_labels(ids)
+            return FoundSuggestion(
+                request,
+                suggestion,
+                await store.receivable_labels(ids),
+                await store.decisions_of(suggestion.id) if suggestion else [],
+            )
 
     async def suggest(
         self, organization_id: UUID, job_id: UUID, store: SuggestionStore, requested_by: UUID

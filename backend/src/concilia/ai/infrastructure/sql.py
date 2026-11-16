@@ -14,6 +14,7 @@ from concilia.ai.application.service import (
     JobStatus,
     ReceivableLabel,
     StoredSuggestion,
+    SuggestionDecision,
     SuggestionRequest,
 )
 from concilia.ai.domain.suggestions import (
@@ -23,6 +24,7 @@ from concilia.ai.domain.suggestions import (
     ServerSuggestion,
 )
 from concilia.audit.application.recorder import AuditRecorder
+from concilia.matching.application.manual import ManualStore
 from concilia.shared.infrastructure.db import (
     LockNamespace,
     lock_organization,
@@ -76,6 +78,23 @@ def _suggestion(data: dict[str, Any]) -> ServerSuggestion:
         difference_reason=data["difference_reason"],
         recomputed=data["recomputed"],
     )
+
+
+def _decision(row: Any) -> SuggestionDecision:
+    return SuggestionDecision(
+        row.id,
+        row.ai_suggestion_id,
+        row.suggestion_index,
+        row.action,
+        row.reason,
+        row.match_id,
+        row.decided_by,
+        row.decided_at,
+    )
+
+
+DECISION_COLUMNS = """id, ai_suggestion_id, suggestion_index, action, reason, match_id, decided_by,
+                      decided_at"""
 
 
 class SqlSuggestionStore:
@@ -230,6 +249,16 @@ class SqlSuggestionStore:
         )
         return {row.id: ReceivableLabel(row.doc_number, row.customer_name) for row in rows}
 
+    async def decisions_of(self, ai_suggestion_id: UUID) -> list[SuggestionDecision]:
+        rows = await self._connection.execute(
+            text(
+                f"""SELECT {DECISION_COLUMNS} FROM ai_suggestion_decisions
+                    WHERE ai_suggestion_id = :id ORDER BY seq"""  # noqa: S608
+            ),
+            {"id": ai_suggestion_id},
+        )
+        return [_decision(row) for row in rows]
+
     async def insert_suggestion(self, organization_id: UUID, suggestion: StoredSuggestion) -> None:
         await self._connection.execute(
             text(
@@ -282,3 +311,73 @@ class SqlSuggestionTransactions:
     async def organization(self, organization_id: UUID) -> AsyncIterator[SqlSuggestionStore]:
         async with organization_transaction(self._engine, organization_id) as connection:
             yield self.store(connection)
+
+
+class SqlSuggestionDecisionStore(SqlSuggestionStore):
+    def __init__(
+        self, connection: AsyncConnection, audit: AuditRecorder, matches: ManualStore
+    ) -> None:
+        super().__init__(connection, audit)
+        self.matches = matches
+
+    async def credit_account(self, bank_movement_id: UUID) -> UUID:
+        found: UUID = await self._connection.scalar(
+            text("SELECT bank_account_id FROM bank_movements WHERE id = :id"),
+            {"id": bank_movement_id},
+        )
+        return found
+
+    async def find_decision(self, decision_id: UUID) -> SuggestionDecision | None:
+        row = (
+            await self._connection.execute(
+                text(f"SELECT {DECISION_COLUMNS} FROM ai_suggestion_decisions WHERE id = :id"),  # noqa: S608
+                {"id": decision_id},
+            )
+        ).first()
+        return _decision(row) if row else None
+
+    async def insert_decision(self, organization_id: UUID, decision: SuggestionDecision) -> None:
+        try:
+            await self._connection.execute(
+                text(
+                    """INSERT INTO ai_suggestion_decisions (id, organization_id, ai_suggestion_id,
+                                                         suggestion_index, action, reason,
+                                                         match_id, decided_by, decided_at)
+                       VALUES (:id, :org, :suggestion, :index, :action, :reason, :match, :by,
+                               :at)"""
+                ),
+                {
+                    "id": decision.id,
+                    "org": organization_id,
+                    "suggestion": decision.ai_suggestion_id,
+                    "index": decision.suggestion_index,
+                    "action": decision.action,
+                    "reason": decision.reason,
+                    "match": decision.match_id,
+                    "by": decision.decided_by,
+                    "at": decision.decided_at,
+                },
+            )
+        except IntegrityError as error:
+            raise IdConflictError from error
+
+
+class SqlSuggestionDecisionTransactions:
+    def __init__(
+        self,
+        engine: AsyncEngine,
+        audit_factory: Callable[[AsyncConnection], AuditRecorder],
+        matches_factory: Callable[[AsyncConnection], ManualStore],
+    ) -> None:
+        self._engine = engine
+        self._audit_factory = audit_factory
+        self._matches_factory = matches_factory
+
+    @asynccontextmanager
+    async def organization(
+        self, organization_id: UUID
+    ) -> AsyncIterator[SqlSuggestionDecisionStore]:
+        async with organization_transaction(self._engine, organization_id) as connection:
+            yield SqlSuggestionDecisionStore(
+                connection, self._audit_factory(connection), self._matches_factory(connection)
+            )
