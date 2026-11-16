@@ -33,6 +33,14 @@ export type { RequestEngineRun$Params as RequestEngineRun$Params } from './fn/ma
 export { requestEngineRun as requestEngineRun } from './fn/matching/request-engine-run';
 export type { GetEngineRun$Params as GetEngineRun$Params } from './fn/matching/get-engine-run';
 export { getEngineRun as getEngineRun } from './fn/matching/get-engine-run';
+export type { RequestExport$Params as RequestExport$Params } from './fn/reports/request-export';
+export { requestExport as requestExport } from './fn/reports/request-export';
+export type { GetExport$Params as GetExport$Params } from './fn/reports/get-export';
+export { getExport as getExport } from './fn/reports/get-export';
+export type { DownloadExport$Params as DownloadExport$Params } from './fn/reports/download-export';
+export { downloadExport as downloadExport } from './fn/reports/download-export';
+export type { GetDashboard$Params as GetDashboard$Params } from './fn/reports/get-dashboard';
+export { getDashboard as getDashboard } from './fn/reports/get-dashboard';
 export type { ListImports$Params as ListImports$Params } from './fn/imports/list-imports';
 export { listImports as listImports } from './fn/imports/list-imports';
 export type { UploadImport$Params as UploadImport$Params } from './fn/imports/upload-import';
@@ -99,8 +107,6 @@ export type { ListReceivables$Params as ListReceivables$Params } from './fn/rece
 export { listReceivables as listReceivables } from './fn/receivables/list-receivables';
 export type { CancelReceivable$Params as CancelReceivable$Params } from './fn/receivables/cancel-receivable';
 export { cancelReceivable as cancelReceivable } from './fn/receivables/cancel-receivable';
-export type { GetDashboard$Params as GetDashboard$Params } from './fn/reports/get-dashboard';
-export { getDashboard as getDashboard } from './fn/reports/get-dashboard';
 export type { GetHealth$Params as GetHealth$Params } from './fn/health/get-health';
 export { getHealth as getHealth } from './fn/health/get-health';
 export type { Register$Params as Register$Params } from './fn/registration/register';

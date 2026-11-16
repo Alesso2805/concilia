@@ -139,7 +139,8 @@
           "match.rejected",
           "match.reverted",
           "period.closed",
-          "period.reopened"
+          "period.reopened",
+          "export.requested"
         ],
         "title": "AuditAction",
         "type": "string"
@@ -175,7 +176,8 @@
           "receivable",
           "engine_run",
           "match",
-          "period_event"
+          "period_event",
+          "export"
         ],
         "title": "AuditEntity",
         "type": "string"
@@ -1130,6 +1132,100 @@
           "cells"
         ],
         "title": "ErrorRowView",
+        "type": "object"
+      },
+      "ExportRequestBody": {
+        "properties": {
+          "bank_account_id": {
+            "format": "uuid",
+            "title": "Bank Account Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "period": {
+            "format": "date",
+            "title": "Period",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "bank_account_id",
+          "period"
+        ],
+        "title": "ExportRequestBody",
+        "type": "object"
+      },
+      "ExportView": {
+        "properties": {
+          "bank_account_id": {
+            "format": "uuid",
+            "title": "Bank Account Id",
+            "type": "string"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "job_id": {
+            "format": "uuid",
+            "title": "Job Id",
+            "type": "string"
+          },
+          "period": {
+            "format": "date",
+            "title": "Period",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "job_id",
+          "bank_account_id",
+          "period",
+          "status",
+          "error_code",
+          "expires_at"
+        ],
+        "title": "ExportView",
         "type": "object"
       },
       "FileFormat": {
@@ -4182,6 +4278,132 @@
         "summary": "Get Engine Run",
         "tags": [
           "matching"
+        ]
+      }
+    },
+    "/api/app/exports": {
+      "post": {
+        "description": "Queue the Excel report of one account and month (`period` is its first day) for\nanalysts and reviewers. The client id is also the id of the `export_period` job to\nfollow; the file can be downloaded for 24 hours once it is `done`. Idempotent on the\nclient id. 403 `role_required`; 404 `not_found`; 409 `id_conflict`; 422\n`invalid_period`, `id_not_uuid7` or `id_clock_skew`.",
+        "operationId": "request_export",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Request Export",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/app/exports/{export_id}": {
+      "get": {
+        "description": "The state of a requested export. 403 `role_required`; 404 `not_found`.",
+        "operationId": "get_export",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "export_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Export Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Export",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/app/exports/{export_id}/file": {
+      "get": {
+        "description": "The workbook (Resumen, Conciliados, Pendientes, Diferencias). 403 `role_required`;\n404 `not_found`; 409 `not_ready`; 410 `expired` after 24 hours.",
+        "operationId": "download_export",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "export_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Export Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {}
+            },
+            "description": "The Excel workbook"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Export",
+        "tags": [
+          "reports"
         ]
       }
     },

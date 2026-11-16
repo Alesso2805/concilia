@@ -19,6 +19,10 @@ from concilia.matching.infrastructure.jobs import run_engine_handler
 from concilia.matching.infrastructure.queries import SqlMatchQueries
 from concilia.matching.infrastructure.runs_sql import SqlRunTransactions
 from concilia.periods.infrastructure.sql import SqlPeriodQueries
+from concilia.reporting.application.exports import ExportService
+from concilia.reporting.infrastructure.exports_sql import SqlExportTransactions
+from concilia.reporting.infrastructure.jobs import export_period_handler
+from concilia.reporting.infrastructure.xlsx import build_workbook
 from concilia.shared.infrastructure.clock import SystemClock
 from concilia.shared.infrastructure.db import create_engine
 from concilia.shared.infrastructure.jobs import (
@@ -53,12 +57,15 @@ def handlers(engine: AsyncEngine, clock: Clock) -> dict[str, Handler]:
     imports = ImportService(transactions, ContentReader(), clock)
     run_transactions = SqlRunTransactions(engine, SqlAuditRecorder, SqlPeriodQueries)
     runs = EngineRunService(run_transactions, clock)
+    export_transactions = SqlExportTransactions(engine, SqlAuditRecorder)
+    exports = ExportService(export_transactions, build_workbook, clock)
     return {
         "noop": run_noop,
         "cleanup": cleanup_handler(clock),
         "parse_import": parse_import_handler(engine, imports, transactions),
         "confirm_import": confirm_import_handler(imports, transactions),
         "run_engine": run_engine_handler(engine, runs, run_transactions),
+        "export_period": export_period_handler(exports, export_transactions),
     }
 
 

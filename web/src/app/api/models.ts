@@ -37,6 +37,8 @@ export type { DifferenceView } from './models/difference-view';
 export type { EngineRunRequest } from './models/engine-run-request';
 export type { EngineRunView } from './models/engine-run-view';
 export type { ErrorRowView } from './models/error-row-view';
+export type { ExportRequestBody } from './models/export-request-body';
+export type { ExportView } from './models/export-view';
 export type { FileFormat } from './models/file-format';
 export type { FilePageView } from './models/file-page-view';
 export type { HealthResponse } from './models/health-response';

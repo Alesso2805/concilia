@@ -29,6 +29,7 @@ __all__ = [
     "NotAllowedError",
     "NotFoundError",
     "Tally",
+    "load_dashboard",
 ]
 
 VIEWER_ROLES = frozenset({"admin", "analyst", "reviewer"})
@@ -68,6 +69,21 @@ class DashboardTransactions(Protocol):
     ) -> AbstractAsyncContextManager[DashboardStore]: ...
 
 
+async def load_dashboard(
+    store: DashboardStore, bank_account_id: UUID, period: date, today: date
+) -> Dashboard:
+    reference = reference_date(period, today)
+    end = month_end(period)
+    return Dashboard(
+        period=period,
+        reference_date=reference,
+        closed=await store.is_closed(bank_account_id, period),
+        credits=await store.credits_by_status(bank_account_id, period, end),
+        pending=age_pending(await store.pending_by_day(bank_account_id, reference), reference),
+        differences=await store.differences(bank_account_id, period, end),
+    )
+
+
 class DashboardService:
     def __init__(self, transactions: DashboardTransactions, clock: Clock) -> None:
         self._transactions = transactions
@@ -82,18 +98,7 @@ class DashboardService:
             raise NotAllowedError
         if period.day != 1:
             raise InvalidPeriodError
-        reference = reference_date(period, self._clock.today_lima())
-        end = month_end(period)
         async with self._transactions.organization(principal.organization_id) as store:
             if not await store.account_exists(bank_account_id):
                 raise NotFoundError
-            return Dashboard(
-                period=period,
-                reference_date=reference,
-                closed=await store.is_closed(bank_account_id, period),
-                credits=await store.credits_by_status(bank_account_id, period, end),
-                pending=age_pending(
-                    await store.pending_by_day(bank_account_id, reference), reference
-                ),
-                differences=await store.differences(bank_account_id, period, end),
-            )
+            return await load_dashboard(store, bank_account_id, period, self._clock.today_lima())
