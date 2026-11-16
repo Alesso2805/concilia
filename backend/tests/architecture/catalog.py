@@ -54,7 +54,7 @@ async def _relation_violations(connection: AsyncConnection, tables: Mapping[str,
     rows = await _rows(
         connection,
         """
-        SELECT c.relname, c.relkind, c.relrowsecurity, c.relforcerowsecurity,
+        SELECT c.relname, c.relkind::text AS relkind, c.relrowsecurity, c.relforcerowsecurity,
                pg_get_userbyid(c.relowner) AS owner, c.reloptions
         FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
         WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p', 'v', 'm')
