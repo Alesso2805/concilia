@@ -211,7 +211,7 @@ async def test_scheduler_enqueues_cleanup_once_per_slot(
     await schedule_periodic_tasks(worker_engine, clock.now())
     assert await _count(worker_engine, "cleanup") == 1
 
-    assert await Runner(worker_engine, clock, handlers(clock)).run_once()
+    assert await Runner(worker_engine, clock, handlers(worker_engine, clock)).run_once()
     clock.advance(timedelta(minutes=7))
     await schedule_periodic_tasks(worker_engine, clock.now())
     assert await _count(worker_engine, "cleanup") == 1
@@ -226,7 +226,7 @@ async def test_rerunning_a_job_after_a_crash_duplicates_nothing(
     owner_engine: AsyncEngine, worker_engine: AsyncEngine, clock: FixedClock, kind: str
 ) -> None:
     job_id = await _enqueue(worker_engine, kind)
-    runner = Runner(worker_engine, clock, handlers(clock))
+    runner = Runner(worker_engine, clock, handlers(worker_engine, clock))
     assert await runner.run_once()
     async with owner_engine.begin() as connection:
         await connection.execute(
@@ -239,8 +239,8 @@ async def test_rerunning_a_job_after_a_crash_duplicates_nothing(
     assert (await _job(worker_engine, job_id)).status == "done"
 
 
-async def test_every_worker_handler_has_a_rerun_test() -> None:
-    covered: set[str] = {"noop", "cleanup"}
-    registered: dict[str, Handler] = handlers(FixedClock(NOW))
+async def test_every_worker_handler_has_a_rerun_test(worker_engine: AsyncEngine) -> None:
+    covered: set[str] = {"noop", "cleanup", "parse_import"}
+    registered: dict[str, Handler] = handlers(worker_engine, FixedClock(NOW))
 
     assert set(registered) == covered

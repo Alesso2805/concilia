@@ -1,0 +1,220 @@
+from datetime import date, datetime
+from typing import Annotated, Any, Literal
+from uuid import UUID
+
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Response,
+    UploadFile,
+    status,
+)
+from pydantic import BaseModel
+
+from concilia.imports.application.service import (
+    MAX_FILE_BYTES,
+    FileSummary,
+    FileTooLargeError,
+    ImportService,
+    NotAllowedError,
+    NotFoundError,
+    Upload,
+    WrongStateError,
+)
+from concilia.imports.domain.model import ImportFile, ImportRow, RowStatus
+from concilia.imports.domain.statement import FileError
+from concilia.shared.infrastructure.web import current_principal
+from concilia.shared.kernel.ids import ClientIdError, IdConflictError
+from concilia.shared.kernel.principal import Principal
+
+CurrentPrincipal = Annotated[Principal, Depends(current_principal)]
+
+ERRORS: dict[type[Exception], tuple[int, str]] = {
+    NotAllowedError: (status.HTTP_403_FORBIDDEN, "role_required"),
+    NotFoundError: (status.HTTP_404_NOT_FOUND, "not_found"),
+    WrongStateError: (status.HTTP_409_CONFLICT, "wrong_state"),
+    IdConflictError: (status.HTTP_409_CONFLICT, "id_conflict"),
+    FileTooLargeError: (status.HTTP_413_CONTENT_TOO_LARGE, "file_too_large"),
+}
+HANDLED: tuple[type[Exception], ...] = (ClientIdError, FileError, *ERRORS)
+
+
+def _http_error(error: Exception) -> HTTPException:
+    if isinstance(error, ClientIdError | FileError):
+        return HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, error.code)
+    code, detail = ERRORS[type(error)]
+    return HTTPException(code, detail)
+
+
+class ImportFileView(BaseModel):
+    id: UUID
+    kind: Literal["bank_statement", "receivables"]
+    bank_account_id: UUID | None
+    import_profile_id: UUID
+    profile_name: str
+    filename: str
+    size_bytes: int
+    status: Literal[
+        "uploaded", "parsing", "previewed", "failed", "confirmed", "discarded", "voided"
+    ]
+    error_code: str | None
+    row_count: int | None
+    created_at: datetime
+    confirmed_at: datetime | None
+    discarded_at: datetime | None
+    voided_at: datetime | None
+
+
+class ImportSummaryView(BaseModel):
+    file: ImportFileView
+    counts: dict[Literal["ok", "error", "duplicate", "closed_period", "conflict"], int]
+    duplicate_of: UUID | None
+
+
+class UploadView(BaseModel):
+    file: ImportFileView
+    job_id: UUID | None
+    duplicate_of: UUID | None
+
+
+class StatementRowView(BaseModel):
+    row_number: int
+    status: Literal["ok", "duplicate", "closed_period"]
+    booked_on: date
+    amount_cents: int
+    description: str
+    operation_number: str | None
+
+
+class ErrorRowView(BaseModel):
+    row_number: int
+    status: Literal["error"]
+    error_code: str
+    cells: list[str]
+
+
+class RowPageView(BaseModel):
+    rows: list[StatementRowView | ErrorRowView]
+    has_previous: bool
+    has_next: bool
+
+
+def _file_view(file: ImportFile) -> ImportFileView:
+    return ImportFileView(
+        id=file.id,
+        kind=file.kind,
+        bank_account_id=file.bank_account_id,
+        import_profile_id=file.import_profile_id,
+        profile_name=str(file.profile_snapshot.get("name", "")),
+        filename=file.filename,
+        size_bytes=file.size_bytes,
+        status=file.status.value,
+        error_code=file.error_code,
+        row_count=file.row_count,
+        created_at=file.created_at,
+        confirmed_at=file.confirmed_at,
+        discarded_at=file.discarded_at,
+        voided_at=file.voided_at,
+    )
+
+
+def _row_view(row: ImportRow) -> StatementRowView | ErrorRowView:
+    parsed: dict[str, Any] = dict(row.parsed)
+    if row.status == RowStatus.ERROR:
+        return ErrorRowView(
+            row_number=row.row_number,
+            status="error",
+            error_code=row.error_code or "",
+            cells=[str(cell) for cell in parsed.get("cells", [])],
+        )
+    return StatementRowView(
+        row_number=row.row_number,
+        status=row.status.value,
+        booked_on=date.fromisoformat(parsed["booked_on"]),
+        amount_cents=parsed["amount_cents"],
+        description=parsed["description"],
+        operation_number=parsed.get("operation_number"),
+    )
+
+
+def _summary_view(summary: FileSummary) -> ImportSummaryView:
+    return ImportSummaryView(
+        file=_file_view(summary.file),
+        counts={key.value: value for key, value in summary.counts.items()},
+        duplicate_of=summary.duplicate_of,
+    )
+
+
+def imports_router(service: ImportService) -> APIRouter:
+    router = APIRouter(prefix="/api/app/imports", tags=["imports"])
+
+    @router.post("", status_code=status.HTTP_201_CREATED)
+    async def upload_import(
+        id: Annotated[UUID, Form()],
+        import_profile_id: Annotated[UUID, Form()],
+        file: Annotated[UploadFile, File()],
+        principal: CurrentPrincipal,
+        response: Response,
+    ) -> UploadView:
+        """Upload a bank statement (CSV or XLSX, up to 5 MB) and queue its preview.
+
+        Analysts only; idempotent on the client-generated id. `duplicate_of` warns about a
+        confirmed file with the same content in the same account.
+        """
+        content = await file.read(MAX_FILE_BYTES + 1)
+        upload = Upload(id, import_profile_id, file.filename or "", content)
+        try:
+            result = await service.upload(principal, upload)
+        except HANDLED as error:
+            raise _http_error(error) from None
+        if not result.created:
+            response.status_code = status.HTTP_200_OK
+        return UploadView(
+            file=_file_view(result.file), job_id=result.job_id, duplicate_of=result.duplicate_of
+        )
+
+    @router.get("/{file_id}")
+    async def get_import(file_id: UUID, principal: CurrentPrincipal) -> ImportSummaryView:
+        """An import with its row counts by status."""
+        try:
+            return _summary_view(await service.summary(principal, file_id))
+        except HANDLED as error:
+            raise _http_error(error) from None
+
+    @router.get("/{file_id}/rows")
+    async def list_import_rows(
+        file_id: UUID,
+        principal: CurrentPrincipal,
+        row_status: Annotated[
+            Literal["ok", "error", "duplicate", "closed_period"], Query(alias="status")
+        ] = "ok",
+        after: Annotated[int | None, Query(gt=0)] = None,
+        before: Annotated[int | None, Query(gt=0)] = None,
+        limit: Annotated[int, Query(gt=0, le=100)] = 50,
+    ) -> RowPageView:
+        """A page of preview rows of one status, by row number (keyset pagination)."""
+        try:
+            page = await service.rows(
+                principal, file_id, RowStatus(row_status), after=after, before=before, limit=limit
+            )
+        except HANDLED as error:
+            raise _http_error(error) from None
+        return RowPageView(
+            rows=[_row_view(row) for row in page.rows],
+            has_previous=page.has_previous,
+            has_next=page.has_next,
+        )
+
+    @router.post("/{file_id}/discard", status_code=status.HTTP_204_NO_CONTENT)
+    async def discard_import(file_id: UUID, principal: CurrentPrincipal) -> None:
+        """Discard a preview without saving any movement. Analysts only."""
+        try:
+            await service.discard(principal, file_id)
+        except HANDLED as error:
+            raise _http_error(error) from None
+
+    return router

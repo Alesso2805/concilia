@@ -93,6 +93,14 @@ async def enqueue(
     )
 
 
+async def report_progress(engine: AsyncEngine, job_id: UUID, percent: int) -> None:
+    async with engine.begin() as connection:
+        await connection.execute(
+            text("UPDATE jobs SET progress = :percent WHERE id = :id AND status = 'running'"),
+            {"percent": max(0, min(percent, 99)), "id": job_id},
+        )
+
+
 async def claim(engine: AsyncEngine, now: datetime) -> Job | None:
     async with engine.begin() as connection:
         row = (
