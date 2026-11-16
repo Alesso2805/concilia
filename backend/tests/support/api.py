@@ -103,3 +103,53 @@ async def create_member(
 
 def xsrf_header(client: httpx.AsyncClient) -> dict[str, str]:
     return {"X-XSRF-TOKEN": client.cookies.get("__Host-XSRF-TOKEN") or ""}
+
+
+async def add_member(
+    owner_engine: AsyncEngine, now: datetime, organization_id: UUID, roles: list[str]
+) -> Member:
+    user_id = uuid7()
+    email = f"{user_id}@example.test"
+    async with owner_engine.begin() as connection:
+        await connection.execute(
+            text(
+                """INSERT INTO users (id, email, password_hash, display_name, created_at)
+                   VALUES (:id, :email, :hash, 'Test member', :now)"""
+            ),
+            {
+                "id": user_id,
+                "email": email,
+                "hash": Argon2PasswordHasher().hash(PASSWORD),
+                "now": now,
+            },
+        )
+        await connection.execute(
+            text(
+                """INSERT INTO memberships (organization_id, user_id, created_at)
+                   VALUES (:org, :user, :now)"""
+            ),
+            {"org": organization_id, "user": user_id, "now": now},
+        )
+        for role in roles:
+            await connection.execute(
+                text(
+                    """INSERT INTO member_roles (organization_id, user_id, role)
+                       VALUES (:org, :user, :role)"""
+                ),
+                {"org": organization_id, "user": user_id, "role": role},
+            )
+    return Member(user_id, email, (organization_id,))
+
+
+@asynccontextmanager
+async def signed_in(app: FastAPI, email: str | None = None) -> AsyncIterator[httpx.AsyncClient]:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(
+        transport=transport, base_url=ORIGIN, headers={"Origin": ORIGIN}
+    ) as client:
+        if email is not None:
+            response = await client.post(
+                "/api/public/login", json={"email": email, "password": PASSWORD}
+            )
+            response.raise_for_status()
+        yield client

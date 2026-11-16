@@ -78,6 +78,14 @@ class SessionRouters:
     app: APIRouter
     authenticate: Callable[[Request], Awaitable[None]]
     require_same_origin: Callable[[Request], Awaitable[None]]
+    set_session_cookies: Callable[[Response, IssuedSession], None]
+
+
+def login_view(issued: IssuedSession) -> LoginView:
+    return LoginView(
+        organization_id=issued.organization_id,
+        organizations=_organizations(issued.organizations),
+    )
 
 
 def session_routers(service: SessionService, security: WebSecurity) -> SessionRouters:
@@ -142,10 +150,7 @@ def session_routers(service: SessionService, security: WebSecurity) -> SessionRo
         except InvalidCredentialsError:
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid_credentials") from None
         set_session_cookies(response, issued)
-        return LoginView(
-            organization_id=issued.organization_id,
-            organizations=_organizations(issued.organizations),
-        )
+        return login_view(issued)
 
     @app.get("/session")
     async def get_session(
@@ -172,10 +177,7 @@ def session_routers(service: SessionService, security: WebSecurity) -> SessionRo
         except NotAMemberError:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "not_a_member") from None
         set_session_cookies(response, issued)
-        return LoginView(
-            organization_id=issued.organization_id,
-            organizations=_organizations(issued.organizations),
-        )
+        return login_view(issued)
 
     @app.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
     async def logout(
@@ -186,4 +188,4 @@ def session_routers(service: SessionService, security: WebSecurity) -> SessionRo
         response.delete_cookie(SESSION_COOKIE, secure=True, httponly=True, samesite="lax")
         response.delete_cookie(XSRF_COOKIE, secure=True, samesite="lax")
 
-    return SessionRouters(public, app, authenticate, require_same_origin)
+    return SessionRouters(public, app, authenticate, require_same_origin, set_session_cookies)

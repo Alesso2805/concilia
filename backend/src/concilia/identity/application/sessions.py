@@ -111,6 +111,13 @@ class SessionService:
             chosen = organizations[0].organization_id if len(organizations) == 1 else None
             return await self._issue(store, user.id, chosen, organizations, now)
 
+    async def start(self, user_id: UUID) -> IssuedSession:
+        now = self._clock.now()
+        async with self._transactions.anonymous() as store:
+            organizations = await store.user_organizations(user_id)
+            chosen = organizations[0].organization_id if len(organizations) == 1 else None
+            return await self._issue(store, user_id, chosen, organizations, now)
+
     async def _issue(
         self,
         store: IdentityStore,
