@@ -1,0 +1,30 @@
+<main class="auth">
+  <mat-card appearance="outlined" class="auth__card">
+    <mat-card-header>
+      <mat-card-title><h1 class="auth__title">Elige una organización</h1></mat-card-title>
+    </mat-card-header>
+    <mat-card-content class="auth__content">
+      <ul class="organizations">
+        @for (organization of organizations(); track organization.id) {
+          <li>
+            <button
+              mat-stroked-button
+              class="organizations__button"
+              type="button"
+              [disabled]="choosing()"
+              (click)="choose(organization)"
+            >
+              {{ organization.name }}
+              <span class="organizations__roles">{{ describe(organization) }}</span>
+            </button>
+          </li>
+        } @empty {
+          <li>Tu cuenta no pertenece a ninguna organización activa.</li>
+        }
+      </ul>
+      @if (error(); as message) {
+        <p class="auth__error" role="alert">{{ message }}</p>
+      }
+    </mat-card-content>
+  </mat-card>
+</main>
