@@ -46,13 +46,11 @@ test('an analyst uploads a statement, confirms it and voids it', async ({ page }
   await expect(page.getByRole('heading', { name: 'Importaciones', level: 1 })).toBeVisible();
   await page.getByText('Perfil de importación', { exact: true }).click();
   await page.getByRole('option', { name: `CSV ${run}` }).click();
-  await page
-    .locator('input[type="file"]')
-    .setInputFiles({
-      name: `enero-${run}.csv`,
-      mimeType: 'text/csv',
-      buffer: Buffer.from(statement),
-    });
+  await page.locator('input[type="file"]').setInputFiles({
+    name: `enero-${run}.csv`,
+    mimeType: 'text/csv',
+    buffer: Buffer.from(statement),
+  });
   await expectAccessible(page);
   await page.getByRole('button', { name: 'Subir y revisar' }).click();
 
