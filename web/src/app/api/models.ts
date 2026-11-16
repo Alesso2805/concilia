@@ -15,6 +15,7 @@ export type { CreateStatementProfileRequest } from './models/create-statement-pr
 export type { DateFormat } from './models/date-format';
 export type { ErrorRowView } from './models/error-row-view';
 export type { FileFormat } from './models/file-format';
+export type { FilePageView } from './models/file-page-view';
 export type { HealthResponse } from './models/health-response';
 export type { HttpValidationError } from './models/http-validation-error';
 export type { ImportFileView } from './models/import-file-view';

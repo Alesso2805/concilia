@@ -57,3 +57,10 @@ class RowPage:
     rows: list[ImportRow]
     has_previous: bool
     has_next: bool
+
+
+@dataclass(frozen=True)
+class FilePage:
+    files: list[ImportFile]
+    has_previous: bool
+    has_next: bool

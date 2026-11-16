@@ -74,3 +74,21 @@ export async function logIn(page: Page, path = '/'): Promise<void> {
   await page.getByRole('button', { name: 'Ingresar' }).click();
   await expect(page).toHaveURL(path);
 }
+
+/** Calls the API as the signed-in user of the page, with the CSRF header. */
+export async function callApi(
+  page: Page,
+  method: 'GET' | 'POST' | 'PUT',
+  path: string,
+  data?: unknown,
+): Promise<unknown> {
+  const cookies = await page.context().cookies();
+  const token = cookies.find((cookie) => cookie.name === '__Host-XSRF-TOKEN')?.value ?? '';
+  const response = await page.request.fetch(path, {
+    method,
+    data,
+    headers: { 'X-XSRF-TOKEN': token, Origin: new URL(page.url()).origin },
+  });
+  expect(response.ok(), `${method} ${path} -> ${response.status()}`).toBe(true);
+  return response.status() === 204 ? null : response.json();
+}

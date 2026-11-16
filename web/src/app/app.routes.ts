@@ -6,6 +6,7 @@ import { organizationGuard, roleGuard } from './core/session/guards';
 export const ERROR_PATH = '/error';
 
 const adminOnly = roleGuard('admin');
+const analystOnly = roleGuard('analyst');
 
 export const routes: Routes = [
   { path: 'iniciar-sesion', loadChildren: () => import('./features/auth/auth.routes') },
@@ -21,6 +22,18 @@ export const routes: Routes = [
     loadComponent: () => import('./core/layout/shell.component').then((m) => m.ShellComponent),
     children: [
       { path: '', loadChildren: () => import('./features/home/home.routes') },
+      {
+        path: 'importaciones',
+        canMatch: [analystOnly],
+        loadComponent: () => import('./features/imports/imports.page').then((m) => m.ImportsPage),
+        title: 'Importaciones · Concilia',
+      },
+      {
+        path: 'importaciones/:id',
+        canMatch: [analystOnly],
+        loadComponent: () => import('./features/imports/import.page').then((m) => m.ImportPage),
+        title: 'Importación · Concilia',
+      },
       {
         path: 'equipo',
         canMatch: [adminOnly],

@@ -344,6 +344,56 @@
         "title": "FileFormat",
         "type": "string"
       },
+      "FilePageView": {
+        "properties": {
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/ImportFileView"
+            },
+            "title": "Files",
+            "type": "array"
+          },
+          "has_next": {
+            "title": "Has Next",
+            "type": "boolean"
+          },
+          "has_previous": {
+            "title": "Has Previous",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "previous_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Cursor"
+          }
+        },
+        "required": [
+          "files",
+          "has_previous",
+          "has_next",
+          "previous_cursor",
+          "next_cursor"
+        ],
+        "title": "FilePageView",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2147,6 +2197,82 @@
       }
     },
     "/api/app/imports": {
+      "get": {
+        "description": "Imports from newest to oldest, by keyset cursor (no total, no jump to the end).",
+        "operationId": "list_imports",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "exclusiveMinimum": 0,
+              "maximum": 100,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilePageView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Imports",
+        "tags": [
+          "imports"
+        ]
+      },
       "post": {
         "description": "Upload a bank statement (CSV or XLSX, up to 5 MB) and queue its preview.\n\nAnalysts only; idempotent on the client-generated id. `duplicate_of` warns about a\nconfirmed file with the same content in the same account.",
         "operationId": "upload_import",

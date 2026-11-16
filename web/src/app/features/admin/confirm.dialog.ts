@@ -9,6 +9,7 @@ export interface ConfirmData {
   message: string;
   action: string;
   run: () => Promise<void>;
+  describeError?: (error: unknown) => string;
 }
 
 @Component({
@@ -46,7 +47,7 @@ export class ConfirmDialog {
       await this.data.run();
       this.dialog.close(true);
     } catch (error) {
-      this.error.set(bankingErrorMessage(error));
+      this.error.set((this.data.describeError ?? bankingErrorMessage)(error));
     } finally {
       this.running.set(false);
     }

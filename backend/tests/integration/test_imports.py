@@ -325,3 +325,54 @@ async def test_imports_and_jobs_of_another_organization_are_invisible(
         ]
 
     assert [response.status_code for response in responses] == [404, 404, 404, 404]
+
+
+async def test_imports_are_listed_newest_first_by_keyset_pages(
+    app: FastAPI, owner_engine: AsyncEngine
+) -> None:
+    setup = await statement_setup(owner_engine)
+    other = await statement_setup(owner_engine)
+    async with owner_engine.begin() as connection:
+        for minute in range(25):
+            await connection.execute(
+                text(
+                    """INSERT INTO import_files (id, organization_id, kind, bank_account_id,
+                                                 import_profile_id, profile_snapshot, filename,
+                                                 sha256, size_bytes, content, status, created_by,
+                                                 created_at)
+                       VALUES (:id, :org, 'bank_statement', :account, :profile, '{}', :name,
+                               repeat('d', 64), 1, 'x', 'failed', :user,
+                               CAST(:now AS timestamptz) + make_interval(mins => :minute))"""
+                ),
+                {
+                    "id": uuid7(),
+                    "org": setup.organization_id,
+                    "account": setup.account_id,
+                    "profile": setup.profile_id,
+                    "name": f"archivo-{minute:02d}.csv",
+                    "user": setup.member.user_id,
+                    "now": NOW,
+                    "minute": minute,
+                },
+            )
+    async with signed_in(app, setup.member.email) as client:
+        first = (await client.get("/api/app/imports?limit=10")).json()
+        second = (
+            await client.get(f"/api/app/imports?limit=10&after={first['next_cursor']}")
+        ).json()
+        back = (
+            await client.get(f"/api/app/imports?limit=10&before={second['previous_cursor']}")
+        ).json()
+        invalid = await client.get("/api/app/imports?after=nope")
+    async with signed_in(app, other.member.email) as client:
+        foreign = (await client.get("/api/app/imports")).json()
+
+    def names(page: dict[str, Any]) -> list[str]:
+        return [file["filename"] for file in page["files"]]
+
+    assert names(first)[:2] == ["archivo-24.csv", "archivo-23.csv"]
+    assert (first["has_previous"], first["has_next"]) == (False, True)
+    assert names(second)[0] == "archivo-14.csv"
+    assert names(back) == names(first)
+    assert (invalid.status_code, invalid.json()["detail"]) == (422, "invalid_cursor")
+    assert foreign["files"] == []

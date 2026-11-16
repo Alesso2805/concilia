@@ -12,6 +12,7 @@ const EVERYONE: readonly Role[] = ['admin', 'analyst', 'reviewer'];
 
 export const NAVIGATION: readonly NavigationItem[] = [
   { path: '/', label: 'Inicio', icon: 'home', roles: EVERYONE },
+  { path: '/importaciones', label: 'Importaciones', icon: 'upload_file', roles: ['analyst'] },
   { path: '/equipo', label: 'Equipo', icon: 'group', roles: ['admin'] },
   { path: '/cuentas', label: 'Cuentas bancarias', icon: 'account_balance', roles: ['admin'] },
   { path: '/perfiles', label: 'Perfiles de importación', icon: 'description', roles: ['admin'] },

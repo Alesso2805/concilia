@@ -1,0 +1,93 @@
+<h1 class="imports__title">Importaciones</h1>
+
+<section class="imports__card" aria-labelledby="subir">
+  <h2 id="subir">Subir un extracto</h2>
+  @if (profiles().length === 0) {
+    <p class="imports__muted">
+      Todavía no hay perfiles de extracto. Pide a quien administra tu organización que registre la
+      cuenta y cree su perfil.
+    </p>
+  } @else {
+    <div class="imports__upload">
+      <mat-form-field class="imports__profile" appearance="outline">
+        <mat-label>Perfil de importación</mat-label>
+        <mat-select [formControl]="profile" required>
+          @for (option of profiles(); track option.id) {
+            <mat-option [value]="option.id">{{ option.name }}</mat-option>
+          }
+        </mat-select>
+        <mat-error>Elige el perfil de la cuenta.</mat-error>
+      </mat-form-field>
+      <div class="imports__file">
+        <input
+          #picker
+          id="archivo"
+          hidden
+          type="file"
+          accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          (change)="choose($event)"
+        />
+        <button mat-stroked-button type="button" (click)="picker.click()">Elegir archivo</button>
+        <span class="imports__muted" aria-live="polite">
+          {{ file()?.name ?? 'Ningún archivo elegido (CSV o Excel, hasta 5 MB)' }}
+        </span>
+      </div>
+      <button mat-flat-button type="button" [disabled]="uploading()" (click)="upload()">
+        Subir y revisar
+      </button>
+    </div>
+    @if (uploading()) {
+      <mat-progress-bar mode="indeterminate" aria-label="Subiendo el archivo" />
+    }
+    @if (uploadError(); as message) {
+      <p class="imports__error" role="alert">{{ message }}</p>
+    }
+  }
+</section>
+
+<section aria-labelledby="recientes">
+  <h2 id="recientes">Importaciones recientes</h2>
+  @if (listError(); as message) {
+    <p class="imports__error" role="alert">{{ message }}</p>
+  }
+  @if (page(); as page) {
+    @if (page.files.length > 0) {
+      <div class="imports__table">
+        <table mat-table [dataSource]="page.files">
+          <ng-container matColumnDef="filename">
+            <th mat-header-cell *matHeaderCellDef scope="col">Archivo</th>
+            <td mat-cell *matCellDef="let file">
+              <a [routerLink]="['/importaciones', file.id]">{{ file.filename }}</a>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="profile">
+            <th mat-header-cell *matHeaderCellDef scope="col">Perfil</th>
+            <td mat-cell *matCellDef="let file">{{ file.profile_name }}</td>
+          </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef scope="col">Estado</th>
+            <td mat-cell *matCellDef="let file">{{ statusOf(file) }}</td>
+          </ng-container>
+          <ng-container matColumnDef="created">
+            <th mat-header-cell *matHeaderCellDef scope="col">Subido</th>
+            <td mat-cell *matCellDef="let file">{{ file.created_at | date: 'short' }}</td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="columns"></tr>
+          <tr mat-row *matRowDef="let row; columns: columns"></tr>
+        </table>
+        <mat-paginator
+          [length]="length()"
+          [pageIndex]="pageIndex()"
+          [pageSize]="pageSize"
+          [hidePageSize]="true"
+          (page)="turn($event)"
+          aria-label="Páginas de importaciones"
+        />
+      </div>
+    } @else {
+      <p class="imports__muted">Todavía no hay importaciones.</p>
+    }
+  } @else if (!listError()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Cargando las importaciones" />
+  }
+</section>

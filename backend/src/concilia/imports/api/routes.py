@@ -31,6 +31,7 @@ from concilia.imports.application.service import (
 from concilia.imports.domain.model import ImportFile, ImportRow, RowStatus
 from concilia.imports.domain.statement import FileError
 from concilia.shared.infrastructure.web import current_principal
+from concilia.shared.kernel.cursor import InvalidCursorError, decode_cursor, encode_cursor
 from concilia.shared.kernel.ids import ClientIdError, IdConflictError
 from concilia.shared.kernel.principal import Principal
 
@@ -101,6 +102,14 @@ class ErrorRowView(BaseModel):
     status: Literal["error"]
     error_code: str
     cells: list[str]
+
+
+class FilePageView(BaseModel):
+    files: list[ImportFileView]
+    has_previous: bool
+    has_next: bool
+    previous_cursor: str | None
+    next_cursor: str | None
 
 
 class ConfirmView(BaseModel):
@@ -189,6 +198,34 @@ def imports_router(service: ImportService) -> APIRouter:
             response.status_code = status.HTTP_200_OK
         return UploadView(
             file=_file_view(result.file), job_id=result.job_id, duplicate_of=result.duplicate_of
+        )
+
+    @router.get("")
+    async def list_imports(
+        principal: CurrentPrincipal,
+        after: str | None = None,
+        before: str | None = None,
+        limit: Annotated[int, Query(gt=0, le=100)] = 20,
+    ) -> FilePageView:
+        """Imports from newest to oldest, by keyset cursor (no total, no jump to the end)."""
+        try:
+            page = await service.files(
+                principal,
+                after=decode_cursor(after) if after else None,
+                before=decode_cursor(before) if before else None,
+                limit=limit,
+            )
+        except InvalidCursorError:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "invalid_cursor") from None
+        except HANDLED as error:
+            raise _http_error(error) from None
+        files = page.files
+        return FilePageView(
+            files=[_file_view(file) for file in files],
+            has_previous=page.has_previous,
+            has_next=page.has_next,
+            previous_cursor=encode_cursor(files[0].created_at, files[0].id) if files else None,
+            next_cursor=encode_cursor(files[-1].created_at, files[-1].id) if files else None,
         )
 
     @router.get("/{file_id}")

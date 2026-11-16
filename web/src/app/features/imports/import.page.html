@@ -1,0 +1,133 @@
+<a mat-button routerLink="/importaciones">← Importaciones</a>
+
+@if (summary(); as summary) {
+  <h1 class="imports__title">{{ summary.file.filename }}</h1>
+  <dl class="imports__facts">
+    <dt>Perfil</dt>
+    <dd>{{ summary.file.profile_name }}</dd>
+    <dt>Estado</dt>
+    <dd>{{ statusLabel(summary) }}</dd>
+    <dt>Subido</dt>
+    <dd>{{ summary.file.created_at | date: 'medium' }}</dd>
+    @if (summary.file.row_count !== null) {
+      <dt>Filas leídas</dt>
+      <dd>{{ summary.file.row_count }}</dd>
+    }
+  </dl>
+
+  @if (error(); as message) {
+    <p class="imports__error" role="alert">{{ message }}</p>
+  }
+
+  @if (processing() || waiting()) {
+    <p aria-live="polite">Estamos procesando el archivo…</p>
+    <mat-progress-bar
+      [mode]="progress() > 0 ? 'determinate' : 'indeterminate'"
+      [value]="progress()"
+      aria-label="Avance del procesamiento"
+    />
+  } @else if (summary.file.status === 'failed') {
+    <p class="imports__error" role="alert">{{ fileError(summary) }}</p>
+  } @else if (summary.file.status === 'previewed') {
+    @if (summary.duplicate_of) {
+      <p class="imports__warning" role="status">
+        Ya confirmaste un archivo idéntico en esta cuenta. Si lo subiste por error, descártalo.
+      </p>
+    }
+    <p>
+      Revisa la vista previa. Al confirmar se guardan solo las filas válidas; las demás se omiten.
+    </p>
+    <div class="imports__actions">
+      <button
+        mat-flat-button
+        type="button"
+        [disabled]="summary.counts['ok'] === 0 || waiting()"
+        (click)="confirm()"
+      >
+        Confirmar {{ summary.counts['ok'] }} movimientos
+      </button>
+      <button mat-stroked-button type="button" (click)="discard()">Descartar</button>
+    </div>
+    <mat-tab-group (selectedIndexChange)="selectTab($event)" mat-stretch-tabs="false">
+      @for (status of tabs; track status) {
+        <mat-tab [label]="tabLabel(status)">
+          <ng-template matTabContent>
+            @if (rowsFor(status); as page) {
+              @if (page.rows.length > 0) {
+                <div class="imports__table">
+                  <table mat-table [dataSource]="page.rows">
+                    <ng-container matColumnDef="row">
+                      <th mat-header-cell *matHeaderCellDef scope="col">Fila</th>
+                      <td mat-cell *matCellDef="let row">{{ row.row_number }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="reason">
+                      <th mat-header-cell *matHeaderCellDef scope="col">Motivo</th>
+                      <td mat-cell *matCellDef="let row">{{ reason(row) }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="cells">
+                      <th mat-header-cell *matHeaderCellDef scope="col">Contenido</th>
+                      <td mat-cell *matCellDef="let row">{{ row.cells.join(' · ') }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="date">
+                      <th mat-header-cell *matHeaderCellDef scope="col">Fecha</th>
+                      <td mat-cell *matCellDef="let row">
+                        {{ row.booked_on | date: 'dd/MM/yyyy' }}
+                      </td>
+                    </ng-container>
+                    <ng-container matColumnDef="description">
+                      <th mat-header-cell *matHeaderCellDef scope="col">Descripción</th>
+                      <td mat-cell *matCellDef="let row">{{ row.description }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="operation">
+                      <th mat-header-cell *matHeaderCellDef scope="col">Operación</th>
+                      <td mat-cell *matCellDef="let row">{{ row.operation_number ?? '—' }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="amount">
+                      <th mat-header-cell *matHeaderCellDef scope="col" class="imports__amount">
+                        Monto
+                      </th>
+                      <td mat-cell *matCellDef="let row" class="imports__amount">
+                        {{ amount(row) }}
+                      </td>
+                    </ng-container>
+                    <tr mat-header-row *matHeaderRowDef="columnsFor(status)"></tr>
+                    <tr mat-row *matRowDef="let row; columns: columnsFor(status)"></tr>
+                  </table>
+                  <mat-paginator
+                    [length]="length()"
+                    [pageIndex]="pageIndex()"
+                    [pageSize]="pageSize"
+                    [hidePageSize]="true"
+                    (page)="turn($event)"
+                    aria-label="Páginas de filas"
+                  />
+                </div>
+              } @else {
+                <p class="imports__muted">No hay filas en esta pestaña.</p>
+              }
+            }
+          </ng-template>
+        </mat-tab>
+      }
+    </mat-tab-group>
+  } @else if (summary.file.status === 'confirmed') {
+    <p role="status">
+      Importación confirmada el {{ summary.file.confirmed_at | date: 'medium' }}. Sus movimientos ya
+      están disponibles para conciliar.
+    </p>
+    <div class="imports__actions">
+      <button mat-stroked-button type="button" (click)="voidImport()">Anular importación</button>
+    </div>
+  } @else if (summary.file.status === 'discarded') {
+    <p role="status">Esta vista previa se descartó; no se guardó ningún movimiento.</p>
+  } @else if (summary.file.status === 'voided') {
+    <p role="status">
+      Esta importación se anuló el {{ summary.file.voided_at | date: 'medium' }}; sus movimientos ya
+      no cuentan.
+    </p>
+  }
+} @else if (error(); as message) {
+  <p class="imports__error" role="alert">{{ message }}</p>
+} @else {
+  <mat-progress-bar mode="indeterminate" aria-label="Cargando la importación" />
+}
