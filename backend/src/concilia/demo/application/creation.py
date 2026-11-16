@@ -1,7 +1,7 @@
 import hmac
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Protocol
 from uuid import UUID, uuid7
 
@@ -56,7 +56,8 @@ ACCOUNT = DemoAccount(
     receivables_profile_name="Cobros de la demo (CSV)",
 )
 DAY = timedelta(days=1)
-LOCAL_LIFETIME = timedelta(days=36_500)
+# SPEC: with DEMO_TTL_HOURS=0 (local) a demo never expires; the column is required for demos.
+NEVER = datetime(9999, 12, 31, tzinfo=UTC)
 
 
 class DemoLimitError(Exception):
@@ -130,7 +131,7 @@ class DemoService:
         await self._check_limits(ip)
         now = self._clock.now()
         organization_id = uuid7()
-        expires_at = now + (self._policy.ttl or LOCAL_LIFETIME)
+        expires_at = now + self._policy.ttl if self._policy.ttl else NEVER
         dataset = build_dataset()
         async with self._transactions.organization(organization_id) as stores:
             await stores.identity.lock_organization(organization_id)

@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import AsyncIterator
 from datetime import date
 from typing import Any
@@ -9,7 +10,8 @@ from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from concilia.shared.infrastructure.jobs import enqueue
+from concilia.shared.infrastructure.jobs import Runner, enqueue
+from concilia.worker import handlers
 from tests.support.api import add_member, build_app, signed_in, xsrf_header
 from tests.support.clock import FixedClock
 from tests.support.database import DatabaseUrls
@@ -278,3 +280,79 @@ async def test_runs_stay_inside_their_organization_and_need_an_analyst(
     assert (hidden.status_code, foreign.status_code) == (404, 404)
     assert visible.status_code == 200
     assert (refused.status_code, refused.json()["detail"]) == (403, "role_required")
+
+
+async def test_runs_on_two_accounts_at_once_share_a_receivable_without_overdrawing_it(
+    app: FastAPI,
+    owner_engine: AsyncEngine,
+    worker_engine: AsyncEngine,
+    clock: FixedClock,
+    setup: Setup,
+) -> None:
+    second_account = uuid7()
+    async with owner_engine.begin() as connection:
+        await connection.execute(
+            text(
+                """INSERT INTO bank_accounts (id, organization_id, bank, currency, alias,
+                                              number_last4, created_at)
+                   VALUES (:id, :org, 'BBVA', 'PEN', 'Secundaria', '9876', :now)"""
+            ),
+            {"id": second_account, "org": setup.organization_id, "now": NOW},
+        )
+        await connection.execute(
+            text(
+                """INSERT INTO bank_movements (id, organization_id, bank_account_id,
+                                               import_file_id, booked_on, amount_cents,
+                                               description, description_norm, fingerprint,
+                                               doc_refs, created_at)
+                   SELECT gen_random_uuid(), organization_id, :account, import_file_id,
+                          booked_on, amount_cents, description, description_norm,
+                          :fingerprint, doc_refs, :now
+                   FROM bank_movements
+                   WHERE organization_id = :org AND amount_cents = 118000"""
+            ),
+            {
+                "account": second_account,
+                "org": setup.organization_id,
+                "fingerprint": "f" * 64,
+                "now": NOW,
+            },
+        )
+    async with signed_in(app, setup.member.email) as client:
+        for account in (setup.account_id, second_account):
+            await client.post(
+                "/api/app/engine-runs",
+                json={"id": client_id(), "bank_account_id": str(account), "period": "2027-01-01"},
+                headers=xsrf_header(client),
+            )
+
+    runners = [Runner(worker_engine, clock, handlers(worker_engine, clock)) for _ in range(2)]
+    claimed = await asyncio.gather(*(runner.run_once() for runner in runners))
+
+    async with owner_engine.connect() as connection:
+        proposed = await connection.scalar(
+            text(
+                """SELECT count(*) FROM match_items i JOIN receivables r ON r.id = i.receivable_id
+                   WHERE r.organization_id = :org AND r.doc_number_norm = 'F001-123'"""
+            ),
+            {"org": setup.organization_id},
+        )
+        available = await connection.scalar(
+            text(
+                """SELECT b.available_cents FROM receivable_balances b
+                   JOIN receivables r ON r.id = b.receivable_id
+                   WHERE r.organization_id = :org AND r.doc_number_norm = 'F001-123'"""
+            ),
+            {"org": setup.organization_id},
+        )
+        statuses = list(
+            await connection.scalars(
+                text(
+                    "SELECT status FROM jobs WHERE organization_id = :org AND kind = 'run_engine'"
+                ),
+                {"org": setup.organization_id},
+            )
+        )
+    assert claimed == [True, True]
+    assert statuses == ["done", "done"]
+    assert (proposed, available) == (1, 0)

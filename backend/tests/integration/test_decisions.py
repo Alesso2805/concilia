@@ -387,3 +387,31 @@ async def test_two_accounts_approved_at_once_on_one_receivable_keep_its_balance(
 
     assert [response.status_code for response in responses] == [201, 201]
     assert tuple(balance) == (0, 0)
+
+
+async def test_approving_and_rejecting_at_once_records_only_one_decision(
+    app: FastAPI, owner_engine: AsyncEngine, team: Team
+) -> None:
+    async with signed_in(app, team.analyst.email) as analyst:
+        [match] = await _proposals(analyst, team.setup, "2027-01-01")
+        await _decide(analyst, match, "confirm")
+    async with (
+        signed_in(app, team.reviewer.email) as first,
+        signed_in(app, team.other_reviewer.email) as second,
+    ):
+        responses = await asyncio.gather(
+            _decide(first, match, "approve"),
+            _decide(second, match, "reject", reason="El abono es de otro cliente"),
+        )
+    async with owner_engine.connect() as connection:
+        actions = list(
+            await connection.scalars(
+                text("SELECT action FROM match_decisions WHERE match_id = :id ORDER BY seq"),
+                {"id": match},
+            )
+        )
+
+    assert sorted(response.status_code for response in responses) == [201, 409]
+    assert actions[0] == "confirm"
+    assert len(actions) == 2
+    assert actions[1] in {"approve", "reject"}
