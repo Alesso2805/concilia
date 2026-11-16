@@ -1,0 +1,25 @@
+.status-page {
+  display: grid;
+  max-width: 480px;
+  margin: 48px auto;
+  padding: 16px;
+  gap: 8px;
+  justify-items: center;
+  text-align: center;
+}
+
+.status-page__icon {
+  width: 48px;
+  height: 48px;
+  color: var(--mat-sys-primary);
+}
+
+.status-page__title {
+  margin: 0;
+  font: var(--mat-sys-headline-small);
+}
+
+.status-page__text {
+  margin: 0 0 8px;
+  color: var(--mat-sys-on-surface-variant);
+}
