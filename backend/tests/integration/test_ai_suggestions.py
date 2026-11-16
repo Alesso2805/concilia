@@ -413,4 +413,3 @@ async def test_a_demo_never_reaches_the_provider_nor_counts_for_the_limits(
     assert (view["status"], view["valid"], view["suggestions"]) == ("done", True, [])
     assert view["no_match_reason"] == "Sin sugerencias en la demo para este abono."
     assert real.calls == []
-
