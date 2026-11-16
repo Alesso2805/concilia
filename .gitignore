@@ -19,6 +19,7 @@ playwright-report/
 .env
 .env.*
 !.env.example
+caddy-local-root.crt
 
 .claude/settings.local.json
 .idea/

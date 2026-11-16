@@ -1,0 +1,71 @@
+name: concilia
+
+x-backend: &backend
+  image: concilia-backend:local
+  build: ./backend
+  restart: unless-stopped
+  depends_on:
+    migrator:
+      condition: service_completed_successfully
+
+services:
+  db:
+    image: postgres:17.12
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres-local}
+      CONCILIA_OWNER_PASSWORD: ${CONCILIA_OWNER_PASSWORD:-owner-local}
+      CONCILIA_APP_PASSWORD: ${CONCILIA_APP_PASSWORD:-app-local}
+      CONCILIA_WORKER_PASSWORD: ${CONCILIA_WORKER_PASSWORD:-worker-local}
+      CONCILIA_BACKUP_PASSWORD: ${CONCILIA_BACKUP_PASSWORD:-backup-local}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "--host", "127.0.0.1", "--username", "postgres", "--dbname", "concilia"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  migrator:
+    image: concilia-backend:local
+    build: ./backend
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      CONCILIA_MIGRATIONS_DATABASE_URL: postgresql+asyncpg://concilia_owner:${CONCILIA_OWNER_PASSWORD:-owner-local}@db:5432/concilia
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    <<: *backend
+    environment:
+      CONCILIA_DATABASE_URL: postgresql+asyncpg://concilia_app:${CONCILIA_APP_PASSWORD:-app-local}@db:5432/concilia
+
+  worker:
+    <<: *backend
+    command: ["python", "-m", "concilia.worker"]
+    environment:
+      CONCILIA_DATABASE_URL: postgresql+asyncpg://concilia_worker:${CONCILIA_WORKER_PASSWORD:-worker-local}@db:5432/concilia
+
+  web:
+    build: ./web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+      TLS_ISSUER: ${TLS_ISSUER:-internal}
+      HSTS: ${HSTS:-max-age=0}
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+
+volumes:
+  db_data:
+  caddy_data:
+  caddy_config:
