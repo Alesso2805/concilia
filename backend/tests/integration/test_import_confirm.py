@@ -28,6 +28,7 @@ from tests.support.imports import (
     upload,
     work,
 )
+from tests.support.statistics import all_grew, manual_analyze_counts
 
 pytestmark = pytest.mark.anyio
 
@@ -114,6 +115,19 @@ async def test_confirming_saves_only_the_valid_rows(
         )
     assert refs == ["F001-123"]
     assert actions == ["import.uploaded", "import.confirmed"]
+
+
+async def test_confirming_refreshes_the_planner_statistics(
+    app: FastAPI, owner_engine: AsyncEngine, worker_engine: AsyncEngine, clock: FixedClock
+) -> None:
+    setup = await statement_setup(owner_engine)
+    async with signed_in(app, setup.member.email) as client:
+        file_id = await _previewed(client, setup, worker_engine, clock)
+        before = await manual_analyze_counts(owner_engine)
+        await _confirm(client, file_id)
+        await work(worker_engine, clock)
+
+    assert all_grew(before, await manual_analyze_counts(owner_engine))
 
 
 async def test_the_same_file_cannot_be_confirmed_twice_in_an_account(

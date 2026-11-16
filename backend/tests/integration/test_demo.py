@@ -13,6 +13,7 @@ from tests.support.api import ORIGIN, build_app, create_member, signed_in, xsrf_
 from tests.support.clock import FixedClock
 from tests.support.database import DatabaseUrls
 from tests.support.imports import NOW, client_id, work
+from tests.support.statistics import all_grew, manual_analyze_counts
 
 pytestmark = pytest.mark.anyio
 
@@ -139,6 +140,17 @@ async def test_a_visitor_enters_a_demo_with_two_imported_months_as_its_analyst(
         "match.confirmed": FIRST_MONTH_PROPOSALS,
         "match.approved": FIRST_MONTH_PROPOSALS,
     }
+
+
+async def test_creating_a_demo_refreshes_the_planner_statistics(
+    database: DatabaseUrls, owner_engine: AsyncEngine
+) -> None:
+    before = await manual_analyze_counts(owner_engine)
+    async with _app(database) as app, _visitor(app, ip="203.0.113.70") as client:
+        created = await client.post("/api/public/demo")
+
+    assert created.status_code == 201
+    assert all_grew(before, await manual_analyze_counts(owner_engine))
 
 
 async def test_a_published_demo_expires_after_its_ttl(

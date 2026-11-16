@@ -40,3 +40,7 @@ async def lock_organization(connection: AsyncConnection, organization_id: UUID) 
         text("SELECT pg_advisory_xact_lock(:namespace, hashtext(:key))"),
         {"namespace": LockNamespace.ORGANIZATION.value, "key": str(organization_id)},
     )
+
+
+async def refresh_statistics(connection: AsyncConnection) -> None:
+    await connection.execute(text("SELECT app_refresh_stats()"))
