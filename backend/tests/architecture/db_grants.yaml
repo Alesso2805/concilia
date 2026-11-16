@@ -77,6 +77,30 @@ tables:
       concilia_worker:
         UPDATE: [revoked_at]
 
+  bank_accounts:
+    rls: organization
+    privileges:
+      concilia_app: [INSERT, SELECT]
+      concilia_worker: [INSERT, SELECT]
+      concilia_backup: [SELECT]
+    column_privileges:
+      concilia_app:
+        UPDATE: [alias, archived_at, bank, number_last4]
+      concilia_worker:
+        UPDATE: [alias, archived_at, bank, number_last4]
+
+  import_profiles:
+    rls: organization
+    privileges:
+      concilia_app: [INSERT, SELECT]
+      concilia_worker: [INSERT, SELECT]
+      concilia_backup: [SELECT]
+    column_privileges:
+      concilia_app:
+        UPDATE: [archived_at, config, name]
+      concilia_worker:
+        UPDATE: [archived_at, config, name]
+
   jobs:
     rls: jobs
     privileges:
