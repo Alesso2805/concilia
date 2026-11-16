@@ -94,3 +94,13 @@
 .detail__history {
   padding-inline-start: 20px;
 }
+
+.detail__decision {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.detail__reason {
+  width: 100%;
+}

@@ -142,17 +142,22 @@ def create_app(settings: ApiSettings | None = None, clock: Clock | None = None) 
     runs = EngineRunService(run_transactions, clock)
     app.include_router(engine_runs_router(runs), dependencies=authenticated)
 
+    decision_transactions = SqlDecisionTransactions(engine, SqlAuditRecorder)
+    decisions = MatchDecisionService(decision_transactions, clock)
+
     def demo_stores(connection: AsyncConnection) -> DemoStores:
         return DemoStores(
             SqlIdentityStore(connection, SqlAuditRecorder(connection)),
             SqlBankingStore(connection, SqlAuditRecorder(connection)),
             import_transactions.store(connection),
             run_transactions.store(connection),
+            decision_transactions.store(connection),
         )
 
     demo = DemoService(
         SqlDemoTransactions(engine, demo_stores),
         runs,
+        decisions,
         ContentReader(),
         SqlRateLimiter(engine),
         clock,
@@ -169,7 +174,6 @@ def create_app(settings: ApiSettings | None = None, clock: Clock | None = None) 
     )
     inbox = InboxService(SqlInboxTransactions(engine))
     app.include_router(inbox_router(inbox), dependencies=authenticated)
-    decisions = MatchDecisionService(SqlDecisionTransactions(engine, SqlAuditRecorder), clock)
     app.include_router(decisions_router(decisions), dependencies=authenticated)
     app.include_router(
         demo_app_router(

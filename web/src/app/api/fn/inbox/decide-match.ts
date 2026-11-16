@@ -7,15 +7,15 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { ConciliaMatchingApiDecisionsDecisionView } from '../../models/concilia-matching-api-decisions-decision-view';
 import { DecisionRequestBody } from '../../models/decision-request-body';
+import { RecordedDecisionView } from '../../models/recorded-decision-view';
 
 export interface DecideMatch$Params {
   match_id: string;
       body: DecisionRequestBody
 }
 
-export function decideMatch(http: HttpClient, rootUrl: string, params: DecideMatch$Params, context?: HttpContext): Observable<StrictHttpResponse<ConciliaMatchingApiDecisionsDecisionView>> {
+export function decideMatch(http: HttpClient, rootUrl: string, params: DecideMatch$Params, context?: HttpContext): Observable<StrictHttpResponse<RecordedDecisionView>> {
   const rb = new RequestBuilder(rootUrl, decideMatch.PATH, 'post');
   if (params) {
     rb.path('match_id', params.match_id, {});
@@ -27,7 +27,7 @@ export function decideMatch(http: HttpClient, rootUrl: string, params: DecideMat
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<ConciliaMatchingApiDecisionsDecisionView>;
+      return r as StrictHttpResponse<RecordedDecisionView>;
     })
   );
 }

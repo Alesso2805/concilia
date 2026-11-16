@@ -36,7 +36,7 @@ class DecisionRequestBody(BaseModel):
     difference_note: str | None = Field(default=None, max_length=500)
 
 
-class DecisionView(BaseModel):
+class RecordedDecisionView(BaseModel):
     id: UUID
     match_id: UUID
     action: ActionName
@@ -46,8 +46,8 @@ class DecisionView(BaseModel):
     decided_at: datetime
 
 
-def _view(decision: StoredDecision) -> DecisionView:
-    return DecisionView(
+def _view(decision: StoredDecision) -> RecordedDecisionView:
+    return RecordedDecisionView(
         id=decision.id,
         match_id=decision.match_id,
         action=decision.action.value,
@@ -69,7 +69,7 @@ def decisions_router(service: MatchDecisionService) -> APIRouter:
         body: DecisionRequestBody,
         principal: CurrentPrincipal,
         response: Response,
-    ) -> DecisionView:
+    ) -> RecordedDecisionView:
         """Record a decision following the state table: an analyst confirms or discards a
         proposal, and a reviewer other than whoever created or confirmed it approves, rejects or
         reverts it.

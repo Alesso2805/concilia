@@ -507,6 +507,80 @@
         "title": "DecisionRequestBody",
         "type": "object"
       },
+      "DecisionView": {
+        "properties": {
+          "action": {
+            "enum": [
+              "confirm",
+              "discard",
+              "approve",
+              "reject",
+              "revert"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "decided_at": {
+            "format": "date-time",
+            "title": "Decided At",
+            "type": "string"
+          },
+          "decided_by": {
+            "title": "Decided By",
+            "type": "string"
+          },
+          "difference_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Note"
+          },
+          "difference_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "commission",
+                  "detraction",
+                  "rounding",
+                  "overpayment",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Reason"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "action",
+          "reason",
+          "difference_reason",
+          "difference_note",
+          "decided_by",
+          "decided_at"
+        ],
+        "title": "DecisionView",
+        "type": "object"
+      },
       "DemoView": {
         "properties": {
           "organization_id": {
@@ -1116,7 +1190,7 @@
           },
           "decisions": {
             "items": {
-              "$ref": "#/components/schemas/concilia__matching__api__inbox__DecisionView"
+              "$ref": "#/components/schemas/DecisionView"
             },
             "title": "Decisions",
             "type": "array"
@@ -2149,6 +2223,87 @@
         "title": "ReceivablesTemplateView",
         "type": "object"
       },
+      "RecordedDecisionView": {
+        "properties": {
+          "action": {
+            "enum": [
+              "confirm",
+              "discard",
+              "approve",
+              "reject",
+              "revert"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "decided_at": {
+            "format": "date-time",
+            "title": "Decided At",
+            "type": "string"
+          },
+          "difference_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Note"
+          },
+          "difference_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "commission",
+                  "detraction",
+                  "rounding",
+                  "overpayment",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Reason"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "match_id": {
+            "format": "uuid",
+            "title": "Match Id",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "id",
+          "match_id",
+          "action",
+          "reason",
+          "difference_reason",
+          "difference_note",
+          "decided_at"
+        ],
+        "title": "RecordedDecisionView",
+        "type": "object"
+      },
       "RegistrationRequest": {
         "properties": {
           "display_name": {
@@ -2791,161 +2946,6 @@
           "reason"
         ],
         "title": "VoidRequest",
-        "type": "object"
-      },
-      "concilia__matching__api__decisions__DecisionView": {
-        "properties": {
-          "action": {
-            "enum": [
-              "confirm",
-              "discard",
-              "approve",
-              "reject",
-              "revert"
-            ],
-            "title": "Action",
-            "type": "string"
-          },
-          "decided_at": {
-            "format": "date-time",
-            "title": "Decided At",
-            "type": "string"
-          },
-          "difference_note": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Difference Note"
-          },
-          "difference_reason": {
-            "anyOf": [
-              {
-                "enum": [
-                  "commission",
-                  "detraction",
-                  "rounding",
-                  "overpayment",
-                  "other"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Difference Reason"
-          },
-          "id": {
-            "format": "uuid",
-            "title": "Id",
-            "type": "string"
-          },
-          "match_id": {
-            "format": "uuid",
-            "title": "Match Id",
-            "type": "string"
-          },
-          "reason": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reason"
-          }
-        },
-        "required": [
-          "id",
-          "match_id",
-          "action",
-          "reason",
-          "difference_reason",
-          "difference_note",
-          "decided_at"
-        ],
-        "title": "DecisionView",
-        "type": "object"
-      },
-      "concilia__matching__api__inbox__DecisionView": {
-        "properties": {
-          "action": {
-            "enum": [
-              "confirm",
-              "discard",
-              "approve",
-              "reject",
-              "revert"
-            ],
-            "title": "Action",
-            "type": "string"
-          },
-          "decided_at": {
-            "format": "date-time",
-            "title": "Decided At",
-            "type": "string"
-          },
-          "decided_by": {
-            "title": "Decided By",
-            "type": "string"
-          },
-          "difference_note": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Difference Note"
-          },
-          "difference_reason": {
-            "anyOf": [
-              {
-                "enum": [
-                  "commission",
-                  "detraction",
-                  "rounding",
-                  "overpayment",
-                  "other"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Difference Reason"
-          },
-          "reason": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reason"
-          }
-        },
-        "required": [
-          "action",
-          "reason",
-          "difference_reason",
-          "difference_note",
-          "decided_by",
-          "decided_at"
-        ],
-        "title": "DecisionView",
         "type": "object"
       }
     }
@@ -4607,7 +4607,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/concilia__matching__api__decisions__DecisionView"
+                  "$ref": "#/components/schemas/RecordedDecisionView"
                 }
               }
             },

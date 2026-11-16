@@ -7,7 +7,7 @@ from uuid import UUID, uuid7
 
 from concilia.audit.application.recorder import AuditAction, AuditEvent, AuditRecorder
 from concilia.matching.domain.engine import RULES_VERSION, run_engine
-from concilia.matching.domain.model import EngineInput, Proposal
+from concilia.matching.domain.model import DifferenceReason, EngineInput, Proposal
 from concilia.matching.domain.runs import EngineRun
 from concilia.periods.application.queries import PeriodQueries
 from concilia.shared.kernel.clock import Clock
@@ -71,6 +71,8 @@ class RunStore(Protocol):
     ) -> None: ...
 
     async def finish_run(self, run_id: UUID, proposals_count: int, now: datetime) -> None: ...
+
+    async def proposals_of(self, run_id: UUID) -> list[tuple[UUID, DifferenceReason | None]]: ...
 
 
 class RunTransactions(Protocol):
