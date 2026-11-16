@@ -55,7 +55,7 @@ El MVP cubre el ciclo completo de una conciliación mensual para una empresa en 
 | Conciliación | Diferencias | Diferencia con motivo (comisión, detracción, redondeo, sobrepago, otro) y pagos parciales |
 | IA | Sugerencias | Para un abono sin conciliar, la IA propone candidatos con su razón; el servidor valida y recalcula; el analista acepta o rechaza |
 | Períodos | Cierre mensual | Un revisor cierra el período cuando no quedan coincidencias propuestas ni confirmadas; reabrir exige motivo |
-| Reportes | Panel y exportación | Porcentaje conciliado, pendientes por antigüedad y diferencias por motivo; exportación a Excel del período |
+| Reportes | Panel y exportación | Porcentaje conciliado, pendientes por antigüedad (medida contra el último día del período, o contra hoy si es el mes en curso) y diferencias por motivo; exportación a Excel del período |
 | Auditoría | Historial | Quién importó, confirmó, aprobó, rechazó, revirtió, cerró o aceptó una sugerencia, y cuándo |
 | Demo | Organización propia por visitante | Botón "Probar la demo" que crea una organización con datos ficticios y usuarios por rol, archivos de ejemplo descargables y recorrido guiado; se borra a las 4 horas |
 
@@ -118,7 +118,7 @@ Desde CN-12 ambos los implementa `matching.infrastructure.SqlMatchQueries`; ante
 
 **Seguimiento de trabajos en la interfaz.** Al encolar, la API devuelve el id del trabajo. La interfaz consulta su estado cada 2 segundos con un `interval` + `switchMap` que se detiene en `done` o `failed`, se cancela al salir de la ruta (`takeUntilDestroyed`) y se rinde a los 5 minutos con un mensaje.
 
-**Sesiones y CSRF.** Cookie `__Host-concilia_session` httpOnly, Secure, SameSite=Lax, con identificador opaco guardado como hash; vence a las 12 horas sin uso o a los 7 días. CSRF con doble envío firmado: con sesión, la API pone una cookie legible `__Host-XSRF-TOKEN` con un HMAC del id de sesión, y Angular la devuelve en la cabecera `X-XSRF-TOKEN` con `withXsrfConfiguration` (`cookieName` ajustado). Las rutas `/api/public/*` (inicio de sesión, aceptar invitación, registro, crear demo) no usan el token: exigen que la cabecera `Origin` sea la del sitio y se apoyan en SameSite. **Cambio de rol en la demo:** `POST /api/app/demo/switch-role {role}` solo si la organización es de demo, no venció y el usuario actual y el destino son usuarios de demo de esa misma organización; revoca la sesión actual y emite una nueva con su token CSRF; queda en la auditoría. Sin JWT. Límite de intentos de inicio de sesión por IP y por correo. La IP real llega desde Caddy: Uvicorn corre con `--proxy-headers` y `--forwarded-allow-ips` limitado a la red de Caddy, y Caddy sobrescribe `X-Forwarded-For`. En local se usa `https://localhost` con `tls internal` de Caddy, y los tests usan `base_url="https://test"`, así las cookies `__Host-` funcionan igual que en producción.
+**Sesiones y CSRF.** Cookie `__Host-concilia_session` httpOnly, Secure, SameSite=Lax, con identificador opaco guardado como hash; vence a las 12 horas sin uso o a los 7 días. CSRF con doble envío firmado: con sesión, la API pone una cookie legible `__Host-XSRF-TOKEN` con un HMAC del id de sesión, y Angular la devuelve en la cabecera `X-XSRF-TOKEN` con `withXsrfConfiguration` (`cookieName` ajustado). Las rutas `/api/public/*` (inicio de sesión, aceptar invitación, registro, crear demo) no usan el token: exigen que la cabecera `Origin` sea la del sitio y se apoyan en SameSite. **Cambio de rol en la demo:** `POST /api/app/demo/switch-role {role}` solo si la organización es de demo, no venció y el usuario actual y el destino son usuarios de demo de esa misma organización; revoca la sesión actual y emite una nueva con su token CSRF; queda en la auditoría. Sin JWT. Límite de intentos de inicio de sesión por IP y por correo. La IP real llega desde Caddy: Uvicorn corre con `--proxy-headers` y `--forwarded-allow-ips` limitado a la red de Caddy, y Caddy sobrescribe `X-Forwarded-For`. En local se usa `https://localhost` con `tls internal` de Caddy (una sola vez, `make trust-ca` instala su CA en el almacén del sistema para que el navegador la acepte), y los tests usan `base_url="https://test"`, así las cookies `__Host-` funcionan igual que en producción.
 
 **Cola de trabajos.** Tabla `jobs` con tipo, organización (nula en tareas del sistema), carga, estado, progreso, intentos, `run_after` y `dedup_key`. Cada trabajo usa tres transacciones separadas:
 
@@ -173,20 +173,24 @@ Un cobro anulado (`cancelled_at`) no es candidato. Ningún saldo disponible pued
 - si tiene una sola palabra, 100 si esa palabra de 5 o más letras aparece completa en la descripción y 0 si no;
 - 0 si el nombre filtrado queda vacío.
 
-**Motor de conciliación.** Corre sobre los abonos libres y los cobros con saldo disponible de una cuenta y un período abiertos. Las reglas se aplican en este orden; dentro de cada regla, los candidatos se ordenan por puntaje, luego por fecha del abono y luego por id. Un abono o un cobro que entró en una propuesta de esta corrida no se vuelve a usar en ella.
+**Motor de conciliación.** Corre sobre los abonos libres y los cobros con saldo disponible de una cuenta y un período abiertos. Las reglas se aplican en este orden, cada una sobre todos los abonos antes de pasar a la siguiente; dentro de cada regla, los candidatos se ordenan por puntaje, luego por fecha del abono y luego por id, salvo R5, que recorre los cobros por vencimiento ascendente y luego por id. Un abono o un cobro que entró en una propuesta de esta corrida no se vuelve a usar en ella.
 
 | # | Regla | Condición | Puntaje | Aplicado y diferencia |
 | --- | --- | --- | --- | --- |
 | R1 | Exacta | La descripción contiene el número de documento y el abono es igual al saldo disponible | 100 | Aplicado = abono; diferencia 0 |
 | R2 | Varios documentos en un abono | La descripción contiene dos o más números de documento y la suma de sus saldos disponibles es igual al abono | 95 | Cada uno su saldo; diferencia 0 |
 | R3 | Referencia con diferencia | La descripción contiene el número de documento y la diferencia está dentro de la tolerancia o coincide con una detracción | 85 | Aplicado = saldo disponible; diferencia = abono − saldo, con motivo sugerido |
-| R4 | Mismo cliente, varios cobros | El cliente con mayor similitud con el abono (≥ 85; si hay empate, no se propone) tiene una combinación de 2 a 4 cobros que suma exactamente el abono | 80 | Cada uno su saldo; diferencia 0 |
-| R5 | Cobro pagado en partes | De 2 a 3 abonos libres del mismo período con similitud ≥ 85 al cliente, todos entre la emisión y 30 días después del vencimiento y con como máximo 30 días entre el primero y el último, suman exactamente el saldo disponible | 75 | Aplicado = saldo; diferencia 0 |
+| R4 | Mismo cliente, varios cobros | El cliente con mayor similitud con el abono (≥ 85; si hay empate, no se propone) tiene exactamente una combinación de 2 a 4 cobros que suma el abono | 80 | Cada uno su saldo; diferencia 0 |
+| R5 | Cobro pagado en partes | Exactamente una combinación de 2 a 3 abonos libres del mismo período, con similitud ≥ 85 al cliente, todos entre la emisión y 30 días después del vencimiento y con como máximo 30 días entre el primero y el último, suma el saldo disponible | 75 | Aplicado = saldo; diferencia 0 |
 | R6 | Monto y fecha | Abono igual al saldo disponible, fecha entre la emisión y 30 días después del vencimiento, y un único candidato; +15 si la similitud de cliente es ≥ 85 | 60 o 75 | Aplicado = abono; diferencia 0 |
 
-- **Límites de búsqueda:** en R4, como máximo 20 cobros del cliente y 500 combinaciones por abono; en R5, como máximo 20 abonos candidatos y 500 combinaciones por cobro. Si se alcanza un límite, la regla no propone nada para ese caso.
-- No se crean propuestas con puntaje menor a 60. Si R6 encuentra más de un candidato, el abono queda sin propuesta y es candidato para la IA.
-- El motor no vuelve a proponer, en el mismo período, una combinación exacta de abonos y cobros que ya fue descartada, rechazada o revertida.
+- **Límites de búsqueda:** R4 considera como máximo los 10 cobros con saldo disponible del cliente cuyo vencimiento está más cerca de la fecha del abono (hasta 375 combinaciones de 2 a 4). R5 considera como máximo los 12 abonos candidatos cuya fecha está más cerca del vencimiento del cobro (hasta 286 combinaciones de 2 a 3). A igual distancia gana la fecha más antigua y luego el id. Se mantiene un tope de seguridad de 500 combinaciones por abono (R4) o por cobro (R5): si se alcanza, la regla no propone nada para ese caso.
+- No se crean propuestas con puntaje menor a 60. Si R4, R5 o R6 encuentran más de una combinación (o más de un candidato) que cumple la regla, no proponen nada para ese caso y esos abonos quedan como candidatos para la IA.
+- **Varios documentos en la descripción:** R1 y R3 proponen solo si exactamente uno de los documentos mencionados cumple la condición; los números que no corresponden a un cobro con saldo disponible se ignoran. R2, en cambio, exige que todos los documentos mencionados sean cobros con saldo disponible.
+- **Único candidato en R6:** el abono tiene un solo cobro candidato y ese cobro es candidato solo de ese abono. Si dos abonos compiten por el mismo cobro, ninguno recibe propuesta.
+- **Similitud de un cliente en R4, R5 y R6:** es la mayor entre los nombres de sus cobros (un cliente identificado por RUC puede tener nombres distintos). En R4, el cliente de mayor similitud y los empates se buscan entre todos los clientes de los cobros de la corrida, aunque sus cobros ya se hayan usado en ella.
+- **Motivo sugerido en R3:** si la diferencia cabe en la tolerancia, el motivo es `rounding`, aunque también coincida con una detracción; si coinciden varias tasas, se usa la de menor residuo y, a igual residuo, la tasa menor. Si la diferencia es 0 (R1 no pudo decidir porque había dos documentos exactos y otra regla usó uno), no hay motivo.
+- El motor no vuelve a proponer, en el mismo período, una combinación exacta de abonos y cobros que ya fue descartada, rechazada o revertida. Cada regla elige su resultado sin mirar esas combinaciones; si el resultado es una de ellas, la regla no propone nada para ese caso (no pasa a otra combinación) y el abono sigue disponible para las reglas siguientes.
 - **Tolerancia:** la diferencia está dentro de la tolerancia si su valor absoluto es menor o igual que el mayor entre `tolerance_min_cents` (100 por defecto) y `tolerance_bp` del saldo (50 = 0.5 % por defecto, redondeado a céntimos hacia abajo). Motivo sugerido: `rounding`.
 - **Detracción:** para cada tasa configurada (por defecto 10 % y 12 %), detracción = saldo × tasa, redondeada al sol entero (mitad hacia arriba). Coincide si `|abono − (saldo − detracción)| ≤ 100` céntimos. Motivo sugerido: `detraction`.
 - Cada propuesta guarda la regla, el puntaje, el motivo sugerido y una explicación por plantilla (por ejemplo: "La descripción menciona F001-123 y el monto coincide").
@@ -226,14 +230,14 @@ Descartada, rechazada y revertida son finales; sus abonos y cobros quedan libres
 
 **Límites de la IA.** Una consulta es un trabajo `ai_suggest` (con sus reintentos). Al encolar, bajo el bloqueo de la organización y un bloqueo global fijo, se cuentan los trabajos `ai_suggest` creados hoy (día de Lima), incluidos los que están en cola: como máximo 50 por organización y `AI_GLOBAL_DAILY_LIMIT` en toda la instancia (con `app_ai_usage_today`). Las organizaciones de demo no cuentan.
 
-**Respuestas grabadas de la demo.** Las organizaciones de demo nunca llaman al proveedor real. Las grabaciones viven en el repo, indexadas por `dataset_version` y una clave estable del abono `(booked_on, amount_cents, description_norm, índice de aparición de esa combinación en el dataset)`, con los candidatos guardados por `doc_number_norm`, no por alias. Al reproducir, cada número de documento se traduce al cobro de esa demo y se aplican las mismas validaciones y el mismo recálculo; un candidato sin saldo disponible se descarta. Para un abono sin grabación, la respuesta es "sin sugerencias en la demo". Se graban con `make record-ai`, contra una base local, y un test falla si cambia `prompt_version` o `dataset_version` sin volver a grabar.
+**Respuestas grabadas de la demo.** Las organizaciones de demo nunca llaman al proveedor real. Las grabaciones viven en el repo, indexadas por `dataset_version` y una clave estable del abono `(booked_on, amount_cents, description_norm, índice de aparición de esa combinación en el dataset)`, con los candidatos guardados por `doc_number_norm`, no por alias. Al reproducir, cada número de documento se traduce al cobro de esa demo y se aplican las mismas validaciones y el mismo recálculo; un candidato sin saldo disponible se descarta. Para un abono sin grabación, la respuesta es "sin sugerencias en la demo". Se graban con `make record-ai` sobre una organización normal (`is_demo = false`) de una base local cargada con el dataset de demo, con la clave real del proveedor tomada del entorno de quien graba, y un test falla si cambia `prompt_version` o `dataset_version` sin volver a grabar.
 
 **Demo.**
 
 - El botón "Probar la demo" crea una organización de demo con el generador determinista y fechas fijas por `dataset_version`: una cuenta bancaria, perfiles, tres usuarios de demo (`admin`, `analyst`, `reviewer`) y el extracto y los cobros de dos meses ya importados. El primer mes se concilia con el motor real (un `engine_runs` sin trabajo), lo confirma el analista y lo aprueba el revisor de la demo a través del dominio, y queda cerrado; el segundo queda sin conciliar. La precarga crece con las historias: desde CN-22, propuestas del motor; desde CN-14, confirmadas y aprobadas; desde CN-16, el período cerrado. La sesión entra como analista y un selector cambia de rol con el endpoint de cambio de rol.
 - La demo ofrece para descargar un extracto CSV y un archivo de cobros de un tercer mes, con su perfil ya creado, para probar la importación. El extracto empieza con los tres últimos movimientos del mes anterior, como suele pasar al exportar del banco, y la vista previa los marca como ya importados.
 - Además del botón, el enlace `/demo` crea una demo y entra en ella, para compartirlo.
-- Se borra a las `DEMO_TTL_HOURS` horas (4 en producción). En local `DEMO_TTL_HOURS` no se define y la demo no vence; cada «Probar la demo», o el enlace `/demo` que abre `make demo`, crea una nueva. Límite: 5 demos por IP al día y 300 por día en toda la instancia.
+- Se borra a las `DEMO_TTL_HOURS` horas (4 en producción). En local, `DEMO_TTL_HOURS=0` significa sin vencimiento: `demo_expires_at` se fija en 9999-12-31 00:00 UTC para cumplir el CHECK; cada «Probar la demo», o el enlace `/demo` que abre `make demo`, crea una nueva. Límite: 5 demos por IP al día y 300 por día en toda la instancia.
 
 **Roles.**
 
@@ -310,22 +314,23 @@ PostgreSQL 17. Claves primarias uuid v7 generadas en la aplicación (o en el cli
 
 ## Plan de sprints
 
-Diez sprints de una semana (de lunes a domingo, salvo S2), planificados a unos 10 puntos con Claude Code implementando y revisión de cada PR, con menos carga en las semanas de Navidad y Año Nuevo y una pausa del 6 al 20 de diciembre. El primer hito es una **demo mínima publicada el viernes 15 de enero de 2027**; el proyecto completo queda listo el 7 de febrero.
+Diez sprints de una semana (de lunes a domingo, salvo S2), planificados a unos 10 puntos con Claude Code implementando y revisión de cada PR, con menos carga en las semanas de Navidad y Año Nuevo y una pausa del 6 al 20 de diciembre. El primer hito es una **demo mínima funcionando en local el viernes 15 de enero de 2027**; la publicación llega con CN-04, al final del plan, y el proyecto completo queda listo el 7 de febrero.
 
 | Sprint | Fechas | Objetivo | Historias, en orden | Pts |
 | --- | --- | --- | --- | --- |
 | S0 | 16 – 22 nov 2026 | Decisiones, monorepo con CI y base segura | CN-01, 02, 03 | 10 |
-| S1 | 23 – 29 nov | Publicado, con inicio de sesión y el motor de conciliación | CN-04, 05, 11 | 10 |
+| S1 | 23 – 29 nov | Inicio de sesión y el motor de conciliación | CN-05, 11 | 8 |
 | S2 | 30 nov – 5 dic (6 días) | Aplicación Angular base, equipo y configuración | CN-06, 07, 08 | 10 |
 | Pausa | 6 – 20 dic | — | — | — |
 | S3 | 21 – 27 dic | Importación de extractos | CN-09 | 5 |
 | S4 | 28 dic – 3 ene 2027 | Importación de cobros y motor en la base | CN-10, 12 | 6 |
 | S5 | 4 – 10 ene | Bandeja de revisión y demo por visitante | CN-13, 22 | 8 |
 | S6 | 11 – 17 ene | Cuatro ojos | CN-14 | 5 |
-| Hito | vie 15 ene | **Demo mínima:** entrar a la demo, importar el tercer mes, correr el motor, confirmar y aprobar con dos roles, publicada | — | — |
+| Hito | vie 15 ene | **Demo mínima en local:** entrar a la demo, importar el tercer mes, correr el motor, confirmar y aprobar con dos roles, con `docker compose up` | — | — |
 | S7 | 18 – 24 ene | Manual y en lote, cierre de mes y auditoría | CN-15, 16, 19 | 9 |
 | S8 | 25 – 31 ene | Panel, Excel y motor de IA | CN-17, 18, 20 | 10 |
 | S9 | 1 – 7 feb | IA en la interfaz, recorrido guiado y cierre de portafolio | CN-21, 23, 24 | 9 |
+| Final | después de S9 | Publicación: servidor con dominio, HTTPS y despliegue automático | CN-04 | 2 |
 
 **Puertas de decisión**
 
@@ -345,7 +350,7 @@ Diez sprints de una semana (de lunes a domingo, salvo S2), planificados a unos 1
 | Corrección | El motor es determinista, nunca usa un abono dos veces ni excede el saldo disponible de un cobro; los saldos abierto y disponible siempre cumplen sus definiciones | Propiedades con Hypothesis y casos de ejemplo por regla |
 | Cuatro ojos | Nadie aprueba ni rechaza lo que creó o confirmó | Test en el dominio y test directo del trigger en SQL |
 | Aislamiento | Ningún dato cruza organizaciones por la API, por SQL directo ni por vistas; ninguna tabla nueva queda sin RLS; ningún rol tiene permisos fuera de la tabla de roles | Tests con dos organizaciones por endpoint y test del catálogo |
-| Concurrencia | Dos operaciones simultáneas nunca dejan un saldo disponible negativo ni dos decisiones incompatibles | Tests concurrentes en CN-07 y CN-14 |
+| Concurrencia | Dos operaciones simultáneas nunca dejan un saldo disponible negativo ni dos decisiones incompatibles | Tests concurrentes en CN-07, CN-12, CN-14 y CN-15 |
 | Idempotencia | Reenviar un POST o reejecutar un trabajo no duplica nada | Tests de reenvío y de reejecución |
 | Cola | Un trabajo que falla llega a `failed` tras 3 intentos; uno colgado vuelve a la cola | Tests de integración en CN-03 |
 | IA | Salida validada; aritmética recalculada; nada decide sola; funciona con la IA apagada; límites por organización y global | Tests con `FakeLlmClient`, incluidas respuestas inválidas y alias inventados |
