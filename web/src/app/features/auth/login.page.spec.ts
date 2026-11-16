@@ -10,15 +10,17 @@ const ORGANIZATION = { id: 'org-1', name: 'Comercial Andina', is_demo: false, ro
 
 describe('LoginPage', () => {
   const login = vi.fn<(email: string, password: string) => Promise<LoginView>>();
+  const startDemo = vi.fn<() => Promise<void>>();
   let fixture: ComponentFixture<LoginPage>;
   let navigateByUrl: ReturnType<typeof vi.spyOn>;
   let navigate: ReturnType<typeof vi.spyOn>;
 
   beforeEach(async () => {
     login.mockReset();
+    startDemo.mockReset();
     TestBed.configureTestingModule({
       imports: [LoginPage],
-      providers: [provideRouter([]), { provide: SessionStore, useValue: { login } }],
+      providers: [provideRouter([]), { provide: SessionStore, useValue: { login, startDemo } }],
     });
     const router = TestBed.inject(Router);
     navigateByUrl = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
@@ -47,6 +49,33 @@ describe('LoginPage', () => {
     element().querySelector('form')!.dispatchEvent(new Event('submit'));
     await fixture.whenStable();
   }
+
+  function demoButton(): HTMLButtonElement {
+    return [...element().querySelectorAll('button')].find(
+      (button) => button.textContent?.trim() === 'Probar la demo',
+    )!;
+  }
+
+  it('starts a demo and opens its inbox', async () => {
+    startDemo.mockResolvedValue();
+
+    demoButton().click();
+    await fixture.whenStable();
+
+    expect(startDemo).toHaveBeenCalled();
+    expect(navigateByUrl).toHaveBeenCalledWith('/bandeja');
+  });
+
+  it('explains the daily demo limit', async () => {
+    startDemo.mockRejectedValue(new HttpErrorResponse({ status: 429 }));
+
+    demoButton().click();
+    await fixture.whenStable();
+
+    expect(element().querySelector('[role="alert"]')?.textContent).toContain(
+      'Hoy ya se crearon muchas demos',
+    );
+  });
 
   it('asks for both fields before calling the API', async () => {
     await submit('', '');

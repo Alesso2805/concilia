@@ -63,6 +63,8 @@ export type { StatementProfileRequest } from './models/statement-profile-request
 export type { StatementProfileView } from './models/statement-profile-view';
 export type { StatementRowView } from './models/statement-row-view';
 export type { StatementTemplateView } from './models/statement-template-view';
+export type { SwitchedView } from './models/switched-view';
+export type { SwitchRoleRequest } from './models/switch-role-request';
 export type { TeamView } from './models/team-view';
 export type { UploadView } from './models/upload-view';
 export type { ValidationError } from './models/validation-error';

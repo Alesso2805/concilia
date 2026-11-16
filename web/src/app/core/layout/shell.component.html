@@ -44,6 +44,28 @@
           <span class="shell__organization">{{ organization.name }}</span>
           @if (organization.is_demo) {
             <span class="shell__badge">Demo</span>
+            <button
+              mat-button
+              type="button"
+              class="shell__role"
+              [matMenuTriggerFor]="roleMenu"
+              [disabled]="switching()"
+            >
+              Ver como: {{ currentRole() }}
+            </button>
+            <mat-menu #roleMenu="matMenu">
+              @for (role of demoRoles; track role) {
+                <button
+                  mat-menu-item
+                  type="button"
+                  role="menuitemradio"
+                  [attr.aria-checked]="roles().has(role)"
+                  (click)="switchRole(role)"
+                >
+                  {{ roleLabel(role) }}
+                </button>
+              }
+            </mat-menu>
           }
         }
         <span class="shell__spacer"></span>

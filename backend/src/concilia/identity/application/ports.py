@@ -54,6 +54,13 @@ class IdentityStore(Protocol):
 
     async def user_organizations(self, user_id: UUID) -> list[OrganizationAccess]: ...
 
+    async def demo_user_for_role(
+        self, organization_id: UUID, current_user_id: UUID, role: str, now: datetime
+    ) -> UUID | None:
+        """The demo user with `role` when the organization is a live demo and the current user
+        is one of its demo users; otherwise None."""
+        ...
+
     async def insert_session(self, session: Session, token_hash: str) -> None: ...
 
     async def find_session(self, token_hash: str) -> Session | None: ...

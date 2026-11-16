@@ -11,3 +11,10 @@ export function loginErrorMessage(error: unknown): string {
   }
   return 'No pudimos conectar con el servidor. Intenta de nuevo.';
 }
+
+export function demoErrorMessage(error: unknown): string {
+  if (error instanceof HttpErrorResponse && error.status === HttpStatusCode.TooManyRequests) {
+    return 'Hoy ya se crearon muchas demos desde tu red. Vuelve mañana para probar otra.';
+  }
+  return 'No pudimos crear la demo. Intenta de nuevo en unos minutos.';
+}

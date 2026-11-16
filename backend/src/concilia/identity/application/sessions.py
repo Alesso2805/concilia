@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from uuid import UUID, uuid7
 
+from concilia.audit.application.recorder import AuditAction, AuditEvent
 from concilia.identity.application.ports import (
     IdentityStore,
     IdentityTransactions,
@@ -27,6 +28,10 @@ class InvalidCredentialsError(Exception):
 
 
 class NotAMemberError(Exception):
+    pass
+
+
+class NotADemoError(Exception):
     pass
 
 
@@ -165,6 +170,33 @@ class SessionService:
                 raise NotAMemberError
             await store.revoke_session(principal.session_id, now)
             return await self._issue(store, principal.user_id, organization_id, organizations, now)
+
+    async def switch_demo_role(self, principal: Principal, role: str) -> IssuedSession:
+        """Hand a demo visitor over to the demo user with another role, in a new session."""
+        now = self._clock.now()
+        organization_id = principal.organization_id
+        if organization_id is None:
+            raise NotADemoError
+        async with self._transactions.organization(organization_id) as store:
+            target = await store.demo_user_for_role(organization_id, principal.user_id, role, now)
+            if target is None:
+                raise NotADemoError
+            await store.revoke_session(principal.session_id, now)
+            organizations = await store.user_organizations(target)
+            issued = await self._issue(store, target, organization_id, organizations, now)
+            await store.audit.record(
+                AuditEvent(
+                    id=uuid7(),
+                    organization_id=organization_id,
+                    actor_user_id=principal.user_id,
+                    action=AuditAction.DEMO_ROLE_SWITCHED,
+                    entity="user",
+                    entity_id=target,
+                    at=now,
+                    metadata={"roles": [role]},
+                )
+            )
+            return issued
 
     async def logout(self, principal: Principal) -> None:
         async with self._transactions.anonymous() as store:
