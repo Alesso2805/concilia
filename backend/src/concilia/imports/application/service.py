@@ -8,11 +8,19 @@ from uuid import UUID, uuid7
 
 from concilia.audit.application.recorder import AuditAction, AuditEvent, AuditRecorder
 from concilia.banking.application.profile_config import (
+    ProfileConfig,
     ProfileKind,
+    ReceivablesConfig,
     StatementConfig,
     parse_config,
 )
 from concilia.imports.application.matches import ActiveMatchesQuery
+from concilia.imports.application.receivables_flow import (
+    ReceivableStore,
+    apply_receivables,
+    classify_receivables,
+    receivables_layout,
+)
 from concilia.imports.domain.cells import Cell
 from concilia.imports.domain.model import (
     FilePage,
@@ -22,6 +30,7 @@ from concilia.imports.domain.model import (
     RowPage,
     RowStatus,
 )
+from concilia.imports.domain.receivables import read_receivables
 from concilia.imports.domain.statement import (
     FileError,
     RowError,
@@ -84,7 +93,7 @@ class ActiveProfile:
     config: Mapping[str, Any]
 
 
-class ImportStore(Protocol):
+class ImportStore(ReceivableStore, Protocol):
     audit: AuditRecorder
     periods: PeriodQueries
     matches: ActiveMatchesQuery
@@ -97,7 +106,11 @@ class ImportStore(Protocol):
 
     async def file_content(self, file_id: UUID) -> bytes: ...
 
-    async def confirmed_with_hash(self, bank_account_id: UUID, sha256: str) -> UUID | None: ...
+    async def confirmed_duplicate(self, file: ImportFile) -> UUID | None: ...
+
+    async def receivable_ids_of_file(self, file_id: UUID) -> list[UUID]: ...
+
+    async def cancel_receivables(self, ids: list[UUID], reason: str, now: datetime) -> None: ...
 
     async def insert_file(
         self, organization_id: UUID, file: ImportFile, content: bytes
@@ -155,7 +168,7 @@ class ImportTransactions(Protocol):
 class FileReader(Protocol):
     def check(self, content: bytes, expected_format: str) -> None: ...
 
-    def rows(self, content: bytes, config: StatementConfig) -> list[list[Cell]]: ...
+    def rows(self, content: bytes, config: ProfileConfig) -> list[list[Cell]]: ...
 
 
 type ProgressReporter = Callable[[int], Awaitable[None]]
@@ -243,7 +256,7 @@ class ImportService:
         async with self._transactions.organization(organization_id) as store:
             await store.lock_organization(organization_id)
             profile = await store.active_profile(upload.import_profile_id)
-            if profile is None or profile.kind != ProfileKind.BANK_STATEMENT:
+            if profile is None:
                 raise NotFoundError
             self._reader.check(upload.content, str(profile.config["format"]))
             job_ids: list[UUID] = []
@@ -290,11 +303,7 @@ class ImportService:
             file, created = await create_or_replay(
                 find=lambda: store.find_file(upload.id), create=create, same_content=same_content
             )
-            duplicate = (
-                await store.confirmed_with_hash(file.bank_account_id, sha256)
-                if file.bank_account_id is not None
-                else None
-            )
+            duplicate = await store.confirmed_duplicate(file)
         return UploadResult(file, job_ids[0] if job_ids else None, duplicate, created)
 
     async def summary(self, principal: Principal, file_id: UUID) -> FileSummary:
@@ -304,8 +313,8 @@ class ImportService:
             if file is None:
                 raise NotFoundError
             duplicate = None
-            if file.bank_account_id is not None and file.status != FileStatus.CONFIRMED:
-                duplicate = await store.confirmed_with_hash(file.bank_account_id, file.sha256)
+            if file.status != FileStatus.CONFIRMED:
+                duplicate = await store.confirmed_duplicate(file)
             return FileSummary(file, await store.row_counts(file_id), duplicate)
 
     async def files(
@@ -369,9 +378,7 @@ class ImportService:
                 raise NotFoundError
             if file.status != FileStatus.PREVIEWED:
                 raise WrongStateError
-            if file.bank_account_id is not None and await store.confirmed_with_hash(
-                file.bank_account_id, file.sha256
-            ):
+            if await store.confirmed_duplicate(file):
                 raise DuplicateFileError
             pending = await store.pending_job("confirm_import", file_id)
             if pending is not None:
@@ -390,23 +397,15 @@ class ImportService:
         now = self._clock.now()
         await store.lock_organization(organization_id)
         file = await store.find_file(file_id)
-        if file is None or file.status != FileStatus.PREVIEWED or file.bank_account_id is None:
+        if file is None or file.status != FileStatus.PREVIEWED:
             return
-        if await store.confirmed_with_hash(file.bank_account_id, file.sha256):
+        if await store.confirmed_duplicate(file):
             raise DuplicateFileError
         rows = await store.ok_rows(file_id)
-        live = await store.live_fingerprints(
-            file.bank_account_id, [str(row.parsed["fingerprint"]) for row in rows]
-        )
-        months = {period_of(date.fromisoformat(row.parsed["booked_on"])) for row in rows}
-        closed = await store.periods.closed_periods(file.bank_account_id, months)
-        fresh = [
-            row
-            for row in rows
-            if row.parsed["fingerprint"] not in live
-            and period_of(date.fromisoformat(row.parsed["booked_on"])) not in closed
-        ]
-        await store.insert_movements(organization_id, file, fresh, now)
+        if file.bank_account_id is None:
+            await apply_receivables(store, organization_id, file_id, rows, now)
+        else:
+            await _apply_statement(store, organization_id, file, file.bank_account_id, rows, now)
         await store.delete_rows(file_id)
         await store.update_file(file_id, status=FileStatus.CONFIRMED.value, confirmed_at=now)
         await _audit(store, organization_id, actor, AuditAction.IMPORT_CONFIRMED, file_id, now)
@@ -421,15 +420,21 @@ class ImportService:
                 raise NotFoundError
             if file.status == FileStatus.VOIDED:
                 return
-            if file.status != FileStatus.CONFIRMED or file.bank_account_id is None:
+            if file.status != FileStatus.CONFIRMED:
                 raise WrongStateError
-            movements = await store.live_movements(file_id)
-            months = {period_of(movement.booked_on) for movement in movements}
-            if await store.periods.closed_periods(file.bank_account_id, months):
-                raise ClosedPeriodError
-            if await store.matches.active([movement.id for movement in movements], []):
-                raise ActiveMatchesError
-            await store.void_movements(file_id, now)
+            if file.bank_account_id is None:
+                receivables = await store.receivable_ids_of_file(file_id)
+                if await store.matches.pending([], receivables):
+                    raise ActiveMatchesError
+                await store.cancel_receivables(receivables, reason.strip(), now)
+            else:
+                movements = await store.live_movements(file_id)
+                months = {period_of(movement.booked_on) for movement in movements}
+                if await store.periods.closed_periods(file.bank_account_id, months):
+                    raise ClosedPeriodError
+                if await store.matches.active([movement.id for movement in movements], []):
+                    raise ActiveMatchesError
+                await store.void_movements(file_id, now)
             await store.update_file(
                 file_id, status=FileStatus.VOIDED.value, voided_at=now, void_reason=reason.strip()
             )
@@ -443,19 +448,21 @@ class ImportService:
         file = await store.find_file(file_id)
         if file is None or file.status not in {FileStatus.UPLOADED, FileStatus.PARSING}:
             return
-        if file.bank_account_id is None:
-            raise WrongStateError
-        config = parse_config(ProfileKind.BANK_STATEMENT, file.profile_snapshot["config"])
-        if not isinstance(config, StatementConfig):
-            raise WrongStateError
+        config = parse_config(ProfileKind(file.kind), file.profile_snapshot["config"])
         try:
-            content = await store.file_content(file_id)
-            lines = read_statement(self._reader.rows(content, config), _layout(config))
+            cells = self._reader.rows(await store.file_content(file_id), config)
+            await progress(40)
+            if isinstance(config, ReceivablesConfig):
+                receivables = read_receivables(cells, receivables_layout(config))
+                rows = await classify_receivables(store, receivables)
+            elif isinstance(config, StatementConfig) and file.bank_account_id is not None:
+                statement = read_statement(cells, _layout(config))
+                rows = await self._classify(store, file.bank_account_id, statement)
+            else:
+                raise WrongStateError
         except FileError as error:
             await store.update_file(file_id, status=FileStatus.FAILED.value, error_code=error.code)
             return
-        await progress(40)
-        rows = await self._classify(store, file.bank_account_id, lines)
         await progress(70)
         await store.replace_rows(organization_id, file_id, rows)
         await store.update_file(file_id, status=FileStatus.PREVIEWED.value, row_count=len(rows))
@@ -489,6 +496,28 @@ class ImportService:
             )
             rows.append(ImportRow(line.row_number, status, _parsed(line, fingerprint)))
         return rows
+
+
+async def _apply_statement(
+    store: ImportStore,
+    organization_id: UUID,
+    file: ImportFile,
+    bank_account_id: UUID,
+    rows: list[ImportRow],
+    now: datetime,
+) -> None:
+    live = await store.live_fingerprints(
+        bank_account_id, [str(row.parsed["fingerprint"]) for row in rows]
+    )
+    months = {period_of(date.fromisoformat(row.parsed["booked_on"])) for row in rows}
+    closed = await store.periods.closed_periods(bank_account_id, months)
+    fresh = [
+        row
+        for row in rows
+        if row.parsed["fingerprint"] not in live
+        and period_of(date.fromisoformat(row.parsed["booked_on"])) not in closed
+    ]
+    await store.insert_movements(organization_id, file, fresh, now)
 
 
 async def _audit(

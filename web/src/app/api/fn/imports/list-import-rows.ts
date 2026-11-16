@@ -11,7 +11,7 @@ import { RowPageView } from '../../models/row-page-view';
 
 export interface ListImportRows$Params {
   file_id: string;
-  status?: 'ok' | 'error' | 'duplicate' | 'closed_period';
+  status?: 'ok' | 'error' | 'duplicate' | 'closed_period' | 'conflict';
   after?: (number | null);
   before?: (number | null);
   limit?: number;

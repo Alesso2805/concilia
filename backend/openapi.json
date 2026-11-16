@@ -945,6 +945,132 @@
         "title": "OrganizationView",
         "type": "object"
       },
+      "ReceivableRowView": {
+        "properties": {
+          "action": {
+            "anyOf": [
+              {
+                "enum": [
+                  "create",
+                  "update",
+                  "unchanged"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action"
+          },
+          "amount_cents": {
+            "title": "Amount Cents",
+            "type": "integer"
+          },
+          "conflict": {
+            "anyOf": [
+              {
+                "enum": [
+                  "cancelled",
+                  "active_matches"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conflict"
+          },
+          "customer_name": {
+            "title": "Customer Name",
+            "type": "string"
+          },
+          "customer_tax_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Tax Id"
+          },
+          "doc_number": {
+            "title": "Doc Number",
+            "type": "string"
+          },
+          "due_on": {
+            "format": "date",
+            "title": "Due On",
+            "type": "string"
+          },
+          "issued_on": {
+            "format": "date",
+            "title": "Issued On",
+            "type": "string"
+          },
+          "kind": {
+            "const": "receivable",
+            "default": "receivable",
+            "title": "Kind",
+            "type": "string"
+          },
+          "previous_amount_cents": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Amount Cents"
+          },
+          "previous_due_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Due On"
+          },
+          "row_number": {
+            "title": "Row Number",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "duplicate",
+              "conflict"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "row_number",
+          "status",
+          "action",
+          "conflict",
+          "customer_name",
+          "customer_tax_id",
+          "doc_number",
+          "issued_on",
+          "due_on",
+          "amount_cents",
+          "previous_due_on",
+          "previous_amount_cents"
+        ],
+        "title": "ReceivableRowView",
+        "type": "object"
+      },
       "ReceivablesColumns": {
         "additionalProperties": false,
         "properties": {
@@ -1288,6 +1414,9 @@
                   "$ref": "#/components/schemas/StatementRowView"
                 },
                 {
+                  "$ref": "#/components/schemas/ReceivableRowView"
+                },
+                {
                   "$ref": "#/components/schemas/ErrorRowView"
                 }
               ]
@@ -1601,6 +1730,12 @@
           },
           "description": {
             "title": "Description",
+            "type": "string"
+          },
+          "kind": {
+            "const": "statement",
+            "default": "statement",
+            "title": "Kind",
             "type": "string"
           },
           "operation_number": {
@@ -2274,7 +2409,7 @@
         ]
       },
       "post": {
-        "description": "Upload a bank statement (CSV or XLSX, up to 5 MB) and queue its preview.\n\nAnalysts only; idempotent on the client-generated id. `duplicate_of` warns about a\nconfirmed file with the same content in the same account.",
+        "description": "Upload a bank statement or a receivables file (CSV or XLSX, up to 5 MB) and queue\nits preview.\n\nAnalysts only; idempotent on the client-generated id. `duplicate_of` warns about a\nconfirmed file of the same kind with the same content (in the same account for a\nstatement).",
         "operationId": "upload_import",
         "requestBody": {
           "content": {
@@ -2464,7 +2599,8 @@
                 "ok",
                 "error",
                 "duplicate",
-                "closed_period"
+                "closed_period",
+                "conflict"
               ],
               "title": "Status",
               "type": "string"
@@ -2547,7 +2683,7 @@
     },
     "/api/app/imports/{file_id}/void": {
       "post": {
-        "description": "Void a confirmed statement and its movements. Analysts only.\n\nRefused if any movement is in a closed period or in an active match.",
+        "description": "Void a confirmed import. Analysts only.\n\nA statement voids its movements; refused if any is in a closed period or in an active\nmatch. A receivables import cancels the receivables it created; refused if any is in a\nproposed or confirmed match.",
         "operationId": "void_import",
         "parameters": [
           {

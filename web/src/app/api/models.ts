@@ -30,6 +30,7 @@ export type { NewAccountRequest } from './models/new-account-request';
 export type { OrganizationSettingsRequest } from './models/organization-settings-request';
 export type { OrganizationSettingsView } from './models/organization-settings-view';
 export type { OrganizationView } from './models/organization-view';
+export type { ReceivableRowView } from './models/receivable-row-view';
 export type { ReceivablesColumns } from './models/receivables-columns';
 export type { ReceivablesConfig } from './models/receivables-config';
 export type { ReceivablesProfileRequest } from './models/receivables-profile-request';

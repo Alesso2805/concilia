@@ -5,6 +5,7 @@ export interface StatementRowView {
   amount_cents: number;
   booked_on: string;
   description: string;
+  kind?: 'statement';
   operation_number: (string | null);
   row_number: number;
   status: 'ok' | 'duplicate' | 'closed_period';
