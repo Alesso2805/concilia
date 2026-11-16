@@ -1,6 +1,7 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
+import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 
 import { MatchRowView } from '../../api/models/match-row-view';
@@ -70,6 +71,7 @@ describe('InboxPage', () => {
     TestBed.configureTestingModule({
       imports: [InboxPage],
       providers: [
+        provideRouter([]),
         provideLocale(),
         { provide: MatchingService, useValue: service },
         {

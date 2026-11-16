@@ -1,0 +1,189 @@
+<a mat-button routerLink="/bandeja" [queryParams]="{ cuenta: cuenta(), mes: mes() }"> ← Bandeja </a>
+<h1 class="inbox__title">Conciliar a mano · {{ title() }}</h1>
+<p class="inbox__muted">
+  Elige los abonos y los cobros que se corresponden e indica cuánto se aplica a cada cobro. Si
+  aplicas menos que su saldo, el cobro queda abierto por el resto (pago parcial). Al guardar, la
+  conciliación queda confirmada por ti y otra persona debe aprobarla.
+</p>
+
+@if (error(); as message) {
+  <p class="inbox__error" role="alert">{{ message }}</p>
+}
+
+<div class="manual">
+  <section aria-labelledby="abonos" class="manual__panel">
+    <h2 id="abonos">Abonos libres</h2>
+    @if (credits(); as page) {
+      @if (page.credits.length > 0) {
+        <div class="inbox__table" tabindex="0" role="region" aria-label="Tabla de abonos libres">
+          <table mat-table [dataSource]="page.credits">
+            <ng-container matColumnDef="pick">
+              <th mat-header-cell *matHeaderCellDef scope="col">
+                <span class="cdk-visually-hidden">Elegir</span>
+              </th>
+              <td mat-cell *matCellDef="let credit">
+                <mat-checkbox
+                  [checked]="isPicked(credit)"
+                  (change)="toggle(credit)"
+                  [aria-label]="'Elegir el abono ' + credit.description"
+                />
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="date">
+              <th mat-header-cell *matHeaderCellDef scope="col">Fecha</th>
+              <td mat-cell *matCellDef="let credit">{{ day(credit.booked_on) }}</td>
+            </ng-container>
+            <ng-container matColumnDef="description">
+              <th mat-header-cell *matHeaderCellDef scope="col">Descripción</th>
+              <td mat-cell *matCellDef="let credit">{{ credit.description }}</td>
+            </ng-container>
+            <ng-container matColumnDef="amount">
+              <th mat-header-cell *matHeaderCellDef scope="col" class="inbox__amount">Monto</th>
+              <td mat-cell *matCellDef="let credit" class="inbox__amount">
+                {{ pen(credit.amount_cents) }}
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="creditColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: creditColumns"></tr>
+          </table>
+          <mat-paginator
+            [length]="length()"
+            [pageIndex]="pageIndex()"
+            [pageSize]="pageSize"
+            [hidePageSize]="true"
+            (page)="turn($event)"
+            aria-label="Páginas de abonos libres"
+          />
+        </div>
+      } @else {
+        <p class="inbox__muted">No hay abonos libres en este mes.</p>
+      }
+    } @else if (!error()) {
+      <mat-progress-bar mode="indeterminate" aria-label="Cargando los abonos" />
+    }
+  </section>
+
+  <section aria-labelledby="cobros" class="manual__panel">
+    <h2 id="cobros">Cobros con saldo</h2>
+    <form class="inbox__bar" [formGroup]="search" (ngSubmit)="find()" role="search">
+      <mat-form-field class="inbox__field" appearance="outline">
+        <mat-label>Documento, cliente o RUC</mat-label>
+        <input matInput formControlName="query" />
+      </mat-form-field>
+      <button mat-stroked-button type="submit">Buscar</button>
+    </form>
+    @if (found(); as receivables) {
+      @if (receivables.length > 0) {
+        <div class="inbox__table" tabindex="0" role="region" aria-label="Tabla de cobros con saldo">
+          <table mat-table [dataSource]="receivables">
+            <ng-container matColumnDef="document">
+              <th mat-header-cell *matHeaderCellDef scope="col">Documento</th>
+              <td mat-cell *matCellDef="let item">{{ item.doc_number }}</td>
+            </ng-container>
+            <ng-container matColumnDef="customer">
+              <th mat-header-cell *matHeaderCellDef scope="col">Cliente</th>
+              <td mat-cell *matCellDef="let item">{{ item.customer_name }}</td>
+            </ng-container>
+            <ng-container matColumnDef="due">
+              <th mat-header-cell *matHeaderCellDef scope="col">Vence</th>
+              <td mat-cell *matCellDef="let item">{{ day(item.due_on) }}</td>
+            </ng-container>
+            <ng-container matColumnDef="available">
+              <th mat-header-cell *matHeaderCellDef scope="col" class="inbox__amount">Saldo</th>
+              <td mat-cell *matCellDef="let item" class="inbox__amount">
+                {{ pen(item.available_cents) }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="add">
+              <th mat-header-cell *matHeaderCellDef scope="col">
+                <span class="cdk-visually-hidden">Acciones</span>
+              </th>
+              <td mat-cell *matCellDef="let item">
+                <button
+                  mat-button
+                  type="button"
+                  [disabled]="isApplied(item)"
+                  (click)="add(item)"
+                  [attr.aria-label]="'Agregar el cobro ' + item.doc_number"
+                >
+                  Agregar
+                </button>
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="receivableColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: receivableColumns"></tr>
+          </table>
+        </div>
+      } @else {
+        <p class="inbox__muted">No hay cobros con saldo que coincidan con la búsqueda.</p>
+      }
+    }
+  </section>
+</div>
+
+<section aria-labelledby="resumen" class="manual__summary">
+  <h2 id="resumen">Conciliación</h2>
+  @if (applied().length > 0) {
+    <ul class="manual__applied">
+      @for (item of applied(); track item.receivable.id) {
+        <li>
+          <span>{{ item.receivable.doc_number }} · {{ item.receivable.customer_name }}</span>
+          <mat-form-field appearance="outline" class="inbox__field--small">
+            <mat-label>Aplicado (S/)</mat-label>
+            <input
+              matInput
+              inputmode="decimal"
+              [value]="item.amount"
+              (input)="setAmount(item.receivable, $any($event.target).value)"
+            />
+          </mat-form-field>
+          @if (partial(item)) {
+            <span class="inbox__chip">Parcial</span>
+          }
+          <button
+            mat-button
+            type="button"
+            (click)="remove(item.receivable)"
+            [attr.aria-label]="'Quitar el cobro ' + item.receivable.doc_number"
+          >
+            Quitar
+          </button>
+        </li>
+      }
+    </ul>
+  }
+  <dl class="inbox__facts">
+    <dt>Abonos elegidos</dt>
+    <dd>{{ picked().length }} · {{ pen(creditsCents()) }}</dd>
+    <dt>Aplicado a cobros</dt>
+    <dd>{{ applied().length }} · {{ pen(appliedCents()) }}</dd>
+    <dt>Diferencia</dt>
+    <dd aria-live="polite">{{ pen(differenceCents()) }}</dd>
+  </dl>
+  @if (invalidAmounts()) {
+    <p class="inbox__error" role="alert">
+      Cada monto aplicado debe ser mayor que cero y no superar el saldo del cobro.
+    </p>
+  }
+  @if (differenceCents() !== 0 && picked().length > 0 && applied().length > 0) {
+    <div class="detail__decision">
+      <mat-form-field appearance="outline">
+        <mat-label>Motivo de la diferencia</mat-label>
+        <mat-select [formControl]="differenceReason">
+          @for (option of reasons; track option) {
+            <mat-option [value]="option">{{ reasonLabels[option] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      @if (differenceReason.value === 'other') {
+        <mat-form-field appearance="outline">
+          <mat-label>Nota</mat-label>
+          <input matInput [formControl]="differenceNote" maxlength="500" />
+        </mat-form-field>
+      }
+    </div>
+  }
+  <button mat-flat-button type="button" [disabled]="!ready()" (click)="save()">
+    Confirmar conciliación
+  </button>
+</section>

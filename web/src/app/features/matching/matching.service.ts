@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { Api } from '../../api/api';
 import {
+  createManualMatch,
   decideBatch,
   decideMatch,
   getEngineRun,
@@ -12,6 +13,7 @@ import {
   listFreeCredits,
   listInboxPeriods,
   listMatches,
+  listOpenReceivables,
   requestEngineRun,
 } from '../../api/functions';
 import { BatchView } from '../../api/models/batch-view';
@@ -21,7 +23,9 @@ import { DecisionRequestBody } from '../../api/models/decision-request-body';
 import { RecordedDecisionView } from '../../api/models/recorded-decision-view';
 import { EngineRunView } from '../../api/models/engine-run-view';
 import { MatchDetailView } from '../../api/models/match-detail-view';
+import { ManualMatchView } from '../../api/models/manual-match-view';
 import { MatchPageView } from '../../api/models/match-page-view';
+import { OpenReceivablePageView } from '../../api/models/open-receivable-page-view';
 import { PeriodView } from '../../api/models/period-view';
 import { newId } from '../../core/ids';
 
@@ -46,6 +50,13 @@ export interface Cursor {
   before?: string | null;
 }
 
+export interface ManualMatchDraft {
+  creditIds: string[];
+  applications: { receivableId: string; appliedCents: number }[];
+  differenceReason: Decision['difference_reason'];
+  differenceNote: string | null;
+}
+
 export const NO_FILTERS: InboxFilters = {
   rule: null,
   minScore: null,
@@ -56,6 +67,10 @@ export const NO_FILTERS: InboxFilters = {
 export type Decision = Omit<DecisionRequestBody, 'id'>;
 
 const MESSAGES: Record<string, string> = {
+  credit_not_free: 'Algún abono ya está en otra conciliación. Actualiza la página.',
+  insufficient_balance: 'Lo aplicado supera el saldo disponible de algún cobro.',
+  invalid_match:
+    'Elige al menos un abono y un cobro, cada uno una vez y con montos mayores que cero.',
   closed_period: 'El mes está cerrado: no admite cambios.',
   difference_reason:
     'Elige un motivo de diferencia que corresponda: sobrepago solo si sobra dinero, y «Otro» necesita una nota.',
@@ -149,6 +164,28 @@ export class MatchingService {
     return firstValueFrom(
       this.api.invoke(decideBatch, {
         body: { action, bank_account_id: month.accountId, period: month.period },
+      }),
+    );
+  }
+
+  openReceivables(query: string | null, cursor: Cursor): Promise<OpenReceivablePageView> {
+    return firstValueFrom(this.api.invoke(listOpenReceivables, { q: query, limit: 10, ...cursor }));
+  }
+
+  createManual(month: Month, draft: ManualMatchDraft): Promise<ManualMatchView> {
+    return firstValueFrom(
+      this.api.invoke(createManualMatch, {
+        body: {
+          id: newId(),
+          bank_account_id: month.accountId,
+          credit_ids: draft.creditIds,
+          applications: draft.applications.map((item) => ({
+            receivable_id: item.receivableId,
+            applied_cents: item.appliedCents,
+          })),
+          difference_reason: draft.differenceReason,
+          difference_note: draft.differenceNote,
+        },
       }),
     );
   }

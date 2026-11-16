@@ -4,6 +4,7 @@ import {
   computed,
   DestroyRef,
   inject,
+  input,
   OnInit,
   signal,
 } from '@angular/core';
@@ -19,6 +20,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
+import { RouterLink } from '@angular/router';
 
 import { BankAccountView } from '../../api/models/bank-account-view';
 import { CountsView } from '../../api/models/counts-view';
@@ -75,6 +77,7 @@ type Loaded = { tab: 'free'; view: CreditPageView } | { tab: MatchTab; view: Mat
     MatSelectModule,
     MatTableModule,
     MatTabsModule,
+    RouterLink,
   ],
   providers: [{ provide: MatPaginatorIntl, useClass: KeysetPaginatorIntl }],
   templateUrl: './inbox.page.html',
@@ -88,6 +91,9 @@ export class InboxPage implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly session = inject(SessionStore);
   private readonly destroyRef = inject(DestroyRef);
+
+  readonly cuenta = input<string>();
+  readonly mes = input<string>();
 
   protected readonly tabs = TABS;
   protected readonly creditColumns = ['date', 'description', 'operation', 'amount'];
@@ -161,8 +167,10 @@ export class InboxPage implements OnInit {
     try {
       const accounts = (await this.banking.accounts()).filter((account) => !account.archived_at);
       this.accounts.set(accounts);
-      if (accounts.length > 0) {
-        await this.selectAccount(accounts[0].id);
+      const wanted = accounts.find((account) => account.id === this.cuenta());
+      const account = wanted ?? accounts.at(0);
+      if (account) {
+        await this.selectAccount(account.id, wanted ? this.mes() : undefined);
       }
     } catch (error) {
       this.error.set(matchingErrorMessage(error));
@@ -192,7 +200,7 @@ export class InboxPage implements OnInit {
     return match.rule ?? (match.source === 'ai' ? 'IA' : 'Manual');
   }
 
-  protected async selectAccount(accountId: string): Promise<void> {
+  protected async selectAccount(accountId: string, period?: string): Promise<void> {
     this.accountId.set(accountId);
     this.month.set(null);
     this.counts.set(null);
@@ -200,8 +208,9 @@ export class InboxPage implements OnInit {
     try {
       const periods = await this.matching.periods(accountId);
       this.periods.set(periods);
-      if (periods.length > 0) {
-        await this.selectPeriod(periods[0].period);
+      const chosen = periods.find((item) => item.period === period) ?? periods.at(0);
+      if (chosen) {
+        await this.selectPeriod(chosen.period);
       }
     } catch (error) {
       this.error.set(matchingErrorMessage(error));

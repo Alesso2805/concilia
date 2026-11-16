@@ -31,6 +31,15 @@
         <button mat-flat-button type="button" [disabled]="!canRun()" (click)="runEngine()">
           Correr el motor
         </button>
+        @if (canRun()) {
+          <a
+            mat-stroked-button
+            routerLink="/bandeja/manual"
+            [queryParams]="{ cuenta: month()?.accountId, mes: month()?.period }"
+          >
+            Conciliar a mano
+          </a>
+        }
       }
     </div>
 

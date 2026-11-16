@@ -40,6 +40,12 @@ export const routes: Routes = [
         title: 'Importación · Concilia',
       },
       {
+        path: 'bandeja/manual',
+        canMatch: [analystOnly],
+        loadComponent: () => import('./features/matching/manual.page').then((m) => m.ManualPage),
+        title: 'Conciliar a mano · Concilia',
+      },
+      {
         path: 'bandeja',
         loadComponent: () => import('./features/matching/inbox.page').then((m) => m.InboxPage),
         title: 'Bandeja · Concilia',
