@@ -30,10 +30,41 @@ jobs:
       - run: uv run mypy
       - run: uv run lint-imports
       - run: uv run pytest
+      - name: OpenAPI contract is up to date
+        run: |
+          uv run python -m concilia.openapi openapi.json
+          test -z "$(git status --porcelain openapi.json)"
+      - name: Audit Python dependencies
+        run: |
+          uv export --format requirements-txt --no-emit-project --all-groups --quiet -o "$RUNNER_TEMP/requirements.txt"
+          uv run pip-audit --disable-pip --require-hashes -r "$RUNNER_TEMP/requirements.txt"
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Generated API client is up to date
+        run: |
+          npm run generate:api
+          test -z "$(git status --porcelain src/app/api)"
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:ci
+      - run: npm run build
+      - run: npm audit --audit-level=high
 
   ci:
     if: always()
-    needs: [backend]
+    needs: [backend, frontend]
     runs-on: ubuntu-latest
     steps:
       - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')

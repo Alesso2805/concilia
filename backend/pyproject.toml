@@ -16,6 +16,7 @@ dev = [
     "hypothesis>=6.170",
     "import-linter>=2.16",
     "mypy>=2.4",
+    "pip-audit>=2.10",
     "pytest>=9.2",
     "ruff>=0.17.5",
     "time-machine>=3.6",

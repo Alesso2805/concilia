@@ -14,6 +14,7 @@ A rule changes only together with its check, its meta-test and, when the archite
 | AR-06 | Money and scores are never floats | AST test |
 | AR-07 | The API process never runs background work | AST test |
 | AR-08 | Logs carry only allowlisted fields and literal event names | AST test and logging tests |
+| AR-09 | The frontend runs without zone.js | Project file test |
 
 Checks live in `backend/.importlinter` (contracts) and `backend/tests/architecture/` (AST tests and every meta-test). The import-linter contracts run in CI as `lint-imports`, and their meta-tests copy the package to a temporary directory, add one violating module, and assert that the named contract breaks.
 
@@ -89,7 +90,14 @@ Event names are string literals. A call on a logger (`log.info(...)`, `logger.bi
 - `log_events_are_literals` enforces literal events and the single `logging` import.
 - `tests/unit/shared/test_logging.py` covers dropped fields, exceptions and third-party loggers, plus a Hypothesis property: no field outside the allowlist ever reaches the output.
 
+## AR-09 Zoneless frontend
+
+`web/package.json` does not depend on `zone.js`. `web/angular.json` does not reference it in any polyfill or option. No TypeScript file under `web/src` imports `zone.js` or calls `provideZoneChangeDetection`.
+
+**Why:** the frontend uses zoneless change detection driven by signals ([ADR-0007](adr/0007-frontend-angular.md)). Adding zone.js back would silently hide missing signal updates.
+
+**Check:** `zoneless_frontend` in `tests/architecture/test_frontend_rules.py`, which reads the real project files and has meta-tests for each of the four ways zone.js could return.
+
 ## Rules still to come
 
-- No zone.js in the frontend (CN-02).
 - Database catalog rules (CN-03): forced RLS on every organization table, the closed list of tables without RLS, the per-role policies of `jobs` (the single exception to the uniform policy, [ADR-0002](adr/0002-multi-tenancy-with-rls.md)), `security_invoker` views, and grants that match `db_grants.yaml` exactly.
