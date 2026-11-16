@@ -18,6 +18,7 @@ export const NAVIGATION: readonly NavigationItem[] = [
   { path: '/equipo', label: 'Equipo', icon: 'group', roles: ['admin'] },
   { path: '/cuentas', label: 'Cuentas bancarias', icon: 'account_balance', roles: ['admin'] },
   { path: '/perfiles', label: 'Perfiles de importación', icon: 'description', roles: ['admin'] },
+  { path: '/auditoria', label: 'Auditoría', icon: 'history', roles: EVERYONE },
   { path: '/configuracion', label: 'Configuración', icon: 'settings', roles: ['admin'] },
 ];
 

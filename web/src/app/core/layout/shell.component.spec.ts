@@ -72,6 +72,7 @@ describe('ShellComponent', () => {
       'Bandeja',
       'Importaciones',
       'Cobros',
+      'Auditoría',
     ]);
   });
 
