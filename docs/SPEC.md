@@ -155,7 +155,7 @@ Un cobro anulado (`cancelled_at`) no es candidato. Ningún saldo disponible pued
 | Regla | Detalle |
 | --- | --- |
 | Perfiles | Un perfil es de tipo `bank_statement` (ligado a una cuenta bancaria) o `receivables` (de la organización). Define columnas, formato de fecha, separador decimal, signo o columnas separadas de cargo y abono, y filas a saltar. Las plantillas de BCP, Interbank y BBVA viven en código y se copian al crear un perfil; están marcadas "verificar con tu extracto real" |
-| Estados de un archivo | `uploaded` → `parsing` → `previewed` o `failed`; de `previewed` a `confirmed` o `discarded`; de `confirmed` a `voided` |
+| Estados de un archivo | `uploaded` → `parsing` → `previewed` o `failed`; de `previewed` a `confirmed` o `discarded`; de `confirmed` a `voided`. Una subida que no termina de leerse en 24 horas pasa a `failed` con el código `abandoned` |
 | Vista previa | Muestra filas válidas, filas con error (con motivo), movimientos ya importados y filas de períodos cerrados. Nada se guarda como movimiento o cobro hasta confirmar. Una vista previa sin confirmar se descarta sola a las 24 horas |
 | Archivo repetido | Al subir se avisa si hay otro archivo confirmado con el mismo SHA-256 en la misma cuenta; al confirmar se rechaza. Un archivo descartado, fallido o anulado no bloquea volver a subirlo |
 | Huella del movimiento | Hash de (cuenta, fecha, monto, descripción normalizada, número de operación si existe, índice de aparición de esa misma combinación dentro del archivo). Única por cuenta entre movimientos no anulados: dos filas idénticas en un archivo son válidas; la misma fila en otro archivo es un repetido y se omite |
