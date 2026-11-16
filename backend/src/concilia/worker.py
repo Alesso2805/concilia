@@ -6,6 +6,11 @@ from datetime import timedelta
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
+from concilia.audit.infrastructure.sql import SqlAuditRecorder
+from concilia.imports.application.service import ImportService
+from concilia.imports.infrastructure.jobs import ContentReader, parse_import_handler
+from concilia.imports.infrastructure.sql import SqlImportTransactions
+from concilia.periods.infrastructure.sql import SqlPeriodQueries
 from concilia.shared.infrastructure.clock import SystemClock
 from concilia.shared.infrastructure.db import create_engine
 from concilia.shared.infrastructure.jobs import (
@@ -33,8 +38,14 @@ def cleanup_handler(clock: Clock) -> Handler:
     return run_cleanup
 
 
-def handlers(clock: Clock) -> dict[str, Handler]:
-    return {"noop": run_noop, "cleanup": cleanup_handler(clock)}
+def handlers(engine: AsyncEngine, clock: Clock) -> dict[str, Handler]:
+    transactions = SqlImportTransactions(engine, SqlAuditRecorder, SqlPeriodQueries)
+    imports = ImportService(transactions, ContentReader(), clock)
+    return {
+        "noop": run_noop,
+        "cleanup": cleanup_handler(clock),
+        "parse_import": parse_import_handler(engine, imports, transactions),
+    }
 
 
 async def _wait(stop: asyncio.Event, seconds: float) -> None:
@@ -50,7 +61,7 @@ async def serve(
     concurrency: int,
     poll_interval_seconds: float,
 ) -> None:
-    runner = Runner(engine, clock, handlers(clock))
+    runner = Runner(engine, clock, handlers(engine, clock))
 
     async def run_jobs() -> None:
         while not stop.is_set():

@@ -113,6 +113,32 @@
         "title": "BankAccountView",
         "type": "object"
       },
+      "Body_upload_import": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "import_profile_id": {
+            "format": "uuid",
+            "title": "Import Profile Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "import_profile_id",
+          "file"
+        ],
+        "title": "Body_upload_import",
+        "type": "object"
+      },
       "ChooseOrganizationRequest": {
         "properties": {
           "organization_id": {
@@ -264,6 +290,38 @@
         "title": "DateFormat",
         "type": "string"
       },
+      "ErrorRowView": {
+        "properties": {
+          "cells": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Cells",
+            "type": "array"
+          },
+          "error_code": {
+            "title": "Error Code",
+            "type": "string"
+          },
+          "row_number": {
+            "title": "Row Number",
+            "type": "integer"
+          },
+          "status": {
+            "const": "error",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "row_number",
+          "status",
+          "error_code",
+          "cells"
+        ],
+        "title": "ErrorRowView",
+        "type": "object"
+      },
       "FileFormat": {
         "enum": [
           "csv",
@@ -297,6 +355,188 @@
           "status"
         ],
         "title": "HealthResponse",
+        "type": "object"
+      },
+      "ImportFileView": {
+        "properties": {
+          "bank_account_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bank Account Id"
+          },
+          "confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "discarded_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discarded At"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "import_profile_id": {
+            "format": "uuid",
+            "title": "Import Profile Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "bank_statement",
+              "receivables"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "profile_name": {
+            "title": "Profile Name",
+            "type": "string"
+          },
+          "row_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Row Count"
+          },
+          "size_bytes": {
+            "title": "Size Bytes",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "uploaded",
+              "parsing",
+              "previewed",
+              "failed",
+              "confirmed",
+              "discarded",
+              "voided"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "voided_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voided At"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "bank_account_id",
+          "import_profile_id",
+          "profile_name",
+          "filename",
+          "size_bytes",
+          "status",
+          "error_code",
+          "row_count",
+          "created_at",
+          "confirmed_at",
+          "discarded_at",
+          "voided_at"
+        ],
+        "title": "ImportFileView",
+        "type": "object"
+      },
+      "ImportSummaryView": {
+        "properties": {
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "propertyNames": {
+              "enum": [
+                "ok",
+                "error",
+                "duplicate",
+                "closed_period",
+                "conflict"
+              ]
+            },
+            "title": "Counts",
+            "type": "object"
+          },
+          "duplicate_of": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicate Of"
+          },
+          "file": {
+            "$ref": "#/components/schemas/ImportFileView"
+          }
+        },
+        "required": [
+          "file",
+          "counts",
+          "duplicate_of"
+        ],
+        "title": "ImportSummaryView",
         "type": "object"
       },
       "InvitationView": {
@@ -367,6 +607,53 @@
           "roles"
         ],
         "title": "InviteRequest",
+        "type": "object"
+      },
+      "JobView": {
+        "properties": {
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "progress": {
+            "title": "Progress",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "progress",
+          "error_code"
+        ],
+        "title": "JobView",
         "type": "object"
       },
       "LoginRequest": {
@@ -920,6 +1207,39 @@
         "title": "RolesRequest",
         "type": "object"
       },
+      "RowPageView": {
+        "properties": {
+          "has_next": {
+            "title": "Has Next",
+            "type": "boolean"
+          },
+          "has_previous": {
+            "title": "Has Previous",
+            "type": "boolean"
+          },
+          "rows": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/StatementRowView"
+                },
+                {
+                  "$ref": "#/components/schemas/ErrorRowView"
+                }
+              ]
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rows",
+          "has_previous",
+          "has_next"
+        ],
+        "title": "RowPageView",
+        "type": "object"
+      },
       "SessionView": {
         "properties": {
           "organization_id": {
@@ -1204,6 +1524,57 @@
         "title": "StatementProfileView",
         "type": "object"
       },
+      "StatementRowView": {
+        "properties": {
+          "amount_cents": {
+            "title": "Amount Cents",
+            "type": "integer"
+          },
+          "booked_on": {
+            "format": "date",
+            "title": "Booked On",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "operation_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operation Number"
+          },
+          "row_number": {
+            "title": "Row Number",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "duplicate",
+              "closed_period"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "row_number",
+          "status",
+          "booked_on",
+          "amount_cents",
+          "description",
+          "operation_number"
+        ],
+        "title": "StatementRowView",
+        "type": "object"
+      },
       "StatementTemplateView": {
         "properties": {
           "bank": {
@@ -1259,6 +1630,44 @@
           "invitations"
         ],
         "title": "TeamView",
+        "type": "object"
+      },
+      "UploadView": {
+        "properties": {
+          "duplicate_of": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicate Of"
+          },
+          "file": {
+            "$ref": "#/components/schemas/ImportFileView"
+          },
+          "job_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
+          }
+        },
+        "required": [
+          "file",
+          "job_id",
+          "duplicate_of"
+        ],
+        "title": "UploadView",
         "type": "object"
       },
       "ValidationError": {
@@ -1708,6 +2117,235 @@
         ]
       }
     },
+    "/api/app/imports": {
+      "post": {
+        "description": "Upload a bank statement (CSV or XLSX, up to 5 MB) and queue its preview.\n\nAnalysts only; idempotent on the client-generated id. `duplicate_of` warns about a\nconfirmed file with the same content in the same account.",
+        "operationId": "upload_import",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_import"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Import",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/app/imports/{file_id}": {
+      "get": {
+        "description": "An import with its row counts by status.",
+        "operationId": "get_import",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportSummaryView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Import",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/app/imports/{file_id}/discard": {
+      "post": {
+        "description": "Discard a preview without saving any movement. Analysts only.",
+        "operationId": "discard_import",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Discard Import",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/app/imports/{file_id}/rows": {
+      "get": {
+        "description": "A page of preview rows of one status, by row number (keyset pagination).",
+        "operationId": "list_import_rows",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "default": "ok",
+              "enum": [
+                "ok",
+                "error",
+                "duplicate",
+                "closed_period"
+              ],
+              "title": "Status",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "exclusiveMinimum": 0,
+              "maximum": 100,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RowPageView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Import Rows",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
     "/api/app/invitations": {
       "post": {
         "description": "Invite someone by email. The token is returned only when the invitation is created.\n\nIdempotent on the client-generated id.",
@@ -1826,6 +2464,50 @@
         "summary": "Revoke Invitation",
         "tags": [
           "team"
+        ]
+      }
+    },
+    "/api/app/jobs/{job_id}": {
+      "get": {
+        "description": "Status and progress of a background job of the current organization.",
+        "operationId": "get_job",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Job",
+        "tags": [
+          "jobs"
         ]
       }
     },

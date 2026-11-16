@@ -19,6 +19,10 @@ class AuditAction(StrEnum):
     IMPORT_PROFILE_CREATED = "import_profile.created"
     IMPORT_PROFILE_UPDATED = "import_profile.updated"
     IMPORT_PROFILE_ARCHIVED = "import_profile.archived"
+    IMPORT_UPLOADED = "import.uploaded"
+    IMPORT_DISCARDED = "import.discarded"
+    IMPORT_CONFIRMED = "import.confirmed"
+    IMPORT_VOIDED = "import.voided"
 
 
 ALLOWED_METADATA_KEYS = frozenset({"source", "roles", "kind", "fields"})

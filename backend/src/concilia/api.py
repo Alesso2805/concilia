@@ -22,8 +22,14 @@ from concilia.identity.application.team import TeamService
 from concilia.identity.infrastructure.passwords import Argon2PasswordHasher
 from concilia.identity.infrastructure.sql import SqlIdentityTransactions, SqlRateLimiter
 from concilia.identity.infrastructure.team_sql import SqlTeamTransactions
+from concilia.imports.api.routes import imports_router
+from concilia.imports.application.service import ImportService
+from concilia.imports.infrastructure.jobs import ContentReader
+from concilia.imports.infrastructure.sql import SqlImportTransactions
+from concilia.periods.infrastructure.sql import SqlPeriodQueries
 from concilia.shared.infrastructure.clock import SystemClock
 from concilia.shared.infrastructure.db import create_engine
+from concilia.shared.infrastructure.jobs_api import jobs_router
 from concilia.shared.infrastructure.settings import ApiSettings
 from concilia.shared.infrastructure.web import install_error_handlers
 from concilia.shared.kernel.clock import Clock
@@ -106,4 +112,9 @@ def create_app(settings: ApiSettings | None = None, clock: Clock | None = None) 
         banking_router(BankingService(SqlBankingTransactions(engine, SqlAuditRecorder), clock)),
         dependencies=authenticated,
     )
+    imports = ImportService(
+        SqlImportTransactions(engine, SqlAuditRecorder, SqlPeriodQueries), ContentReader(), clock
+    )
+    app.include_router(imports_router(imports), dependencies=authenticated)
+    app.include_router(jobs_router(engine), dependencies=authenticated)
     return app
