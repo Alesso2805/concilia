@@ -56,6 +56,25 @@
       </div>
     </dl>
   }
+  @if (canExport()) {
+    <div class="reports__export">
+      <button mat-stroked-button type="button" [disabled]="exporting()" (click)="exportMonth()">
+        Exportar a Excel
+      </button>
+      @if (exporting()) {
+        <span class="reports__muted" aria-live="polite">Preparando el Excel…</span>
+      }
+      @if (download(); as file) {
+        <a mat-flat-button [href]="file.url" [attr.download]="file.filename">
+          Descargar {{ file.filename }}
+        </a>
+        <span class="reports__muted">Disponible por 24 horas.</span>
+      }
+      @if (exportError(); as message) {
+        <span class="reports__error" role="alert">{{ message }}</span>
+      }
+    </div>
+  }
   <p class="reports__muted">
     {{ monthLabel(view.period) }}{{ view.closed ? ' (cerrado)' : '' }}. Conciliado quiere decir
     aprobado. La antigüedad de los pendientes se mide al {{ day(view.reference_date) }}.

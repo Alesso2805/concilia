@@ -1,8 +1,10 @@
 import { expect, expectAccessible, test } from './fixtures';
 
-test('a visitor enters a demo, the reviewer reopens and closes a month and reads the panel', async ({
+test('a visitor enters a demo, the reviewer closes a month, reads the panel and exports it', async ({
   page,
 }) => {
+  // One visitor walks through several screens with two roles and a queued export.
+  test.slow();
   await page.goto('/iniciar-sesion');
   await expectAccessible(page);
   await page.getByRole('button', { name: 'Probar la demo' }).click();
@@ -59,6 +61,14 @@ test('a visitor enters a demo, the reviewer reopens and closes a month and reads
   await byStatus.getByRole('button', { name: 'Ver como tabla' }).click();
   await expect(byStatus.getByRole('rowheader', { name: 'Conciliados' })).toBeVisible();
   await expectAccessible(page);
+
+  await page.getByRole('button', { name: 'Exportar a Excel' }).click();
+  // The export goes through the worker's queue and the 2-second job polling.
+  const file = page.getByRole('link', { name: 'Descargar conciliacion-2026-10.xlsx' });
+  await expect(file).toBeVisible({ timeout: 20_000 });
+  await expectAccessible(page);
+  const [download] = await Promise.all([page.waitForEvent('download'), file.click()]);
+  expect(download.suggestedFilename()).toBe('conciliacion-2026-10.xlsx');
 });
 
 test('a visitor imports the third month of the demo from its sample files', async ({ page }) => {

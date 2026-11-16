@@ -1,8 +1,12 @@
-import { Component, input } from '@angular/core';
+import { Component, input, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { DashboardView } from '../../api/models/dashboard-view';
+import { of } from 'rxjs';
+
+import { JobTracker } from '../../core/jobs/job-tracker';
 import { provideLocale } from '../../core/locale';
+import { SessionStore } from '../../core/session/session.store';
 import { BankingService } from '../admin/banking.service';
 import { ChartCard } from './chart-card.component';
 import { ChartRow } from './charts';
@@ -46,16 +50,23 @@ describe('DashboardPage', () => {
   let fixture: ComponentFixture<DashboardPage>;
   let reports: Record<string, ReturnType<typeof vi.fn>>;
 
-  beforeEach(async () => {
+  async function render(roles: string[]): Promise<HTMLElement> {
     reports = {
       periods: vi.fn(() => Promise.resolve([{ period: '2027-01-01', closed: true, credits: 3 }])),
       dashboard: vi.fn(() => Promise.resolve(VIEW)),
+      requestExport: vi.fn(() => Promise.resolve({ id: 'x1', job_id: 'x1' })),
+      exportFileUrl: vi.fn((id: string) => `/api/app/exports/${id}/file`),
     };
     TestBed.configureTestingModule({
       imports: [DashboardPage],
       providers: [
         provideLocale(),
         { provide: ReportsService, useValue: reports },
+        { provide: SessionStore, useValue: { roles: signal(new Set(roles)) } },
+        {
+          provide: JobTracker,
+          useValue: { track: () => of({ id: 'x1', status: 'done', progress: 100 }) },
+        },
         {
           provide: BankingService,
           useValue: {
@@ -78,7 +89,8 @@ describe('DashboardPage', () => {
     });
     fixture = TestBed.createComponent(DashboardPage);
     await settle(fixture);
-  });
+    return fixture.nativeElement as HTMLElement;
+  }
 
   function charts(): { heading: string; rows: readonly ChartRow[] }[] {
     return fixture.debugElement
@@ -89,7 +101,8 @@ describe('DashboardPage', () => {
       });
   }
 
-  it('shows the reconciled share by amount and by count for the newest month', () => {
+  it('shows the reconciled share by amount and by count for the newest month', async () => {
+    await render(['admin']);
     const text = (fixture.nativeElement as HTMLElement).textContent!.replace(/\s+/g, ' ');
 
     expect(reports['dashboard']).toHaveBeenCalledWith({ accountId: 'a1', period: '2027-01-01' });
@@ -108,7 +121,8 @@ describe('DashboardPage', () => {
     expect(text).toContain('se mide al 31/01/2027');
   });
 
-  it('charts credits by status, pending by age and differences by reason', () => {
+  it('charts credits by status, pending by age and differences by reason', async () => {
+    await render(['reviewer']);
     expect(charts()).toEqual([
       {
         heading: 'Abonos del mes por estado',
@@ -129,5 +143,30 @@ describe('DashboardPage', () => {
       },
       { heading: 'Diferencias por motivo', rows: [{ label: 'Comisión', count: 1, cents: 500 }] },
     ]);
+  });
+
+  it('exports the month to Excel and offers the download once the job is done', async () => {
+    const element = await render(['analyst']);
+    const button = [...element.querySelectorAll('button')].find(
+      (candidate) => candidate.textContent?.trim() === 'Exportar a Excel',
+    )!;
+
+    button.click();
+    await settle(fixture);
+
+    expect(reports['requestExport']).toHaveBeenCalledWith({
+      accountId: 'a1',
+      period: '2027-01-01',
+    });
+    const link = element.querySelector<HTMLAnchorElement>('a[download]')!;
+    expect(link.getAttribute('href')).toBe('/api/app/exports/x1/file');
+    expect(link.getAttribute('download')).toBe('conciliacion-2027-01.xlsx');
+    expect(element.textContent).toContain('Disponible por 24 horas.');
+  });
+
+  it('offers the export only to analysts and reviewers', async () => {
+    const element = await render(['admin']);
+
+    expect(element.textContent).not.toContain('Exportar a Excel');
   });
 });

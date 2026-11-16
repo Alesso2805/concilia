@@ -2,22 +2,29 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   inject,
   input,
   OnInit,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 
 import { BankAccountView } from '../../api/models/bank-account-view';
 import { DashboardView } from '../../api/models/dashboard-view';
 import { PeriodView } from '../../api/models/period-view';
+import { isFinished, JobTracker } from '../../core/jobs/job-tracker';
+import { SessionStore } from '../../core/session/session.store';
 import { BankingService } from '../admin/banking.service';
 import { dayLabel, monthLabel, REASON_LABELS } from '../matching/labels';
 import { ChartCard } from './chart-card.component';
 import { ChartRow, percent } from './charts';
 import { AccountMonth, ReportsService, reportsErrorMessage } from './reports.service';
+
+const EXPORT_FAILED = 'No pudimos preparar el Excel. Intenta de nuevo.';
 
 const AGE_LABELS: Record<string, string> = {
   '0-7': '0 a 7 días',
@@ -27,7 +34,7 @@ const AGE_LABELS: Record<string, string> = {
 
 @Component({
   selector: 'app-dashboard-page',
-  imports: [MatFormFieldModule, MatSelectModule, ChartCard],
+  imports: [MatButtonModule, MatFormFieldModule, MatSelectModule, ChartCard],
   templateUrl: './dashboard.page.html',
   styleUrl: './reports.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -35,6 +42,9 @@ const AGE_LABELS: Record<string, string> = {
 export class DashboardPage implements OnInit {
   private readonly reports = inject(ReportsService);
   private readonly banking = inject(BankingService);
+  private readonly jobs = inject(JobTracker);
+  private readonly session = inject(SessionStore);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly cuenta = input<string>();
   readonly mes = input<string>();
@@ -47,6 +57,13 @@ export class DashboardPage implements OnInit {
   protected readonly error = signal<string | null>(null);
   protected readonly monthLabel = monthLabel;
   protected readonly day = dayLabel;
+  protected readonly exporting = signal(false);
+  protected readonly download = signal<{ url: string; filename: string } | null>(null);
+  protected readonly exportError = signal<string | null>(null);
+  protected readonly canExport = computed(() => {
+    const roles = this.session.roles();
+    return roles.has('analyst') || roles.has('reviewer');
+  });
 
   protected readonly reconciled = computed(() => {
     const view = this.dashboard();
@@ -123,6 +140,55 @@ export class DashboardPage implements OnInit {
     }
   }
 
+  protected async exportMonth(): Promise<void> {
+    const month = this.month();
+    if (!month) {
+      return;
+    }
+    this.exporting.set(true);
+    this.download.set(null);
+    this.exportError.set(null);
+    try {
+      const requested = await this.reports.requestExport(month);
+      this.follow(requested.job_id, requested.id, month.period);
+    } catch (error) {
+      this.exporting.set(false);
+      this.exportError.set(reportsErrorMessage(error, EXPORT_FAILED));
+    }
+  }
+
+  private follow(jobId: string, exportId: string, period: string): void {
+    let finished = false;
+    this.jobs
+      .track(jobId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (job) => {
+          finished = isFinished(job);
+          if (job.status === 'done') {
+            this.download.set({
+              url: this.reports.exportFileUrl(exportId),
+              filename: `conciliacion-${period.slice(0, 7)}.xlsx`,
+            });
+          } else if (job.status === 'failed') {
+            this.exportError.set(EXPORT_FAILED);
+          }
+        },
+        error: (error: unknown) => {
+          this.exporting.set(false);
+          this.exportError.set(reportsErrorMessage(error, EXPORT_FAILED));
+        },
+        complete: () => {
+          this.exporting.set(false);
+          if (!finished) {
+            this.exportError.set(
+              'El Excel está tardando más de lo normal. Vuelve en unos minutos.',
+            );
+          }
+        },
+      });
+  }
+
   protected async selectPeriod(period: string): Promise<void> {
     const accountId = this.accountId();
     if (!accountId) {
@@ -131,6 +197,8 @@ export class DashboardPage implements OnInit {
     const month = { accountId, period };
     this.month.set(month);
     this.dashboard.set(null);
+    this.download.set(null);
+    this.exportError.set(null);
     try {
       const view = await this.reports.dashboard(month);
       if (this.month() === month) {
