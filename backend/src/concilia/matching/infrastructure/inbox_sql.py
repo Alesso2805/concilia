@@ -18,9 +18,12 @@ from concilia.matching.domain.inbox import (
     MatchPage,
     MatchRow,
     MatchStatus,
+    OpenReceivable,
+    OpenReceivablePage,
     PeriodSummary,
 )
 from concilia.shared.infrastructure.db import organization_transaction
+from concilia.shared.kernel.normalization import normalize_text
 
 IN_PERIOD = """b.bank_account_id = :account AND b.booked_on >= :period
                AND b.booked_on < CAST(:period AS date) + interval '1 month'"""
@@ -225,6 +228,59 @@ class SqlInboxStore:
                     tuple(row.customers),
                     row.credits_cents,
                     row.applied_cents,
+                )
+                for row in page
+            ],
+            has_previous,
+            has_next,
+        )
+
+    async def open_receivables(
+        self,
+        query: str | None,
+        after: tuple[date, UUID] | None,
+        before: tuple[date, UUID] | None,
+        limit: int,
+    ) -> OpenReceivablePage:
+        backwards = before is not None and after is None
+        cursor = before if backwards else after
+        comparison, order = ("<", "DESC") if backwards else (">", "ASC")
+        condition = f"(r.due_on, r.id) {comparison} (:on, :id)" if cursor else "true"
+        rows = list(
+            await self._connection.execute(
+                text(
+                    f"""SELECT r.id, r.doc_number, r.customer_name, r.customer_tax_id,
+                               r.issued_on, r.due_on, r.amount_cents, b.available_cents
+                        FROM receivables r JOIN receivable_balances b ON b.receivable_id = r.id
+                        WHERE r.cancelled_at IS NULL AND b.available_cents > 0
+                          AND (CAST(:document AS text) IS NULL
+                               OR strpos(r.doc_number_norm, :document) > 0
+                               OR strpos(r.customer_name_norm, :name) > 0
+                               OR r.customer_tax_id = :document)
+                          AND {condition}
+                        ORDER BY r.due_on {order}, r.id {order} LIMIT :limit"""  # noqa: S608
+                ),
+                {
+                    "document": query.upper() if query else None,
+                    "name": normalize_text(query) if query else None,
+                    "on": cursor[0] if cursor else None,
+                    "id": cursor[1] if cursor else None,
+                    "limit": limit + 1,
+                },
+            )
+        )
+        page, has_previous, has_next = _window(rows, limit, backwards, cursor)
+        return OpenReceivablePage(
+            [
+                OpenReceivable(
+                    row.id,
+                    row.doc_number,
+                    row.customer_name,
+                    row.customer_tax_id,
+                    row.issued_on,
+                    row.due_on,
+                    row.amount_cents,
+                    row.available_cents,
                 )
                 for row in page
             ],

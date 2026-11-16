@@ -80,6 +80,25 @@ class MatchPageView(BaseModel):
     next_cursor: str | None
 
 
+class OpenReceivableView(BaseModel):
+    id: UUID
+    doc_number: str
+    customer_name: str
+    customer_tax_id: str | None
+    issued_on: date
+    due_on: date
+    amount_cents: int
+    available_cents: int
+
+
+class OpenReceivablePageView(BaseModel):
+    receivables: list[OpenReceivableView]
+    has_previous: bool
+    has_next: bool
+    previous_cursor: str | None
+    next_cursor: str | None
+
+
 class MatchedReceivableView(BaseModel):
     id: UUID
     doc_number: str
@@ -304,6 +323,49 @@ def inbox_router(service: InboxService) -> APIRouter:
             has_next=page.has_next,
             previous_cursor=str(items[0].id) if items else None,
             next_cursor=str(items[-1].id) if items else None,
+        )
+
+    @router.get("/inbox/receivables")
+    async def list_open_receivables(
+        principal: CurrentPrincipal,
+        q: Annotated[str | None, Query(max_length=100)] = None,
+        after: str | None = None,
+        before: str | None = None,
+        limit: Limit = 25,
+    ) -> OpenReceivablePageView:
+        """Live receivables with available balance, by due date, to reconcile by hand. `q`
+        searches the document number, the customer name or the RUC."""
+        try:
+            page = await service.open_receivables(
+                principal,
+                q,
+                after=decode_date_cursor(after) if after else None,
+                before=decode_date_cursor(before) if before else None,
+                limit=limit,
+            )
+        except InvalidCursorError:
+            raise _invalid_cursor() from None
+        except HANDLED as error:
+            raise http_error(error) from None
+        items = page.receivables
+        return OpenReceivablePageView(
+            receivables=[
+                OpenReceivableView(
+                    id=item.id,
+                    doc_number=item.doc_number,
+                    customer_name=item.customer_name,
+                    customer_tax_id=item.customer_tax_id,
+                    issued_on=item.issued_on,
+                    due_on=item.due_on,
+                    amount_cents=item.amount_cents,
+                    available_cents=item.available_cents,
+                )
+                for item in items
+            ],
+            has_previous=page.has_previous,
+            has_next=page.has_next,
+            previous_cursor=encode_cursor(items[0].due_on, items[0].id) if items else None,
+            next_cursor=encode_cursor(items[-1].due_on, items[-1].id) if items else None,
         )
 
     @router.get("/matches/{match_id}")

@@ -137,14 +137,17 @@ def test_only_a_confirmation_carries_a_difference_reason() -> None:
         _decide(_state(), Action.DISCARD, ANALYST, difference_reason=DifferenceReason.OTHER)
 
 
-def test_every_decision_error_has_a_code() -> None:
-    codes = {error.code for error in DecisionError.__subclasses__()}
+def test_every_decision_error_has_its_own_code() -> None:
+    errors = DecisionError.__subclasses__()
+    codes = [error.code for error in errors]
 
-    assert codes == {
+    assert len(set(codes)) == len(codes)
+    assert DecisionError.code not in codes
+    assert {
         "role_required",
         "wrong_state",
         "four_eyes",
         "closed_period",
         "reason_required",
         "difference_reason",
-    }
+    } <= set(codes)

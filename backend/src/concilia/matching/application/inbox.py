@@ -12,6 +12,7 @@ from concilia.matching.domain.inbox import (
     MatchFilters,
     MatchPage,
     MatchStatus,
+    OpenReceivablePage,
     PeriodSummary,
 )
 from concilia.shared.kernel.principal import Principal
@@ -48,6 +49,14 @@ class InboxStore(Protocol):
     ) -> MatchPage: ...
 
     async def match_detail(self, match_id: UUID) -> MatchDetail | None: ...
+
+    async def open_receivables(
+        self,
+        query: str | None,
+        after: tuple[date, UUID] | None,
+        before: tuple[date, UUID] | None,
+        limit: int,
+    ) -> OpenReceivablePage: ...
 
 
 class InboxTransactions(Protocol):
@@ -127,6 +136,20 @@ class InboxService:
                 after,
                 before,
                 min(limit, PAGE_LIMIT),
+            )
+
+    async def open_receivables(
+        self,
+        principal: Principal,
+        query: str | None = None,
+        *,
+        after: tuple[date, UUID] | None = None,
+        before: tuple[date, UUID] | None = None,
+        limit: int = 25,
+    ) -> OpenReceivablePage:
+        async with self._transactions.organization(_organization(principal)) as store:
+            return await store.open_receivables(
+                (query or "").strip() or None, after, before, min(limit, PAGE_LIMIT)
             )
 
     async def match_detail(self, principal: Principal, match_id: UUID) -> MatchDetail:

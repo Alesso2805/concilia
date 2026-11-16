@@ -49,8 +49,12 @@ export type { ListFreeCredits$Params as ListFreeCredits$Params } from './fn/inbo
 export { listFreeCredits as listFreeCredits } from './fn/inbox/list-free-credits';
 export type { ListInboxPeriods$Params as ListInboxPeriods$Params } from './fn/inbox/list-inbox-periods';
 export { listInboxPeriods as listInboxPeriods } from './fn/inbox/list-inbox-periods';
+export type { ListOpenReceivables$Params as ListOpenReceivables$Params } from './fn/inbox/list-open-receivables';
+export { listOpenReceivables as listOpenReceivables } from './fn/inbox/list-open-receivables';
 export type { ListMatches$Params as ListMatches$Params } from './fn/inbox/list-matches';
 export { listMatches as listMatches } from './fn/inbox/list-matches';
+export type { CreateManualMatch$Params as CreateManualMatch$Params } from './fn/inbox/create-manual-match';
+export { createManualMatch as createManualMatch } from './fn/inbox/create-manual-match';
 export type { GetMatch$Params as GetMatch$Params } from './fn/inbox/get-match';
 export { getMatch as getMatch } from './fn/inbox/get-match';
 export type { DecideMatch$Params as DecideMatch$Params } from './fn/inbox/decide-match';
