@@ -38,6 +38,12 @@ class Credit:
 
 
 @dataclass(frozen=True, slots=True)
+class Application:
+    receivable_id: UUID
+    applied_cents: int
+
+
+@dataclass(frozen=True, slots=True)
 class OpenReceivable:
     id: UUID
     doc_number_norm: str
@@ -51,6 +57,9 @@ class OpenReceivable:
         if self.available_cents <= 0:
             raise ValueError("open receivables have a positive available balance")
 
+    def full_application(self) -> Application:
+        return Application(self.id, self.available_cents)
+
 
 @dataclass(frozen=True, slots=True)
 class EnginePolicy:
@@ -63,12 +72,6 @@ class EnginePolicy:
 class MatchKey:
     credit_ids: frozenset[UUID]
     receivable_ids: frozenset[UUID]
-
-
-@dataclass(frozen=True, slots=True)
-class Application:
-    receivable_id: UUID
-    applied_cents: int
 
 
 @dataclass(frozen=True, slots=True)
