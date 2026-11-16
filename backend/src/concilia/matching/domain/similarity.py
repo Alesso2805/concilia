@@ -1,6 +1,5 @@
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
-from uuid import UUID
 
 from rapidfuzz import fuzz, process
 
@@ -19,11 +18,12 @@ def customer_key(receivable: OpenReceivable) -> CustomerKey:
 
 
 class SimilarityIndex:
-    # Bulk version of kernel customer_similarity, keeping only strong scores; a customer's
-    # score is the best among its names. tests/unit/matching/test_similarity.py proves both agree.
+    # Bulk version of kernel customer_similarity that keeps only strong scores (a customer
+    # scores its best name); test_similarity.py proves both agree. Credits are keyed by
+    # UUID.int because hashing UUID objects dominated large runs.
     def __init__(self, credits: Sequence[Credit], receivables: Sequence[OpenReceivable]) -> None:
-        self._by_credit: dict[UUID, dict[CustomerKey, int]] = defaultdict(dict)
-        self._by_customer: dict[CustomerKey, dict[UUID, int]] = defaultdict(dict)
+        self._scores: defaultdict[int, dict[CustomerKey, int]] = defaultdict(dict)
+        self._credits: defaultdict[CustomerKey, list[Credit]] = defaultdict(list)
         names: dict[CustomerKey, set[str]] = defaultdict(set)
         tax_ids: dict[CustomerKey, str] = {}
         for receivable in receivables:
@@ -31,13 +31,13 @@ class SimilarityIndex:
             names[key].add(filtered_customer_name(receivable.customer_name_norm))
             if receivable.customer_tax_id:
                 tax_ids[key] = receivable.customer_tax_id
-        by_token: dict[str, list[UUID]] = defaultdict(list)
-        for credit in credits:
+        by_token: defaultdict[str, list[int]] = defaultdict(list)
+        for position, credit in enumerate(credits):
             for token in dict.fromkeys(credit.description_norm.split()):
-                by_token[token].append(credit.id)
+                by_token[token].append(position)
         descriptions = [credit.description_norm for credit in credits]
         for key in sorted(names):
-            found: dict[UUID, int] = {}
+            found: dict[int, int] = {}
             if key in tax_ids:
                 found.update(dict.fromkeys(by_token.get(tax_ids[key], ()), 100))
             for name in sorted(names[key]):
@@ -45,24 +45,24 @@ class SimilarityIndex:
                 if len(words) == 1 and len(name) >= MIN_SINGLE_WORD_LENGTH:
                     found.update(dict.fromkeys(by_token.get(name, ()), 100))
                 elif len(words) > 1:
-                    for _, score, index in process.extract(
+                    for _, score, position in process.extract(
                         name,
                         descriptions,
                         scorer=fuzz.token_set_ratio,
                         score_cutoff=STRONG_SIMILARITY,
                         limit=None,
                     ):
-                        credit_id = credits[index].id
-                        found[credit_id] = max(found.get(credit_id, 0), int(score))
-            for credit_id, score in found.items():
-                self._by_credit[credit_id][key] = score
-                self._by_customer[key][credit_id] = score
+                        found[position] = max(found.get(position, 0), int(score))
+            for position in sorted(found):
+                credit = credits[position]
+                self._scores[credit.id.int][key] = found[position]
+                self._credits[key].append(credit)
 
-    def similar_customers(self, credit_id: UUID) -> Mapping[CustomerKey, int]:
-        return self._by_credit.get(credit_id, {})
+    def similar_customers(self, credit: Credit) -> Mapping[CustomerKey, int]:
+        return self._scores.get(credit.id.int, {})
 
-    def similar_credits(self, customer: CustomerKey) -> Mapping[UUID, int]:
-        return self._by_customer.get(customer, {})
+    def similar_credits(self, customer: CustomerKey) -> Sequence[Credit]:
+        return self._credits.get(customer, [])
 
-    def similarity(self, credit_id: UUID, customer: CustomerKey) -> int | None:
-        return self.similar_customers(credit_id).get(customer)
+    def similarity(self, credit: Credit, customer: CustomerKey) -> int | None:
+        return self.similar_customers(credit).get(customer)
