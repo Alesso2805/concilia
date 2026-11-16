@@ -7,7 +7,11 @@ from uuid import UUID
 
 class AuditAction(StrEnum):
     ORGANIZATION_CREATED = "organization.created"
+    INVITATION_CREATED = "invitation.created"
+    INVITATION_REVOKED = "invitation.revoked"
     INVITATION_ACCEPTED = "invitation.accepted"
+    MEMBER_ROLES_CHANGED = "member.roles_changed"
+    MEMBER_REMOVED = "member.removed"
 
 
 ALLOWED_METADATA_KEYS = frozenset({"source", "roles"})

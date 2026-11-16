@@ -1,6 +1,35 @@
 {
   "components": {
     "schemas": {
+      "AcceptInvitationRequest": {
+        "properties": {
+          "token": {
+            "maxLength": 200,
+            "minLength": 16,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "AcceptInvitationRequest",
+        "type": "object"
+      },
+      "AcceptedInvitationView": {
+        "properties": {
+          "organization_id": {
+            "format": "uuid",
+            "title": "Organization Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "organization_id"
+        ],
+        "title": "AcceptedInvitationView",
+        "type": "object"
+      },
       "ChooseOrganizationRequest": {
         "properties": {
           "organization_id": {
@@ -13,6 +42,30 @@
           "organization_id"
         ],
         "title": "ChooseOrganizationRequest",
+        "type": "object"
+      },
+      "CreatedInvitationView": {
+        "properties": {
+          "invitation": {
+            "$ref": "#/components/schemas/InvitationView"
+          },
+          "token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token"
+          }
+        },
+        "required": [
+          "invitation",
+          "token"
+        ],
+        "title": "CreatedInvitationView",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -40,6 +93,76 @@
           "status"
         ],
         "title": "HealthResponse",
+        "type": "object"
+      },
+      "InvitationView": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/RoleName"
+            },
+            "title": "Roles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "roles",
+          "created_at",
+          "expires_at"
+        ],
+        "title": "InvitationView",
+        "type": "object"
+      },
+      "InviteRequest": {
+        "properties": {
+          "email": {
+            "maxLength": 320,
+            "minLength": 3,
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/RoleName"
+            },
+            "maxItems": 3,
+            "minItems": 1,
+            "title": "Roles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "roles"
+        ],
+        "title": "InviteRequest",
         "type": "object"
       },
       "LoginRequest": {
@@ -89,6 +212,79 @@
           "organizations"
         ],
         "title": "LoginView",
+        "type": "object"
+      },
+      "MemberView": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "joined_at": {
+            "format": "date-time",
+            "title": "Joined At",
+            "type": "string"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/RoleName"
+            },
+            "title": "Roles",
+            "type": "array"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "display_name",
+          "email",
+          "roles",
+          "joined_at"
+        ],
+        "title": "MemberView",
+        "type": "object"
+      },
+      "NewAccountRequest": {
+        "properties": {
+          "display_name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "maxLength": 320,
+            "minLength": 3,
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 1024,
+            "title": "Password",
+            "type": "string"
+          },
+          "token": {
+            "maxLength": 200,
+            "minLength": 16,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "email",
+          "display_name",
+          "password"
+        ],
+        "title": "NewAccountRequest",
         "type": "object"
       },
       "OrganizationView": {
@@ -178,6 +374,32 @@
         "title": "RegistrationView",
         "type": "object"
       },
+      "RoleName": {
+        "enum": [
+          "admin",
+          "analyst",
+          "reviewer"
+        ],
+        "type": "string"
+      },
+      "RolesRequest": {
+        "properties": {
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/RoleName"
+            },
+            "maxItems": 3,
+            "minItems": 1,
+            "title": "Roles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "roles"
+        ],
+        "title": "RolesRequest",
+        "type": "object"
+      },
       "SessionView": {
         "properties": {
           "organization_id": {
@@ -219,6 +441,30 @@
           "organizations"
         ],
         "title": "SessionView",
+        "type": "object"
+      },
+      "TeamView": {
+        "properties": {
+          "invitations": {
+            "items": {
+              "$ref": "#/components/schemas/InvitationView"
+            },
+            "title": "Invitations",
+            "type": "array"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/MemberView"
+            },
+            "title": "Members",
+            "type": "array"
+          }
+        },
+        "required": [
+          "members",
+          "invitations"
+        ],
+        "title": "TeamView",
         "type": "object"
       },
       "ValidationError": {
@@ -269,6 +515,127 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/app/invitations": {
+      "post": {
+        "description": "Invite someone by email. The token is returned only when the invitation is created.\n\nIdempotent on the client-generated id.",
+        "operationId": "create_invitation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedInvitationView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Invitation",
+        "tags": [
+          "team"
+        ]
+      }
+    },
+    "/api/app/invitations/accept": {
+      "post": {
+        "description": "Accept an invitation addressed to the signed-in user's email.",
+        "operationId": "accept_invitation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptInvitationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptedInvitationView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Accept Invitation",
+        "tags": [
+          "team"
+        ]
+      }
+    },
+    "/api/app/invitations/{invitation_id}/revoke": {
+      "post": {
+        "description": "Revoke a pending invitation. Admins only.",
+        "operationId": "revoke_invitation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invitation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Invitation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Revoke Invitation",
+        "tags": [
+          "team"
+        ]
+      }
+    },
     "/api/app/logout": {
       "post": {
         "description": "End the current session.",
@@ -348,6 +715,112 @@
         ]
       }
     },
+    "/api/app/team": {
+      "get": {
+        "description": "List the active members and pending invitations. Admins only.",
+        "operationId": "get_team",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Team",
+        "tags": [
+          "team"
+        ]
+      }
+    },
+    "/api/app/team/members/{user_id}/remove": {
+      "post": {
+        "description": "Remove a member, drop their roles and end their sessions in this organization.",
+        "operationId": "remove_member",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Member",
+        "tags": [
+          "team"
+        ]
+      }
+    },
+    "/api/app/team/members/{user_id}/roles": {
+      "put": {
+        "description": "Replace the roles of a member. The organization always keeps an admin.",
+        "operationId": "set_member_roles",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RolesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Member Roles",
+        "tags": [
+          "team"
+        ]
+      }
+    },
     "/api/health": {
       "get": {
         "description": "Report that the API process is up.",
@@ -367,6 +840,48 @@
         "summary": "Get Health",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/public/invitations/accept": {
+      "post": {
+        "description": "Create an account for the invited email, accept the invitation and sign in.\n\nAny reason the invitation cannot be used, including an email that already has an\naccount, gives the same answer.",
+        "operationId": "accept_invitation_with_new_account",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Accept Invitation With New Account",
+        "tags": [
+          "team"
         ]
       }
     },

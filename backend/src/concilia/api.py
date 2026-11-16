@@ -10,10 +10,13 @@ from pydantic import BaseModel
 from concilia.audit.infrastructure.sql import SqlAuditRecorder
 from concilia.identity.api.registration import registration_router
 from concilia.identity.api.sessions import WebSecurity, session_routers
+from concilia.identity.api.team import team_routers
 from concilia.identity.application.registration import RegistrationService
 from concilia.identity.application.sessions import LoginPolicy, SessionService
+from concilia.identity.application.team import TeamService
 from concilia.identity.infrastructure.passwords import Argon2PasswordHasher
 from concilia.identity.infrastructure.sql import SqlIdentityTransactions, SqlRateLimiter
+from concilia.identity.infrastructure.team_sql import SqlTeamTransactions
 from concilia.shared.infrastructure.clock import SystemClock
 from concilia.shared.infrastructure.db import create_engine
 from concilia.shared.infrastructure.settings import ApiSettings
@@ -83,4 +86,11 @@ def create_app(settings: ApiSettings | None = None, clock: Clock | None = None) 
         ),
         dependencies=[Depends(routers.require_same_origin)],
     )
+    team_app, team_public = team_routers(
+        TeamService(SqlTeamTransactions(engine, SqlAuditRecorder), hasher, clock),
+        sessions,
+        routers.set_session_cookies,
+    )
+    app.include_router(team_public, dependencies=[Depends(routers.require_same_origin)])
+    app.include_router(team_app, dependencies=[Depends(routers.authenticate)])
     return app
