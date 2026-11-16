@@ -312,7 +312,7 @@ PostgreSQL 17. Claves primarias uuid v7 generadas en la aplicación (o en el cli
 
 ## Plan de sprints
 
-Diez sprints de una semana (de lunes a domingo, salvo S2), planificados a unos 10 puntos con Claude Code implementando y revisión de cada PR, con menos carga en las semanas de Navidad y Año Nuevo y una pausa del 6 al 20 de diciembre. El primer hito es una **demo mínima publicada el viernes 15 de enero de 2027**; el proyecto completo queda listo el 7 de febrero.
+Diez sprints de una semana (de lunes a domingo, salvo S2), planificados a unos 10 puntos con Claude Code implementando y revisión de cada PR, con menos carga en las semanas de Navidad y Año Nuevo y una pausa del 6 al 20 de diciembre. El primer hito es una **demo mínima funcionando en local el viernes 15 de enero de 2027**; la publicación llega con CN-04, al final del plan, y el proyecto completo queda listo el 7 de febrero.
 
 | Sprint | Fechas | Objetivo | Historias, en orden | Pts |
 | --- | --- | --- | --- | --- |
@@ -324,7 +324,7 @@ Diez sprints de una semana (de lunes a domingo, salvo S2), planificados a unos 1
 | S4 | 28 dic – 3 ene 2027 | Importación de cobros y motor en la base | CN-10, 12 | 6 |
 | S5 | 4 – 10 ene | Bandeja de revisión y demo por visitante | CN-13, 22 | 8 |
 | S6 | 11 – 17 ene | Cuatro ojos | CN-14 | 5 |
-| Hito | vie 15 ene | **Demo mínima:** entrar a la demo, importar el tercer mes, correr el motor, confirmar y aprobar con dos roles, publicada | — | — |
+| Hito | vie 15 ene | **Demo mínima en local:** entrar a la demo, importar el tercer mes, correr el motor, confirmar y aprobar con dos roles, con `docker compose up` | — | — |
 | S7 | 18 – 24 ene | Manual y en lote, cierre de mes y auditoría | CN-15, 16, 19 | 9 |
 | S8 | 25 – 31 ene | Panel, Excel y motor de IA | CN-17, 18, 20 | 10 |
 | S9 | 1 – 7 feb | IA en la interfaz, recorrido guiado y cierre de portafolio | CN-21, 23, 24 | 9 |
