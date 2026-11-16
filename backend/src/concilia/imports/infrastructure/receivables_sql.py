@@ -137,6 +137,7 @@ class SqlReceivables:
     async def receivable_page(
         self,
         cancelled: bool,
+        document: str | None,
         after: tuple[date, UUID] | None,
         before: tuple[date, UUID] | None,
         limit: int,
@@ -150,10 +151,12 @@ class SqlReceivables:
                 text(
                     f"""SELECT {RECEIVABLE_COLUMNS} FROM receivables
                         WHERE (cancelled_at IS NOT NULL) = :cancelled AND {condition}
+                          AND (CAST(:document AS text) IS NULL OR doc_number_norm = :document)
                         ORDER BY due_on {order}, id {order} LIMIT :limit"""  # noqa: S608
                 ),
                 {
                     "cancelled": cancelled,
+                    "document": document,
                     "on": cursor[0] if cursor else None,
                     "id": cursor[1] if cursor else None,
                     "limit": limit + 1,

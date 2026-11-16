@@ -11,6 +11,7 @@ import { ReceivablePageView } from '../../models/receivable-page-view';
 
 export interface ListReceivables$Params {
   cancelled?: boolean;
+  document?: (string | null);
   after?: (string | null);
   before?: (string | null);
   limit?: number;
@@ -20,6 +21,7 @@ export function listReceivables(http: HttpClient, rootUrl: string, params?: List
   const rb = new RequestBuilder(rootUrl, listReceivables.PATH, 'get');
   if (params) {
     rb.query('cancelled', params.cancelled, {});
+    rb.query('document', params.document, {});
     rb.query('after', params.after, {});
     rb.query('before', params.before, {});
     rb.query('limit', params.limit, {});

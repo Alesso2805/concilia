@@ -35,6 +35,12 @@ export const routes: Routes = [
         title: 'Importación · Concilia',
       },
       {
+        path: 'cobros',
+        loadComponent: () =>
+          import('./features/imports/receivables.page').then((m) => m.ReceivablesPage),
+        title: 'Cobros esperados · Concilia',
+      },
+      {
         path: 'equipo',
         canMatch: [adminOnly],
         loadComponent: () => import('./features/admin/team.page').then((m) => m.TeamPage),
