@@ -94,6 +94,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/settings.page').then((m) => m.SettingsPage),
         title: 'Configuración · Concilia',
       },
+      {
+        path: 'auditoria',
+        loadComponent: () => import('./features/audit/audit.page').then((m) => m.AuditPage),
+        title: 'Auditoría · Concilia',
+      },
       { path: 'sin-permiso', component: ForbiddenPage, title: 'Sin acceso · Concilia' },
       { path: '**', component: NotFoundPage, title: 'Página no encontrada · Concilia' },
     ],

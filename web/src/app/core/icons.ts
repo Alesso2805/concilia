@@ -14,6 +14,7 @@ import description from '@material-symbols/svg-400/outlined/description.svg';
 import edit from '@material-symbols/svg-400/outlined/edit.svg';
 import error from '@material-symbols/svg-400/outlined/error.svg';
 import group from '@material-symbols/svg-400/outlined/group.svg';
+import history from '@material-symbols/svg-400/outlined/history.svg';
 import home from '@material-symbols/svg-400/outlined/home.svg';
 import inbox from '@material-symbols/svg-400/outlined/inbox.svg';
 import lightMode from '@material-symbols/svg-400/outlined/light_mode.svg';
@@ -42,6 +43,7 @@ const ICONS = {
   edit,
   error,
   group,
+  history,
   home,
   inbox,
   light_mode: lightMode,

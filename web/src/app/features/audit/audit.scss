@@ -1,0 +1,44 @@
+.audit__title {
+  margin: 0 0 8px;
+  font: var(--mat-sys-headline-small);
+}
+
+.audit__muted {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.audit__error {
+  color: var(--mat-sys-error);
+}
+
+.audit__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0 16px;
+  margin: 16px 0;
+}
+
+.audit__field {
+  width: min(260px, 100%);
+}
+
+.audit__field--small {
+  width: min(180px, 100%);
+}
+
+.audit__buttons {
+  display: flex;
+  gap: 8px;
+  min-height: 56px;
+  align-items: center;
+}
+
+.audit__table {
+  overflow-x: auto;
+}
+
+.audit__nowrap {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
