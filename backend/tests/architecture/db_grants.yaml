@@ -65,6 +65,18 @@ tables:
       concilia_worker: [INSERT, SELECT]
       concilia_backup: [SELECT]
 
+  invitations:
+    rls: organization
+    privileges:
+      concilia_app: [INSERT, SELECT]
+      concilia_worker: [INSERT, SELECT]
+      concilia_backup: [SELECT]
+    column_privileges:
+      concilia_app:
+        UPDATE: [revoked_at]
+      concilia_worker:
+        UPDATE: [revoked_at]
+
   jobs:
     rls: jobs
     privileges:
@@ -76,6 +88,9 @@ tables:
         UPDATE: [attempts, error_code, finished_at, locked_at, progress, run_after, status]
 
 functions:
+  app_accept_invitation:
+    security_definer: true
+    execute: [concilia_app]
   app_cleanup:
     security_definer: true
     execute: [concilia_worker]

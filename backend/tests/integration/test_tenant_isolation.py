@@ -12,7 +12,14 @@ from concilia.shared.infrastructure.db import anonymous_transaction, organizatio
 pytestmark = pytest.mark.anyio
 
 NOW = datetime(2026, 11, 16, 15, 0, tzinfo=UTC)
-RLS_TABLES = ("organizations", "memberships", "member_roles", "audit_events", "jobs")
+RLS_TABLES = (
+    "organizations",
+    "memberships",
+    "member_roles",
+    "invitations",
+    "audit_events",
+    "jobs",
+)
 
 
 @dataclass(frozen=True)
@@ -39,6 +46,11 @@ async def _create_tenant(owner_engine: AsyncEngine, name: str) -> Tenant:
                VALUES (:org, :user, :now)""",
             """INSERT INTO member_roles (organization_id, user_id, role)
                VALUES (:org, :user, 'admin')""",
+            """INSERT INTO invitations (id, organization_id, email, roles, token_hash, created_by,
+                                        created_at, expires_at)
+               VALUES (gen_random_uuid(), :org, 'invitee@example.test', '{analyst}',
+                       gen_random_uuid()::text, :user, :now,
+                       CAST(:now AS timestamptz) + interval '7 days')""",
             """INSERT INTO audit_events (id, organization_id, actor_user_id, action, entity, at)
                VALUES (gen_random_uuid(), :org, :user, 'test.created', 'organization', :now)""",
             """INSERT INTO jobs (id, organization_id, kind, run_after, created_at)
