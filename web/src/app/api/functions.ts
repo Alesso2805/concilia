@@ -81,5 +81,7 @@ export type { CancelReceivable$Params as CancelReceivable$Params } from './fn/re
 export { cancelReceivable as cancelReceivable } from './fn/receivables/cancel-receivable';
 export type { GetHealth$Params as GetHealth$Params } from './fn/health/get-health';
 export { getHealth as getHealth } from './fn/health/get-health';
+export type { CreateDemo$Params as CreateDemo$Params } from './fn/demo/create-demo';
+export { createDemo as createDemo } from './fn/demo/create-demo';
 export type { Register$Params as Register$Params } from './fn/registration/register';
 export { register as register } from './fn/registration/register';

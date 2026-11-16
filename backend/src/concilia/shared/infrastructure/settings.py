@@ -16,6 +16,9 @@ class ApiSettings(DatabaseSettings):
     login_window_minutes: int = 15
     login_max_per_email: int = 10
     login_max_per_ip: int = 30
+    demo_ttl_hours: int | None = None
+    demo_max_per_ip_per_day: int = 5
+    demo_max_per_day: int = 300
 
 
 class WorkerSettings(DatabaseSettings):

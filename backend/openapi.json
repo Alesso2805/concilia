@@ -513,6 +513,20 @@
         "title": "DecisionView",
         "type": "object"
       },
+      "DemoView": {
+        "properties": {
+          "organization_id": {
+            "format": "uuid",
+            "title": "Organization Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "organization_id"
+        ],
+        "title": "DemoView",
+        "type": "object"
+      },
       "EngineRunRequest": {
         "properties": {
           "bank_account_id": {
@@ -4689,6 +4703,28 @@
         "summary": "Get Health",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/public/demo": {
+      "post": {
+        "description": "Create a demo organization with fictional data and sign in as its analyst.\n\nAt most 5 per IP and 300 in total per day (429 `demo_limit`).",
+        "operationId": "create_demo",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Create Demo",
+        "tags": [
+          "demo"
         ]
       }
     },

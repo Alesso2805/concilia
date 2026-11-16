@@ -80,6 +80,10 @@ class RunTransactions(Protocol):
 type ProgressReporter = Callable[[int], Awaitable[None]]
 
 
+async def _no_progress(_percent: int) -> None:
+    pass
+
+
 def _organization(principal: Principal, *, analyst: bool) -> UUID:
     if principal.organization_id is None or (analyst and ANALYST not in principal.roles):
         raise NotAllowedError
@@ -142,6 +146,17 @@ class EngineRunService:
             run = await store.find_run(run_id)
         if run is None:
             raise NotFoundError
+        return run
+
+    async def preload(
+        self, organization_id: UUID, bank_account_id: UUID, period: date, store: RunStore
+    ) -> EngineRun:
+        """Run the engine inside a demo's creation: the only run that has no job."""
+        run = EngineRun(
+            uuid7(), bank_account_id, period, None, RULES_VERSION, None, self._clock.now(), None
+        )
+        await store.insert_run(organization_id, run)
+        await self.run(organization_id, run.id, store, _no_progress)
         return run
 
     async def run(
