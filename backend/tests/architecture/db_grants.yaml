@@ -144,6 +144,53 @@ tables:
       concilia_worker:
         UPDATE: [amount_cents, cancel_reason, cancelled_at, due_on, updated_at]
 
+  engine_runs:
+    rls: organization
+    privileges:
+      concilia_app: [INSERT, SELECT]
+      concilia_worker: [INSERT, SELECT]
+      concilia_backup: [SELECT]
+    column_privileges:
+      concilia_app:
+        UPDATE: [finished_at, proposals_count]
+      concilia_worker:
+        UPDATE: [finished_at, proposals_count]
+
+  matches:
+    rls: organization
+    privileges:
+      concilia_app: [INSERT, SELECT]
+      concilia_worker: [INSERT, SELECT]
+      concilia_backup: [SELECT]
+
+  match_items:
+    rls: organization
+    privileges:
+      concilia_app: [INSERT, SELECT]
+      concilia_worker: [INSERT, SELECT]
+      concilia_backup: [SELECT]
+
+  match_decisions:
+    rls: organization
+    privileges:
+      concilia_app: [INSERT, SELECT]
+      concilia_worker: [INSERT, SELECT]
+      concilia_backup: [SELECT]
+
+  match_status:
+    rls: view
+    privileges:
+      concilia_app: [SELECT]
+      concilia_worker: [SELECT]
+      concilia_backup: [SELECT]
+
+  receivable_balances:
+    rls: view
+    privileges:
+      concilia_app: [SELECT]
+      concilia_worker: [SELECT]
+      concilia_backup: [SELECT]
+
   period_events:
     rls: organization
     privileges:
@@ -178,3 +225,12 @@ functions:
   app_user_orgs:
     security_definer: true
     execute: [concilia_app]
+  match_decisions_check:
+    security_definer: false
+    execute: []
+  match_items_check:
+    security_definer: false
+    execute: []
+  matches_complete:
+    security_definer: false
+    execute: []
