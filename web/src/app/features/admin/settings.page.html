@@ -1,0 +1,45 @@
+<div class="page-header">
+  <h1 class="page-header__title">Configuración</h1>
+</div>
+<p class="admin__intro">
+  El motor acepta una diferencia como redondeo si no supera el mayor entre la tolerancia mínima y el
+  porcentaje del saldo. Las tasas de detracción le permiten reconocer abonos que llegan sin la
+  detracción.
+</p>
+
+@if (error(); as message) {
+  <p class="admin__error" role="alert">{{ message }}</p>
+}
+
+@if (loaded()) {
+  <form class="admin__form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <mat-form-field appearance="outline">
+      <mat-label>Nombre de la organización</mat-label>
+      <input matInput formControlName="name" maxlength="200" required />
+      <mat-error>Ingresa un nombre.</mat-error>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Tolerancia mínima (S/)</mat-label>
+      <input matInput formControlName="toleranceMin" inputmode="decimal" required />
+      <mat-hint>Por ejemplo, 1.00</mat-hint>
+      <mat-error>Usa un monto en soles con hasta 2 decimales.</mat-error>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Tolerancia sobre el saldo (%)</mat-label>
+      <input matInput formControlName="tolerancePercent" inputmode="decimal" required />
+      <mat-hint>Por ejemplo, 0.5</mat-hint>
+      <mat-error>Usa un porcentaje con hasta 2 decimales.</mat-error>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Tasas de detracción (%)</mat-label>
+      <input matInput formControlName="detractionRates" inputmode="decimal" />
+      <mat-hint>Separadas por punto y coma, por ejemplo: 10; 12. Hasta 5.</mat-hint>
+      <mat-error>Usa porcentajes mayores que 0, sin repetir, separados por punto y coma.</mat-error>
+    </mat-form-field>
+    <div class="admin__form-actions">
+      <button mat-flat-button type="submit" [disabled]="saving()">Guardar</button>
+    </div>
+  </form>
+} @else if (!error()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Cargando la configuración" />
+}
