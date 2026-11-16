@@ -1,0 +1,99 @@
+<div class="page-header">
+  <h1 class="page-header__title">Equipo</h1>
+  <button mat-flat-button type="button" (click)="invite()">
+    <mat-icon svgIcon="person_add" />
+    Invitar
+  </button>
+</div>
+
+@if (error(); as message) {
+  <p class="team__error" role="alert">{{ message }}</p>
+}
+
+@if (team(); as team) {
+  <section class="team__section" aria-labelledby="miembros">
+    <h2 id="miembros">Miembros</h2>
+    <table mat-table [dataSource]="team.members">
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef scope="col">Nombre</th>
+        <td mat-cell *matCellDef="let member">{{ member.display_name }}</td>
+      </ng-container>
+      <ng-container matColumnDef="email">
+        <th mat-header-cell *matHeaderCellDef scope="col">Correo</th>
+        <td mat-cell *matCellDef="let member">{{ member.email }}</td>
+      </ng-container>
+      <ng-container matColumnDef="roles">
+        <th mat-header-cell *matHeaderCellDef scope="col">Roles</th>
+        <td mat-cell *matCellDef="let member">{{ roles(member.roles) }}</td>
+      </ng-container>
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef scope="col">
+          <span class="team__hidden">Acciones</span>
+        </th>
+        <td mat-cell *matCellDef="let member" class="team__actions">
+          <button
+            mat-icon-button
+            type="button"
+            [attr.aria-label]="'Editar los roles de ' + member.display_name"
+            (click)="editRoles(member)"
+          >
+            <mat-icon svgIcon="edit" />
+          </button>
+          <button
+            mat-icon-button
+            type="button"
+            [attr.aria-label]="'Dar de baja a ' + member.display_name"
+            (click)="remove(member)"
+          >
+            <mat-icon svgIcon="person_remove" />
+          </button>
+        </td>
+      </ng-container>
+      <tr mat-header-row *matHeaderRowDef="memberColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: memberColumns"></tr>
+    </table>
+  </section>
+
+  <section class="team__section" aria-labelledby="invitaciones">
+    <h2 id="invitaciones">Invitaciones pendientes</h2>
+    @if (team.invitations.length > 0) {
+      <table mat-table [dataSource]="team.invitations">
+        <ng-container matColumnDef="email">
+          <th mat-header-cell *matHeaderCellDef scope="col">Correo</th>
+          <td mat-cell *matCellDef="let invitation">{{ invitation.email }}</td>
+        </ng-container>
+        <ng-container matColumnDef="roles">
+          <th mat-header-cell *matHeaderCellDef scope="col">Roles</th>
+          <td mat-cell *matCellDef="let invitation">{{ roles(invitation.roles) }}</td>
+        </ng-container>
+        <ng-container matColumnDef="expires">
+          <th mat-header-cell *matHeaderCellDef scope="col">Vence</th>
+          <td mat-cell *matCellDef="let invitation">
+            {{ invitation.expires_at | date: 'mediumDate' }}
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef scope="col">
+            <span class="team__hidden">Acciones</span>
+          </th>
+          <td mat-cell *matCellDef="let invitation" class="team__actions">
+            <button
+              mat-button
+              type="button"
+              [attr.aria-label]="'Revocar la invitación a ' + invitation.email"
+              (click)="revoke(invitation)"
+            >
+              Revocar
+            </button>
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="invitationColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: invitationColumns"></tr>
+      </table>
+    } @else {
+      <p class="team__empty">No hay invitaciones pendientes.</p>
+    }
+  </section>
+} @else if (!error()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Cargando el equipo" />
+}

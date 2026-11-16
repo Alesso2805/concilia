@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 
 import { ErrorPage, ForbiddenPage, NotFoundPage } from './core/pages/status-pages';
-import { organizationGuard } from './core/session/guards';
+import { organizationGuard, roleGuard } from './core/session/guards';
 
 export const ERROR_PATH = '/error';
 
@@ -14,6 +14,11 @@ export const routes: Routes = [
     loadComponent: () => import('./core/layout/shell.component').then((m) => m.ShellComponent),
     children: [
       { path: '', loadChildren: () => import('./features/home/home.routes') },
+      {
+        path: 'equipo',
+        canMatch: [roleGuard('admin')],
+        loadChildren: () => import('./features/admin/admin.routes'),
+      },
       { path: 'sin-permiso', component: ForbiddenPage, title: 'Sin acceso · Concilia' },
       { path: '**', component: NotFoundPage, title: 'Página no encontrada · Concilia' },
     ],
