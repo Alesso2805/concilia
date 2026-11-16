@@ -11,7 +11,9 @@ BUSINESS_MODULES = frozenset(
     {"audit", "identity", "banking", "periods", "imports", "matching", "ai", "reporting", "demo"}
 )
 LAYERS = frozenset({"domain", "application", "infrastructure", "api"})
-COMPOSITION_ROOTS = frozenset({"concilia.api", "concilia.worker", "concilia.cli"})
+COMPOSITION_ROOTS = frozenset(
+    {"concilia.api", "concilia.worker", "concilia.cli", "concilia.record_ai"}
+)
 
 
 @dataclass(frozen=True)

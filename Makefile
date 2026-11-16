@@ -1,4 +1,4 @@
-.PHONY: up down trust-ca create-org demo lint test e2e openapi
+.PHONY: up down trust-ca create-org demo lint test e2e openapi record-ai
 
 CA_FILE := caddy-local-root.crt
 
@@ -39,3 +39,10 @@ demo:
 
 create-org:
 	docker compose run --rm migrator python -m concilia.cli create-org --name "$(NAME)" --email "$(EMAIL)" --display-name "$(DISPLAY_NAME)"
+
+RECORDINGS := backend/src/concilia/ai/recordings/dataset_v1.json
+
+record-ai:
+	docker build -q -t concilia-backend:local ./backend
+	docker compose run --rm -T -e OPENAI_API_KEY -e CONCILIA_AI_MODEL migrator python -m concilia.record_ai > $(RECORDINGS).tmp
+	mv $(RECORDINGS).tmp $(RECORDINGS)

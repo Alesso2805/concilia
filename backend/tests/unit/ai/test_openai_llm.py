@@ -15,7 +15,6 @@ from pydantic import SecretStr
 from concilia.ai.application.llm import LlmError
 from concilia.ai.application.response import RESPONSE_SCHEMA
 from concilia.ai.infrastructure.clients import llm_clients
-from concilia.ai.infrastructure.fake_llm import FakeLlmClient
 from concilia.ai.infrastructure.openai_llm import OpenAiLlmClient
 from concilia.shared.infrastructure.settings import AiSettings
 
@@ -114,7 +113,7 @@ async def test_provider_failures_become_job_codes_without_provider_text(
     assert (raised.value.code, raised.value.retry, str(raised.value)) == (code, retry, code)
 
 
-def test_the_real_client_is_used_only_with_a_key_and_never_for_demos() -> None:
+def test_the_real_client_is_used_only_with_a_non_blank_key() -> None:
     def settings(key: str | None) -> AiSettings:
         return AiSettings.model_validate(
             {
@@ -126,7 +125,6 @@ def test_the_real_client_is_used_only_with_a_key_and_never_for_demos() -> None:
     with_key, without_key = llm_clients(settings("sk-test")), llm_clients(settings(None))
     blank = llm_clients(settings(" "))
 
-    assert isinstance(with_key.for_organization(is_demo=False), OpenAiLlmClient)
-    assert isinstance(with_key.for_organization(is_demo=True), FakeLlmClient)
-    assert without_key.for_organization(is_demo=False) is None
-    assert blank.for_organization(is_demo=False) is None
+    assert isinstance(with_key.provider(), OpenAiLlmClient)
+    assert without_key.provider() is None
+    assert blank.provider() is None

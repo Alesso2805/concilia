@@ -1,11 +1,11 @@
 from collections.abc import Sequence
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Literal, Protocol
 from uuid import UUID, uuid7
 
-from concilia.ai.application.llm import LlmClient, LlmError
+from concilia.ai.application.llm import LlmClient, LlmError, LlmResult
 from concilia.ai.application.prompts import PROMPT_VERSION, system_prompt, user_input
 from concilia.ai.application.response import RESPONSE_SCHEMA, parse_output, proposals
 from concilia.ai.domain.suggestions import (
@@ -23,11 +23,13 @@ from concilia.shared.kernel.principal import Principal
 
 __all__ = [
     "AiError",
+    "CreditKey",
     "DecisionAction",
     "FoundSuggestion",
     "LlmChooser",
     "LlmError",
     "ReceivableLabel",
+    "Replayer",
     "StoredSuggestion",
     "SuggestionDecision",
     "SuggestionRequest",
@@ -119,7 +121,26 @@ class Usage:
 
 
 class LlmChooser(Protocol):
-    def for_organization(self, is_demo: bool) -> LlmClient | None: ...
+    def provider(self) -> LlmClient | None:
+        """The real provider for regular organizations, or None without a key."""
+        ...
+
+
+@dataclass(frozen=True)
+class CreditKey:
+    """Identifies a demo credit across demos: the same dataset row in every demo."""
+
+    booked_on: date
+    amount_cents: int
+    description_norm: str
+    occurrence: int
+
+
+class Replayer(Protocol):
+    def replay(self, key: CreditKey, candidates: Sequence[Candidate]) -> LlmResult:
+        """The recorded answer for a demo credit, with its documents turned into this request's
+        aliases; demo organizations never reach the provider (rule 7)."""
+        ...
 
 
 class SuggestionStore(Protocol):
@@ -130,6 +151,8 @@ class SuggestionStore(Protocol):
     async def lock_global_quota(self) -> None: ...
 
     async def is_demo(self, organization_id: UUID) -> bool: ...
+
+    async def credit_key(self, bank_movement_id: UUID) -> CreditKey: ...
 
     async def free_credit(self, bank_movement_id: UUID) -> CreditFacts | None:
         """A live credit in no active match whose month is open, or None."""
@@ -181,12 +204,14 @@ class SuggestionService:
         self,
         transactions: SuggestionTransactions,
         llm: LlmChooser,
+        replayer: Replayer,
         clock: Clock,
         *,
         global_daily_limit: int = 200,
     ) -> None:
         self._transactions = transactions
         self._llm = llm
+        self._replayer = replayer
         self._clock = clock
         self._global_daily_limit = global_daily_limit
 
@@ -208,7 +233,7 @@ class SuggestionService:
                 if await store.free_credit(bank_movement_id) is None:
                     raise AiError("credit_not_free")
                 if not await store.is_demo(organization_id):
-                    if self._llm.for_organization(is_demo=False) is None:
+                    if self._llm.provider() is None:
                         raise AiError("ai_unavailable")
                     if await store.organization_usage(since, until) >= ORGANIZATION_DAILY_LIMIT:
                         raise AiError("ai_daily_limit")
@@ -252,7 +277,7 @@ class SuggestionService:
         async with self._transactions.organization(organization_id) as store:
             is_demo = await store.is_demo(organization_id)
             return Usage(
-                available=self._llm.for_organization(is_demo=is_demo) is not None,
+                available=is_demo or self._llm.provider() is not None,
                 used_today=await store.organization_usage(since, until),
                 daily_limit=None if is_demo else ORGANIZATION_DAILY_LIMIT,
             )
@@ -290,14 +315,17 @@ class SuggestionService:
         if not candidates:
             raise AiError("no_candidates")
         is_demo = await store.is_demo(organization_id)
-        client = self._llm.for_organization(is_demo=is_demo)
-        if client is None:
-            raise AiError("ai_unavailable")
-        result = await client.complete(
-            system=system_prompt(PROMPT_VERSION),
-            user=user_input(credit, candidates),
-            schema=RESPONSE_SCHEMA,
-        )
+        if is_demo:
+            result = self._replayer.replay(await store.credit_key(credit.id), candidates)
+        else:
+            client = self._llm.provider()
+            if client is None:
+                raise AiError("ai_unavailable")
+            result = await client.complete(
+                system=system_prompt(PROMPT_VERSION),
+                user=user_input(credit, candidates),
+                schema=RESPONSE_SCHEMA,
+            )
         output = parse_output(result.output)
         await store.insert_suggestion(
             organization_id,

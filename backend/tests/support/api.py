@@ -10,7 +10,7 @@ from pydantic import SecretStr
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from concilia.ai.application.service import LlmChooser
+from concilia.ai.application.service import LlmChooser, Replayer
 from concilia.api import create_app
 from concilia.identity.infrastructure.passwords import Argon2PasswordHasher
 from concilia.shared.infrastructure.settings import ApiSettings
@@ -42,9 +42,14 @@ async def api_client(app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
 
 
 def build_app(
-    database_url: str, clock: FixedClock, *, llm: LlmChooser | None = None, **overrides: object
+    database_url: str,
+    clock: FixedClock,
+    *,
+    llm: LlmChooser | None = None,
+    replayer: Replayer | None = None,
+    **overrides: object,
 ) -> FastAPI:
-    return create_app(settings_for_tests(database_url, **overrides), clock, llm)
+    return create_app(settings_for_tests(database_url, **overrides), clock, llm, replayer)
 
 
 @dataclass(frozen=True)

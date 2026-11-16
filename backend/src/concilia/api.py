@@ -10,8 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from concilia.ai.api.routes import ai_router
 from concilia.ai.application.decisions import SuggestionDecisionService
-from concilia.ai.application.service import LlmChooser, SuggestionService
+from concilia.ai.application.service import LlmChooser, Replayer, SuggestionService
 from concilia.ai.infrastructure.clients import llm_clients
+from concilia.ai.infrastructure.recordings import RecordedReplayer, load_recordings
 from concilia.ai.infrastructure.sql import (
     SqlSuggestionDecisionTransactions,
     SqlSuggestionTransactions,
@@ -90,6 +91,7 @@ def create_app(
     settings: ApiSettings | None = None,
     clock: Clock | None = None,
     llm: LlmChooser | None = None,
+    replayer: Replayer | None = None,
 ) -> FastAPI:
     settings = settings or ApiSettings()
     clock = clock or SystemClock()
@@ -230,6 +232,7 @@ def create_app(
         suggestions = SuggestionService(
             SqlSuggestionTransactions(engine, SqlAuditRecorder),
             llm or llm_clients(settings),
+            replayer or RecordedReplayer(load_recordings()),
             clock,
             global_daily_limit=settings.ai_global_daily_limit,
         )

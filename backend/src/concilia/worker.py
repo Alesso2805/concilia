@@ -6,9 +6,10 @@ from datetime import timedelta
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
-from concilia.ai.application.service import LlmChooser, SuggestionService
+from concilia.ai.application.service import LlmChooser, Replayer, SuggestionService
 from concilia.ai.infrastructure.clients import LlmClients, llm_clients
 from concilia.ai.infrastructure.jobs import ai_suggest_handler
+from concilia.ai.infrastructure.recordings import RecordedReplayer, load_recordings
 from concilia.ai.infrastructure.sql import SqlSuggestionTransactions
 from concilia.audit.infrastructure.sql import SqlAuditRecorder
 from concilia.imports.application.service import ImportService
@@ -55,7 +56,10 @@ def cleanup_handler(clock: Clock) -> Handler:
 
 
 def handlers(
-    engine: AsyncEngine, clock: Clock, llm: LlmChooser | None = None
+    engine: AsyncEngine,
+    clock: Clock,
+    llm: LlmChooser | None = None,
+    replayer: Replayer | None = None,
 ) -> dict[str, Handler]:
     transactions = SqlImportTransactions(
         engine, SqlAuditRecorder, SqlPeriodQueries, SqlMatchQueries
@@ -66,7 +70,12 @@ def handlers(
     export_transactions = SqlExportTransactions(engine, SqlAuditRecorder)
     exports = ExportService(export_transactions, build_workbook, clock)
     suggestion_transactions = SqlSuggestionTransactions(engine, SqlAuditRecorder)
-    suggestions = SuggestionService(suggestion_transactions, llm or LlmClients(real=None), clock)
+    suggestions = SuggestionService(
+        suggestion_transactions,
+        llm or LlmClients(real=None),
+        replayer or RecordedReplayer(load_recordings()),
+        clock,
+    )
     return {
         "noop": run_noop,
         "cleanup": cleanup_handler(clock),

@@ -4,15 +4,12 @@ from typing import Any
 
 from concilia.ai.application.llm import LlmResult
 
-NO_SUGGESTIONS = json.dumps(
-    {"suggestions": [], "no_match_reason": "Sin sugerencias en la demo para este abono."}
-)
+NO_SUGGESTIONS = json.dumps({"suggestions": [], "no_match_reason": "Ningún candidato coincide."})
 
 
 class FakeLlmClient:
-    """Deterministic stand-in for the provider: answers with whatever `answer` returns for
-    the user input. Tests script it; demo organizations use it so they never reach the
-    provider (rule 7)."""
+    """Deterministic stand-in for the provider in tests: answers with whatever `answer`
+    returns for the user input."""
 
     model = "fake"
 

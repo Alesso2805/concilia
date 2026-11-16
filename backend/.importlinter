@@ -35,6 +35,7 @@ forbidden_modules =
     concilia.api
     concilia.worker
     concilia.cli
+    concilia.record_ai
 
 [importlinter:contract:module-layers]
 name = AR-02 Layers inside each business module

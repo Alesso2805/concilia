@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from concilia.ai.application.service import (
     KIND,
+    CreditKey,
     JobStatus,
     ReceivableLabel,
     StoredSuggestion,
@@ -116,6 +117,24 @@ class SqlSuggestionStore:
             text("SELECT is_demo FROM organizations WHERE id = :id"), {"id": organization_id}
         )
         return bool(found)
+
+    async def credit_key(self, bank_movement_id: UUID) -> CreditKey:
+        row = (
+            await self._connection.execute(
+                text(
+                    """SELECT b.booked_on, b.amount_cents, b.description_norm,
+                              (SELECT count(*) FROM bank_movements o
+                               WHERE o.bank_account_id = b.bank_account_id
+                                 AND o.booked_on = b.booked_on
+                                 AND o.amount_cents = b.amount_cents
+                                 AND o.description_norm = b.description_norm
+                                 AND o.voided_at IS NULL AND o.id < b.id) AS occurrence
+                       FROM bank_movements b WHERE b.id = :id"""
+                ),
+                {"id": bank_movement_id},
+            )
+        ).one()
+        return CreditKey(row.booked_on, row.amount_cents, row.description_norm, row.occurrence)
 
     async def free_credit(self, bank_movement_id: UUID) -> CreditFacts | None:
         row = (await self._connection.execute(text(FREE_CREDIT), {"id": bank_movement_id})).first()
