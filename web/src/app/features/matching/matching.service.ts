@@ -72,6 +72,11 @@ const MESSAGES: Record<string, string> = {
   invalid_match:
     'Elige al menos un abono y un cobro, cada uno una vez y con montos mayores que cero.',
   closed_period: 'El mes está cerrado: no admite cambios.',
+  pending_matches:
+    'Quedan coincidencias propuestas o confirmadas en este mes: decide sobre ellas antes de cerrarlo.',
+  already_closed: 'El mes ya está cerrado. Actualiza la página.',
+  not_closed: 'El mes ya está abierto. Actualiza la página.',
+  future_period: 'Solo se cierran meses que ya empezaron.',
   difference_reason:
     'Elige un motivo de diferencia que corresponda: sobrepago solo si sobra dinero, y «Otro» necesita una nota.',
   four_eyes: 'Otra persona debe decidir: tú creaste o confirmaste esta coincidencia.',

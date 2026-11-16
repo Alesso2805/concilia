@@ -40,6 +40,16 @@
             Conciliar a mano
           </a>
         }
+        @if (canClose()) {
+          <button mat-stroked-button type="button" [disabled]="closing()" (click)="closePeriod()">
+            Cerrar mes
+          </button>
+        }
+        @if (canReopen()) {
+          <button mat-stroked-button type="button" [disabled]="closing()" (click)="reopenPeriod()">
+            Reabrir mes
+          </button>
+        }
       }
     </div>
 

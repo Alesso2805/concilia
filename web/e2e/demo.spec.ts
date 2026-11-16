@@ -1,6 +1,6 @@
 import { expect, expectAccessible, test } from './fixtures';
 
-test('a visitor enters a demo, reviews its months and switches to the reviewer', async ({
+test('a visitor enters a demo, reviews its months and the reviewer reopens and closes one', async ({
   page,
 }) => {
   await page.goto('/iniciar-sesion');
@@ -14,7 +14,8 @@ test('a visitor enters a demo, reviews its months and switches to the reviewer',
   await expect(page.getByText('Demo', { exact: true })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Libres (118)' })).toBeVisible();
   await page.getByText('Mes', { exact: true }).click();
-  await page.getByRole('option', { name: 'octubre de 2026' }).click();
+  await page.getByRole('option', { name: 'octubre de 2026 (cerrado)' }).click();
+  await expect(page.getByText('Este mes está cerrado: solo se puede consultar.')).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Aprobadas (103)' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Propuestas (0)' })).toBeVisible();
   await expectAccessible(page);
@@ -28,6 +29,22 @@ test('a visitor enters a demo, reviews its months and switches to the reviewer',
   await expect(navigation.getByRole('link', { name: 'Importaciones' })).toBeHidden();
   await expect(page.getByRole('button', { name: 'Correr el motor' })).toBeDisabled();
   await expectAccessible(page);
+
+  await page.getByText('Mes', { exact: true }).click();
+  await page.getByRole('option', { name: 'octubre de 2026 (cerrado)' }).click();
+  await page.getByRole('button', { name: 'Reabrir mes' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Reabrir octubre de 2026' });
+  await dialog.getByRole('button', { name: 'Reabrir' }).click();
+  await expect(dialog.getByText('Indica el motivo.')).toBeVisible();
+  await expectAccessible(page);
+  await dialog.getByLabel('Motivo').fill('Faltó registrar una comisión');
+  await dialog.getByRole('button', { name: 'Reabrir' }).click();
+  await expect(page.getByText('Reabriste octubre de 2026.')).toBeVisible();
+  await expect(page.getByText('Este mes está cerrado: solo se puede consultar.')).toBeHidden();
+
+  await page.getByRole('button', { name: 'Cerrar mes' }).click();
+  await expect(page.getByText('Cerraste octubre de 2026.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Reabrir mes' })).toBeVisible();
 });
 
 test('a visitor imports the third month of the demo from its sample files', async ({ page }) => {

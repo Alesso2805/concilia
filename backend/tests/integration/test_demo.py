@@ -56,6 +56,9 @@ async def test_a_visitor_enters_a_demo_with_two_imported_months_as_its_analyst(
         files = (await client.get("/api/app/imports")).json()["files"]
         october = await _counts(client, account["id"], "2026-10-01")
         november = await _counts(client, account["id"], "2026-11-01")
+        periods = (
+            await client.get("/api/app/inbox/periods", params={"bank_account_id": account["id"]})
+        ).json()
 
     organization_id = created.json()["organization_id"]
     assert created.status_code == 201
@@ -74,6 +77,10 @@ async def test_a_visitor_enters_a_demo_with_two_imported_months_as_its_analyst(
         "approved": FIRST_MONTH_PROPOSALS,
     }
     assert (november["proposed"], november["free"]) == (0, SECOND_MONTH_CREDITS)
+    assert [(period["period"], period["closed"]) for period in periods] == [
+        ("2026-11-01", False),
+        ("2026-10-01", True),
+    ]
     async with owner_engine.connect() as connection:
         organization = (
             await connection.execute(
@@ -114,7 +121,8 @@ async def test_a_visitor_enters_a_demo_with_two_imported_months_as_its_analyst(
                 await connection.execute(
                     text(
                         """SELECT action, count(*) FROM audit_events
-                           WHERE organization_id = :id AND entity = 'match' GROUP BY action"""
+                           WHERE organization_id = :id AND entity IN ('match', 'period_event')
+                           GROUP BY action"""
                     ),
                     {"id": organization_id},
                 )
@@ -139,6 +147,7 @@ async def test_a_visitor_enters_a_demo_with_two_imported_months_as_its_analyst(
     assert decisions == {
         "match.confirmed": FIRST_MONTH_PROPOSALS,
         "match.approved": FIRST_MONTH_PROPOSALS,
+        "period.closed": 1,
     }
 
 
