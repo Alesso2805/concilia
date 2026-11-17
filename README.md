@@ -73,6 +73,7 @@ On the demo dataset, rules 1 to 3 propose the right receivables for 75.0 % of th
 | [0008](docs/adr/0008-sessions-csrf-local-https.md) | Cookie sessions, signed double-submit CSRF and local HTTPS |
 | [0009](docs/adr/0009-client-ids-and-idempotent-posts.md) | Client-generated ids and idempotent POST requests |
 | [0010](docs/adr/0010-deployment.md) | One server with Compose; images built by CI and pulled on deploy |
+| [0011](docs/adr/0011-ledger-visual-design.md) | A ledger look on Angular Material 3, with a dark mode |
 
 ## Stack
 

@@ -7,15 +7,16 @@ import { MatListModule } from '@angular/material/list';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { map } from 'rxjs';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter, map } from 'rxjs';
 
 import { DemoTour } from '../../features/demo/demo-tour.component';
 import { LOGIN_PATH, ORGANIZATION_PICKER_PATH } from '../session/paths';
 import { Role, roleLabel } from '../session/roles';
 import { SessionStore } from '../session/session.store';
 import { THEME_OPTIONS, ThemeService } from '../theme/theme.service';
-import { NAVIGATION, visibleItems } from './navigation';
+import { LogoComponent } from './logo.component';
+import { groupBySection, itemFor, NAVIGATION, visibleItems } from './navigation';
 
 const COMPACT_LAYOUT = '(max-width: 959.98px)';
 const DEMO_ROLES: readonly Role[] = ['analyst', 'reviewer', 'admin'];
@@ -25,6 +26,7 @@ const DEMO_LANDING = '/bandeja';
   selector: 'app-shell',
   imports: [
     DemoTour,
+    LogoComponent,
     RouterLink,
     RouterLinkActive,
     RouterOutlet,
@@ -53,7 +55,17 @@ export class ShellComponent {
   protected readonly canSwitch = computed(
     () => (this.store.session()?.organizations.length ?? 0) > 1,
   );
-  protected readonly items = computed(() => visibleItems(NAVIGATION, this.store.roles()));
+  protected readonly groups = computed(() =>
+    groupBySection(visibleItems(NAVIGATION, this.store.roles())),
+  );
+  private readonly url = toSignal(
+    this.router.events.pipe(
+      filter((event) => event instanceof NavigationEnd),
+      map((event) => event.urlAfterRedirects),
+    ),
+    { initialValue: this.router.url },
+  );
+  protected readonly current = computed(() => itemFor(this.url(), NAVIGATION));
   protected readonly compact = toSignal(
     inject(BreakpointObserver)
       .observe(COMPACT_LAYOUT)

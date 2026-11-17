@@ -63,7 +63,9 @@ describe('ShellComponent', () => {
   it('shows the organization, a skip link and the navigation for the roles', async () => {
     const element = await render(sessionIn(ANDINA));
 
-    expect(element.querySelector('.shell__organization')?.textContent).toBe('Comercial Andina');
+    expect(element.querySelector('.shell__organization-name')?.textContent).toBe(
+      'Comercial Andina',
+    );
     expect(element.querySelector('.shell__badge')).toBeNull();
     expect(element.querySelector('a.skip-link')?.getAttribute('href')).toBe('#contenido');
     expect(element.querySelector('main#contenido')).not.toBeNull();
@@ -75,6 +77,19 @@ describe('ShellComponent', () => {
       'Cobros',
       'Auditoría',
     ]);
+    expect(
+      [...element.querySelectorAll('.shell__section')].map((label) => label.textContent?.trim()),
+    ).toEqual(['Conciliación', 'Control']);
+  });
+
+  it('names the current page and its section in the toolbar', async () => {
+    const element = await render(sessionIn(ANDINA));
+    await TestBed.inject(Router).navigateByUrl('/');
+    await fixture.whenStable();
+
+    expect(
+      [...element.querySelectorAll('.shell__trail span')].map((part) => part.textContent?.trim()),
+    ).toEqual(['Conciliación', '/', 'Inicio']);
   });
 
   it('lets a demo visitor switch role and offers it nowhere else', async () => {

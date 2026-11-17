@@ -334,7 +334,7 @@ Diez sprints de una semana (de lunes a domingo, salvo S2), planificados a unos 1
 | S7 | 18 – 24 ene | Manual y en lote, cierre de mes y auditoría | CN-15, 16, 19 | 9 |
 | S8 | 25 – 31 ene | Panel, Excel y motor de IA | CN-17, 18, 20 | 10 |
 | S9 | 1 – 7 feb | IA en la interfaz, recorrido guiado y cierre de portafolio | CN-21, 23, 24 | 9 |
-| Final | después de S9 | Publicación: servidor con dominio, HTTPS y despliegue automático | CN-04 | 2 |
+| Final | después de S9 | Publicación: servidor con dominio, HTTPS y despliegue automático; rediseño visual | CN-04, 25 | 5 |
 
 **Puertas de decisión**
 

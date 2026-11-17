@@ -6,22 +6,34 @@
     [opened]="!compact() || menuOpen()"
     (openedChange)="menuOpen.set($event)"
   >
+    <div class="shell__brand"><app-logo />Concilia</div>
+    @if (organization(); as organization) {
+      <div class="shell__organization">
+        <span class="shell__organization-name">{{ organization.name }}</span>
+        @if (organization.is_demo) {
+          <span class="shell__badge">Demo</span>
+        }
+      </div>
+    }
     <nav aria-label="Principal">
-      <mat-nav-list>
-        @for (item of items(); track item.path) {
-          <a
-            mat-list-item
-            [routerLink]="item.path"
-            routerLinkActive
-            #link="routerLinkActive"
-            [routerLinkActiveOptions]="{ exact: item.path === '/' }"
-            [activated]="link.isActive"
-            [attr.aria-current]="link.isActive ? 'page' : null"
-            (click)="menuOpen.set(false)"
-          >
-            <mat-icon matListItemIcon [svgIcon]="item.icon" />
-            <span matListItemTitle>{{ item.label }}</span>
-          </a>
+      <mat-nav-list class="shell__list">
+        @for (group of groups(); track group.section) {
+          <div mat-subheader class="shell__section">{{ group.section }}</div>
+          @for (item of group.items; track item.path) {
+            <a
+              mat-list-item
+              [routerLink]="item.path"
+              routerLinkActive
+              #link="routerLinkActive"
+              [routerLinkActiveOptions]="{ exact: item.path === '/' }"
+              [activated]="link.isActive"
+              [attr.aria-current]="link.isActive ? 'page' : null"
+              (click)="menuOpen.set(false)"
+            >
+              <mat-icon matListItemIcon [svgIcon]="item.icon" />
+              <span matListItemTitle>{{ item.label }}</span>
+            </a>
+          }
         }
       </mat-nav-list>
     </nav>
@@ -38,37 +50,39 @@
           >
             <mat-icon svgIcon="menu" />
           </button>
-        }
-        <span class="shell__brand">Concilia</span>
-        @if (organization(); as organization) {
-          <span class="shell__organization">{{ organization.name }}</span>
-          @if (organization.is_demo) {
-            <span class="shell__badge">Demo</span>
-            <button
-              mat-button
-              type="button"
-              class="shell__role"
-              [matMenuTriggerFor]="roleMenu"
-              [disabled]="switching()"
-            >
-              Ver como: {{ currentRole() }}
-            </button>
-            <mat-menu #roleMenu="matMenu">
-              @for (role of demoRoles; track role) {
-                <button
-                  mat-menu-item
-                  type="button"
-                  role="menuitemradio"
-                  [attr.aria-checked]="roles().has(role)"
-                  (click)="switchRole(role)"
-                >
-                  {{ roleLabel(role) }}
-                </button>
-              }
-            </mat-menu>
-          }
+          <span class="shell__brand shell__brand--toolbar"><app-logo />Concilia</span>
+        } @else if (current(); as item) {
+          <p class="shell__trail">
+            <span>{{ item.section }}</span>
+            <span aria-hidden="true">/</span>
+            <span class="shell__trail-current">{{ item.label }}</span>
+          </p>
         }
         <span class="shell__spacer"></span>
+        @if (organization()?.is_demo) {
+          <button
+            mat-stroked-button
+            type="button"
+            class="shell__role"
+            [matMenuTriggerFor]="roleMenu"
+            [disabled]="switching()"
+          >
+            Ver como: {{ currentRole() }}
+          </button>
+          <mat-menu #roleMenu="matMenu">
+            @for (role of demoRoles; track role) {
+              <button
+                mat-menu-item
+                type="button"
+                role="menuitemradio"
+                [attr.aria-checked]="roles().has(role)"
+                (click)="switchRole(role)"
+              >
+                {{ roleLabel(role) }}
+              </button>
+            }
+          </mat-menu>
+        }
         <button
           mat-icon-button
           type="button"
