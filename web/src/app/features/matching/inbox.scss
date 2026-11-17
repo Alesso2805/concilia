@@ -1,8 +1,20 @@
+.inbox__top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
 .inbox__head {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-bottom: 20px;
+}
+
+.inbox__controls {
+  margin-bottom: 0;
 }
 
 .inbox__title {
@@ -112,7 +124,7 @@
 }
 
 .inbox__field--small {
-  width: 160px;
+  width: 170px;
 }
 
 .inbox__muted {

@@ -1,14 +1,71 @@
-<div class="inbox__head">
-  <h1 class="inbox__title">Bandeja de conciliación</h1>
-  @if (month() && accountLabel(); as account) {
-    <p class="inbox__context">
-      <span>{{ account }}</span>
-      <span aria-hidden="true">·</span>
-      <span>{{ monthLabel(month()!.period) }}</span>
-      <span class="inbox__state" [class.inbox__state--closed]="closed()">
-        {{ closed() ? 'Mes cerrado' : 'Mes abierto' }}
-      </span>
-    </p>
+<div class="inbox__top">
+  <div class="inbox__head">
+    <h1 class="inbox__title">Bandeja de conciliación</h1>
+    @if (month() && accountLabel(); as account) {
+      <p class="inbox__context">
+        <span>{{ account }}</span>
+        <span aria-hidden="true">·</span>
+        <span>{{ monthLabel(month()!.period) }}</span>
+        <span class="inbox__state" [class.inbox__state--closed]="closed()">
+          {{ closed() ? 'Mes cerrado' : 'Mes abierto' }}
+        </span>
+      </p>
+    }
+  </div>
+  @if (accounts(); as list) {
+    @if (list.length > 0) {
+      <div class="inbox__bar inbox__controls app-dense-fields">
+        <mat-form-field class="inbox__field" appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Cuenta</mat-label>
+          <mat-select [value]="accountId()" (selectionChange)="selectAccount($event.value)">
+            @for (account of list; track account.id) {
+              <mat-option [value]="account.id">
+                {{ account.bank }} · {{ account.alias }} ({{ account.number_last4 }})
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        @if (periods().length > 0) {
+          <mat-form-field class="inbox__field" appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Mes</mat-label>
+            <mat-select [value]="month()?.period" (selectionChange)="selectPeriod($event.value)">
+              @for (period of periods(); track period.period) {
+                <mat-option [value]="period.period">{{ periodLabel(period) }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
+        @if (month()) {
+          <button mat-flat-button type="button" [disabled]="!canRun()" (click)="runEngine()">
+            Correr el motor
+          </button>
+          @if (canRun()) {
+            <a
+              mat-stroked-button
+              routerLink="/bandeja/manual"
+              [queryParams]="{ cuenta: month()?.accountId, mes: month()?.period }"
+            >
+              Conciliar a mano
+            </a>
+          }
+          @if (canClose()) {
+            <button mat-stroked-button type="button" [disabled]="closing()" (click)="closePeriod()">
+              Cerrar mes
+            </button>
+          }
+          @if (canReopen()) {
+            <button
+              mat-stroked-button
+              type="button"
+              [disabled]="closing()"
+              (click)="reopenPeriod()"
+            >
+              Reabrir mes
+            </button>
+          }
+        }
+      </div>
+    }
   }
 </div>
 
@@ -18,53 +75,6 @@
       Todavía no hay cuentas bancarias. Pide a quien administra tu organización que registre una.
     </p>
   } @else {
-    <div class="inbox__bar app-dense-fields">
-      <mat-form-field class="inbox__field" appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Cuenta</mat-label>
-        <mat-select [value]="accountId()" (selectionChange)="selectAccount($event.value)">
-          @for (account of accounts; track account.id) {
-            <mat-option [value]="account.id">
-              {{ account.bank }} · {{ account.alias }} ({{ account.number_last4 }})
-            </mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-      @if (periods().length > 0) {
-        <mat-form-field class="inbox__field" appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Mes</mat-label>
-          <mat-select [value]="month()?.period" (selectionChange)="selectPeriod($event.value)">
-            @for (period of periods(); track period.period) {
-              <mat-option [value]="period.period">{{ periodLabel(period) }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-      }
-      @if (month()) {
-        <button mat-flat-button type="button" [disabled]="!canRun()" (click)="runEngine()">
-          Correr el motor
-        </button>
-        @if (canRun()) {
-          <a
-            mat-stroked-button
-            routerLink="/bandeja/manual"
-            [queryParams]="{ cuenta: month()?.accountId, mes: month()?.period }"
-          >
-            Conciliar a mano
-          </a>
-        }
-        @if (canClose()) {
-          <button mat-stroked-button type="button" [disabled]="closing()" (click)="closePeriod()">
-            Cerrar mes
-          </button>
-        }
-        @if (canReopen()) {
-          <button mat-stroked-button type="button" [disabled]="closing()" (click)="reopenPeriod()">
-            Reabrir mes
-          </button>
-        }
-      }
-    </div>
-
     @if (closed()) {
       <p class="inbox__notice" role="status">Este mes está cerrado: solo se puede consultar.</p>
     }
@@ -210,7 +220,11 @@
                       />
                     </div>
                   } @else {
-                    <p class="inbox__muted">No hay abonos libres en este mes.</p>
+                    <div class="app-empty">
+                      <mat-icon [svgIcon]="filtered() ? 'search_off' : 'inbox'" />
+                      <p class="app-empty__title">{{ empty('free').title }}</p>
+                      <p class="inbox__muted">{{ empty('free').hint }}</p>
+                    </div>
                   }
                 } @else if (!error()) {
                   <mat-progress-bar mode="indeterminate" aria-label="Cargando los abonos" />
@@ -307,7 +321,11 @@
                       />
                     </div>
                   } @else {
-                    <p class="inbox__muted">No hay coincidencias en esta pestaña.</p>
+                    <div class="app-empty">
+                      <mat-icon [svgIcon]="filtered() ? 'search_off' : 'inbox'" />
+                      <p class="app-empty__title">{{ empty(item.tab).title }}</p>
+                      <p class="inbox__muted">{{ empty(item.tab).hint }}</p>
+                    </div>
                   }
                 } @else if (!error()) {
                   <mat-progress-bar mode="indeterminate" aria-label="Cargando las coincidencias" />

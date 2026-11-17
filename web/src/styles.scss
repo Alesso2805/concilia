@@ -44,6 +44,13 @@ html {
   @include mat.form-field-overrides(
     (
       outlined-container-shape: var(--app-radius),
+      container-text-size: 14px,
+      outlined-label-text-size: 14px,
+    )
+  );
+  @include mat.select-overrides(
+    (
+      trigger-text-size: 14px,
     )
   );
   @include mat.card-overrides(
@@ -110,6 +117,35 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.app-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  margin-top: 16px;
+  padding: 40px 16px;
+  border: 1px dashed var(--mat-sys-outline-variant);
+  border-radius: 10px;
+  background: var(--app-panel);
+  color: var(--mat-sys-on-surface-variant);
+  text-align: center;
+
+  p {
+    margin: 0;
+  }
+
+  .mat-icon {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 8px;
+  }
+}
+
+.app-empty__title {
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-title-medium);
+}
+
 .app-wide-dialog {
   @include mat.dialog-overrides(
     (
@@ -121,8 +157,8 @@ body {
 .app-dense-fields {
   @include mat.form-field-overrides(
     (
-      container-height: 44px,
-      container-vertical-padding: 10px,
+      container-height: 40px,
+      container-vertical-padding: 8px,
     )
   );
 }
