@@ -3,9 +3,14 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 12px;
-  padding: 8px 16px;
-  background: var(--mat-sys-tertiary-container);
-  color: var(--mat-sys-on-tertiary-container);
+  padding: 8px 32px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  background: var(--app-panel);
+  color: var(--mat-sys-on-surface-variant);
+
+  strong {
+    color: var(--mat-sys-tertiary);
+  }
 }
 
 .tour__toggle {

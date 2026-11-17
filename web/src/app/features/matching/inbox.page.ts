@@ -14,6 +14,7 @@ import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorIntl, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -40,7 +41,15 @@ import { AiService } from '../ai/ai.service';
 import { SuggestionDialog, SuggestionDialogData } from '../ai/suggestion.dialog';
 import { PeriodsService } from '../periods/periods.service';
 import { ReopenPeriodDialog } from '../periods/reopen-period.dialog';
-import { dayLabel, monthLabel, RULE_LABELS, RULE_NAMES, TABS } from './labels';
+import {
+  dayLabel,
+  EMPTY_TABS,
+  FILTERED_HINT,
+  monthLabel,
+  RULE_LABELS,
+  RULE_NAMES,
+  TABS,
+} from './labels';
 import { MatchDetailDialog } from './match-detail.dialog';
 import { ScoreMeter } from './score-meter.component';
 import {
@@ -78,6 +87,7 @@ type Loaded = { tab: 'free'; view: CreditPageView } | { tab: MatchTab; view: Mat
     ReactiveFormsModule,
     MatButtonModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
     MatPaginatorModule,
     MatProgressBarModule,
@@ -169,6 +179,15 @@ export class InboxPage implements OnInit {
     }
     return null;
   });
+  protected readonly filtered = computed(() => {
+    const filters = this.filters();
+    return (
+      filters.rule !== null ||
+      filters.minScore !== null ||
+      filters.minAmountCents !== null ||
+      filters.maxAmountCents !== null
+    );
+  });
   protected readonly accountLabel = computed(() => {
     const account = this.accounts()?.find((item) => item.id === this.accountId());
     return account ? `${account.bank} · ${account.alias} ···${account.number_last4}` : null;
@@ -218,6 +237,11 @@ export class InboxPage implements OnInit {
     } catch (error) {
       this.error.set(matchingErrorMessage(error));
     }
+  }
+
+  protected empty(tab: InboxTab): { title: string; hint: string } {
+    const state = EMPTY_TABS[tab];
+    return this.filtered() ? { title: state.title, hint: FILTERED_HINT } : state;
   }
 
   protected periodLabel(period: PeriodView): string {

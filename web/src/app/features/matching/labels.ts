@@ -7,6 +7,27 @@ export const TABS: readonly { tab: InboxTab; label: string }[] = [
   { tab: 'approved', label: 'Aprobadas' },
 ];
 
+export const EMPTY_TABS: Record<InboxTab, { title: string; hint: string }> = {
+  free: {
+    title: 'No hay abonos libres',
+    hint: 'Todos los abonos de este mes están en alguna coincidencia.',
+  },
+  proposed: {
+    title: 'No hay propuestas',
+    hint: 'Usa «Correr el motor» para que busque coincidencias en este mes, o concilia a mano.',
+  },
+  confirmed: {
+    title: 'No hay coincidencias confirmadas',
+    hint: 'Aparecen aquí cuando alguien confirma una propuesta.',
+  },
+  approved: {
+    title: 'No hay coincidencias aprobadas',
+    hint: 'Aparecen aquí cuando otra persona aprueba una coincidencia confirmada.',
+  },
+};
+
+export const FILTERED_HINT = 'Ninguna cumple los filtros. Prueba quitándolos.';
+
 export const RULE_LABELS: Record<Rule, string> = {
   R1: 'R1 · Exacta',
   R2: 'R2 · Varios documentos',
