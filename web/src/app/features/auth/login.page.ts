@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { Router } from '@angular/router';
 
+import { LogoComponent } from '../../core/layout/logo.component';
 import { INVITATION_PATH, ORGANIZATION_PICKER_PATH, safeReturnUrl } from '../../core/session/paths';
 import { SessionStore } from '../../core/session/session.store';
 import { DEMO_LANDING } from '../demo/demo-start.page';
@@ -15,13 +16,14 @@ import { demoErrorMessage, loginErrorMessage } from './login-errors';
   selector: 'app-login-page',
   imports: [
     ReactiveFormsModule,
+    LogoComponent,
     MatButtonModule,
-    MatCardModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
   ],
   templateUrl: './login.page.html',
-  styleUrl: './auth-card.scss',
+  styleUrls: ['./auth-card.scss', './login.page.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginPage {

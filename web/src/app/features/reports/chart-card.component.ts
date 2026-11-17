@@ -1,10 +1,10 @@
-import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 
 import { formatPen } from '../../core/format/amounts';
-import { barOptions, ChartRow, describeRows } from './charts';
+import { ThemeService } from '../../core/theme/theme.service';
+import { barOptions, CHART_COLORS, ChartRow, describeRows } from './charts';
 import { echarts } from './echarts';
 
 @Component({
@@ -69,7 +69,7 @@ import { echarts } from './echarts';
 })
 export class ChartCard {
   private static next = 0;
-  private readonly document = inject(DOCUMENT);
+  private readonly theme = inject(ThemeService);
 
   readonly heading = input.required<string>();
   readonly category = input.required<string>();
@@ -81,11 +81,6 @@ export class ChartCard {
   protected readonly pen = formatPen;
   protected readonly summary = computed(() => `${this.heading()}. ${describeRows(this.rows())}.`);
   protected readonly options = computed(() =>
-    barOptions(this.rows(), this.heading(), this.textColor()),
+    barOptions(this.rows(), this.heading(), CHART_COLORS[this.theme.scheme()]),
   );
-
-  private textColor(): string {
-    const style = this.document.defaultView?.getComputedStyle(this.document.documentElement);
-    return style?.getPropertyValue('--mat-sys-on-surface').trim() || '#1b1b1f';
-  }
 }

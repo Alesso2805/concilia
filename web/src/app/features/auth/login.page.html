@@ -1,56 +1,107 @@
-<main class="auth">
-  <mat-card appearance="outlined" class="auth__card">
-    <mat-card-header>
-      <mat-card-title><h1 class="auth__title">Concilia</h1></mat-card-title>
-      <mat-card-subtitle>Inicia sesión para continuar</mat-card-subtitle>
-    </mat-card-header>
-    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <mat-card-content class="auth__content">
-        <mat-form-field appearance="outline">
-          <mat-label>Correo</mat-label>
-          <input matInput type="email" formControlName="email" autocomplete="username" required />
-          @if (form.controls.email.hasError('required')) {
-            <mat-error>Ingresa tu correo.</mat-error>
-          } @else if (form.controls.email.hasError('email')) {
-            <mat-error>Revisa el formato del correo.</mat-error>
-          }
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Contraseña</mat-label>
-          <input
-            matInput
-            type="password"
-            formControlName="password"
-            autocomplete="current-password"
-            required
-          />
-          @if (form.controls.password.hasError('required')) {
-            <mat-error>Ingresa tu contraseña.</mat-error>
-          }
-        </mat-form-field>
-        @if (error(); as message) {
-          <p class="auth__error" role="alert">{{ message }}</p>
+<main class="entry">
+  <section class="entry__story">
+    <h1 class="entry__brand"><app-logo />Concilia</h1>
+    <p class="entry__tagline">Cada abono, con su cobro.</p>
+    <p class="entry__lead">
+      Concilia cruza el extracto del banco con tus cobros, propone coincidencias con su explicación
+      y deja que otra persona las apruebe. Todo queda en un historial que no se edita.
+    </p>
+    <figure class="entry__ledger">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Extracto</th>
+            <th scope="col" class="entry__number">Monto</th>
+            <th scope="col">Cobros</th>
+            <th scope="col">Propuesta</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>PAGO FACT F001-123</td>
+            <td class="entry__number app-amount">1,180.00</td>
+            <td class="app-amount">F001-123</td>
+            <td><span class="entry__tag">R1 · 100</span></td>
+          </tr>
+          <tr>
+            <td>TRANSF CLIENTE ABC</td>
+            <td class="entry__number app-amount">4,250.00</td>
+            <td class="app-amount">F001-98 · F001-99</td>
+            <td><span class="entry__tag">R2 · 95</span></td>
+          </tr>
+          <tr>
+            <td>ABONO F002-310</td>
+            <td class="entry__number app-amount">10,620.00</td>
+            <td class="app-amount">F002-310</td>
+            <td><span class="entry__tag entry__tag--difference">Detracción</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <figcaption class="entry__caption">Ejemplo con datos ficticios.</figcaption>
+    </figure>
+    <ul class="entry__points">
+      <li><mat-icon svgIcon="check" />Aprobación por una segunda persona</li>
+      <li><mat-icon svgIcon="check" />Historial que no se edita</li>
+      <li><mat-icon svgIcon="check" />La IA sugiere, tú decides</li>
+    </ul>
+  </section>
+
+  <section class="entry__panel">
+    <form class="entry__form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <h2 class="entry__heading">Inicia sesión</h2>
+      <mat-form-field appearance="outline">
+        <mat-label>Correo</mat-label>
+        <input matInput type="email" formControlName="email" autocomplete="username" required />
+        @if (form.controls.email.hasError('required')) {
+          <mat-error>Ingresa tu correo.</mat-error>
+        } @else if (form.controls.email.hasError('email')) {
+          <mat-error>Revisa el formato del correo.</mat-error>
         }
-      </mat-card-content>
-      <mat-card-actions class="auth__actions">
-        <button mat-flat-button type="submit" [disabled]="submitting()">Ingresar</button>
-      </mat-card-actions>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Contraseña</mat-label>
+        <input
+          matInput
+          type="password"
+          formControlName="password"
+          autocomplete="current-password"
+          required
+        />
+        @if (form.controls.password.hasError('required')) {
+          <mat-error>Ingresa tu contraseña.</mat-error>
+        }
+      </mat-form-field>
+      @if (error(); as message) {
+        <p class="auth__error" role="alert">{{ message }}</p>
+      }
+      <button mat-flat-button class="entry__submit" type="submit" [disabled]="submitting()">
+        Ingresar
+      </button>
     </form>
-    <mat-card-content class="auth__demo">
-      <h2 class="auth__demo-title">¿Solo quieres mirar?</h2>
-      <p>
+
+    <p class="entry__divider">o</p>
+
+    <div class="entry__demo">
+      <h2 class="entry__subheading">¿Solo quieres mirar?</h2>
+      <p class="entry__text">
         Entra a una demo propia con datos ficticios de una empresa: extractos, cobros y
         coincidencias para revisar como analista o como revisora. Se borra sola a las 4 horas.
       </p>
       @if (demoError(); as message) {
         <p class="auth__error" role="alert">{{ message }}</p>
       }
-      <button mat-stroked-button type="button" [disabled]="startingDemo()" (click)="startDemo()">
+      <button
+        mat-stroked-button
+        class="entry__submit"
+        type="button"
+        [disabled]="startingDemo()"
+        (click)="startDemo()"
+      >
         Probar la demo
       </button>
       @if (startingDemo()) {
         <p class="auth__hint" aria-live="polite">Preparando tu demo…</p>
       }
-    </mat-card-content>
-  </mat-card>
+    </div>
+  </section>
 </main>

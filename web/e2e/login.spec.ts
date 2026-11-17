@@ -8,6 +8,14 @@ test('a visitor lands on an accessible login that remembers the way back', async
   await expectAccessible(page);
 });
 
+test('the login stays accessible in the dark scheme', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.goto('/iniciar-sesion');
+
+  await expect(page.getByRole('heading', { name: 'Concilia' })).toBeVisible();
+  await expectAccessible(page);
+});
+
 test('wrong credentials are explained', async ({ page }) => {
   await page.goto('/iniciar-sesion');
   await page.getByLabel('Correo').fill(credentials.email);

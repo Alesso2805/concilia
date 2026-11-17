@@ -44,4 +44,33 @@ describe('ThemeService', () => {
     expect(root.dataset['theme']).toBeUndefined();
     expect(localStorage.getItem('concilia.theme')).toBeNull();
   });
+
+  describe('scheme', () => {
+    let listeners: ((event: { matches: boolean }) => void)[];
+
+    beforeEach(() => {
+      listeners = [];
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn(() => ({
+          matches: true,
+          addEventListener: (_: string, listener: (event: { matches: boolean }) => void) =>
+            listeners.push(listener),
+          removeEventListener: vi.fn(),
+        })),
+      );
+    });
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('is the chosen scheme, or the system one while following it', () => {
+      const theme = create();
+
+      expect(theme.scheme()).toBe('dark');
+      listeners.forEach((listener) => listener({ matches: false }));
+      expect(theme.scheme()).toBe('light');
+      theme.mode.set('dark');
+      expect(theme.scheme()).toBe('dark');
+    });
+  });
 });

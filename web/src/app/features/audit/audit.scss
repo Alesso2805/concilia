@@ -42,3 +42,7 @@
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
+
+.audit__nowrap:not(th) {
+  font-family: var(--app-font-mono);
+}

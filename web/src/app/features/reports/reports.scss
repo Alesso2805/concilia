@@ -106,3 +106,7 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+.chart__number:not(th) {
+  font-family: var(--app-font-mono);
+}
