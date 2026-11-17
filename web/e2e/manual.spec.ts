@@ -72,7 +72,7 @@ test('an analyst reconciles a partial payment by hand', async ({ page }) => {
   );
 
   await page.goto(`/bandeja?cuenta=${account.id}&mes=2027-01-01`);
-  await expect(page.getByRole('tab', { name: 'Libres (1)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Libres 1' })).toBeVisible();
   await page.getByRole('link', { name: 'Conciliar a mano' }).click();
   await expect(page.getByRole('heading', { name: /Conciliar a mano/, level: 1 })).toBeVisible();
   await page.getByRole('checkbox', { name: `Elegir el abono PAGO A CUENTA ${document}` }).check();
@@ -84,6 +84,6 @@ test('an analyst reconciles a partial payment by hand', async ({ page }) => {
   await expectAccessible(page);
   await page.getByRole('button', { name: 'Confirmar conciliación' }).click();
 
-  await expect(page.getByRole('tab', { name: 'Confirmadas (1)' })).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Libres (0)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Confirmadas 1' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Libres 0' })).toBeVisible();
 });

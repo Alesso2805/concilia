@@ -16,6 +16,15 @@ export const RULE_LABELS: Record<Rule, string> = {
   R6: 'R6 · Monto y fecha',
 };
 
+export const RULE_NAMES: Record<Rule, string> = {
+  R1: 'R1 · Exacta',
+  R2: 'R2 · Varios documentos',
+  R3: 'R3 · Con diferencia',
+  R4: 'R4 · Mismo cliente',
+  R5: 'R5 · Pago en partes',
+  R6: 'R6 · Monto y fecha',
+};
+
 export const SOURCE_LABELS: Record<string, string> = {
   engine: 'Motor',
   ai: 'Asistente de IA',
