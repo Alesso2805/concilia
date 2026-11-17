@@ -52,7 +52,7 @@
 
 @if (page(); as page) {
   @if (page.events.length > 0) {
-    <div class="audit__table" tabindex="0" role="region" aria-label="Eventos de auditoría">
+    <div class="app-table" tabindex="0" role="region" aria-label="Eventos de auditoría">
       <table mat-table [dataSource]="page.events">
         <ng-container matColumnDef="at">
           <th mat-header-cell *matHeaderCellDef scope="col">Fecha (Lima)</th>

@@ -23,7 +23,7 @@
     Mostrar archivados
   </mat-slide-toggle>
   @if (visible().length > 0) {
-    <div class="admin__table">
+    <div class="admin__table app-table">
       <table mat-table [dataSource]="visible()">
         <ng-container matColumnDef="name">
           <th mat-header-cell *matHeaderCellDef scope="col">Nombre</th>

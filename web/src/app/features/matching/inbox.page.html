@@ -96,55 +96,65 @@
     @if (periods().length === 0) {
       <p class="inbox__muted">Esta cuenta todavía no tiene abonos importados.</p>
     } @else if (month()) {
-      <form
-        class="inbox__bar inbox__filters app-dense-fields"
-        [formGroup]="filterForm"
-        (ngSubmit)="applyFilters()"
-      >
-        @if (tab() !== 'free') {
-          <mat-form-field class="inbox__field" appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Regla</mat-label>
-            <mat-select formControlName="rule">
-              <mat-option [value]="null">Todas</mat-option>
-              @for (rule of rules; track rule) {
-                <mat-option [value]="rule">{{ ruleLabels[rule] }}</mat-option>
-              }
-            </mat-select>
+      <ng-template #toolbar>
+        <form
+          class="inbox__bar inbox__filters app-dense-fields"
+          [formGroup]="filterForm"
+          (ngSubmit)="applyFilters()"
+        >
+          @if (tab() !== 'free') {
+            <mat-form-field class="inbox__field" appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Regla</mat-label>
+              <mat-select formControlName="rule">
+                <mat-option [value]="null">Todas</mat-option>
+                @for (rule of rules; track rule) {
+                  <mat-option [value]="rule">{{ ruleLabels[rule] }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field
+              class="inbox__field--small"
+              appearance="outline"
+              subscriptSizing="dynamic"
+            >
+              <mat-label>Puntaje mínimo</mat-label>
+              <input matInput formControlName="minScore" inputmode="numeric" />
+            </mat-form-field>
+          }
+          <mat-form-field
+            class="inbox__field--small"
+            appearance="outline"
+            subscriptSizing="dynamic"
+          >
+            <mat-label>Monto desde (S/)</mat-label>
+            <input matInput formControlName="minAmount" inputmode="decimal" />
           </mat-form-field>
           <mat-form-field
             class="inbox__field--small"
             appearance="outline"
             subscriptSizing="dynamic"
           >
-            <mat-label>Puntaje mínimo</mat-label>
-            <input matInput formControlName="minScore" inputmode="numeric" />
+            <mat-label>Monto hasta (S/)</mat-label>
+            <input matInput formControlName="maxAmount" inputmode="decimal" />
           </mat-form-field>
-        }
-        <mat-form-field class="inbox__field--small" appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Monto desde (S/)</mat-label>
-          <input matInput formControlName="minAmount" inputmode="decimal" />
-        </mat-form-field>
-        <mat-form-field class="inbox__field--small" appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Monto hasta (S/)</mat-label>
-          <input matInput formControlName="maxAmount" inputmode="decimal" />
-        </mat-form-field>
-        <button mat-stroked-button type="submit">Filtrar</button>
-        <button mat-button type="button" (click)="clearFilters()">Quitar filtros</button>
-      </form>
+          <button mat-stroked-button type="submit">Filtrar</button>
+          <button mat-button type="button" (click)="clearFilters()">Quitar filtros</button>
+        </form>
 
-      @if (batch(); as batch) {
-        <div class="inbox__batch">
-          <span>{{ batch.hint }}</span>
-          <button
-            mat-stroked-button
-            type="button"
-            [disabled]="batching()"
-            (click)="decideBatch(batch.action)"
-          >
-            {{ batch.label }}
-          </button>
-        </div>
-      }
+        @if (batch(); as batch) {
+          <div class="inbox__batch">
+            <span>{{ batch.hint }}</span>
+            <button
+              mat-stroked-button
+              type="button"
+              [disabled]="batching()"
+              (click)="decideBatch(batch.action)"
+            >
+              {{ batch.label }}
+            </button>
+          </div>
+        }
+      </ng-template>
 
       <mat-tab-group
         class="inbox__tabs"
@@ -161,10 +171,11 @@
               }
             </ng-template>
             <ng-template matTabContent>
+              <ng-container [ngTemplateOutlet]="toolbar" />
               @if (item.tab === 'free') {
                 @if (creditPage(); as page) {
                   @if (page.credits.length > 0) {
-                    <div class="inbox__table">
+                    <div class="inbox__table app-table">
                       <table mat-table [dataSource]="page.credits">
                         <ng-container matColumnDef="date">
                           <th mat-header-cell *matHeaderCellDef scope="col">Fecha</th>
@@ -232,7 +243,7 @@
               } @else {
                 @if (matchPage(item.tab); as page) {
                   @if (page.matches.length > 0) {
-                    <div class="inbox__table">
+                    <div class="inbox__table app-table">
                       <table mat-table [dataSource]="page.matches">
                         <ng-container matColumnDef="date">
                           <th mat-header-cell *matHeaderCellDef scope="col">Fecha</th>
@@ -249,9 +260,10 @@
                         <ng-container matColumnDef="documents">
                           <th mat-header-cell *matHeaderCellDef scope="col">Cobros</th>
                           <td mat-cell *matCellDef="let match">
-                            <span class="inbox__stack">
-                              <span class="app-amount">{{ match.documents.join(' · ') }}</span>
-                              <span class="inbox__muted">{{ match.customers.join(', ') }}</span>
+                            <span class="inbox__docs">
+                              @for (document of match.documents; track $index) {
+                                <span class="inbox__doc">{{ document }}</span>
+                              }
                             </span>
                           </td>
                         </ng-container>
@@ -290,7 +302,12 @@
                             [class.inbox__difference]="match.difference_cents !== 0"
                             [class.inbox__zero]="match.difference_cents === 0"
                           >
-                            {{ pen(match.difference_cents) }}
+                            @if (match.difference_cents === 0) {
+                              <span aria-hidden="true">—</span>
+                              <span class="cdk-visually-hidden">Sin diferencia</span>
+                            } @else {
+                              {{ pen(match.difference_cents) }}
+                            }
                           </td>
                         </ng-container>
                         <ng-container matColumnDef="actions">

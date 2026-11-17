@@ -19,7 +19,7 @@
     Mostrar archivadas
   </mat-slide-toggle>
   @if (visible().length > 0) {
-    <div class="admin__table">
+    <div class="admin__table app-table">
       <table mat-table [dataSource]="visible()">
         <ng-container matColumnDef="bank">
           <th mat-header-cell *matHeaderCellDef scope="col">Banco</th>
