@@ -112,9 +112,28 @@ body {
   font: var(--mat-sys-body-medium);
 }
 
+a {
+  color: var(--mat-sys-primary);
+}
+
 .app-amount {
   font-family: var(--app-font-mono);
   font-variant-numeric: tabular-nums;
+}
+
+.mat-mdc-cell.app-amount {
+  font-size: 13px;
+}
+
+.app-table {
+  overflow-x: auto;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 10px;
+  background: var(--app-panel);
+}
+
+.mat-mdc-tab-body-content > .app-table:first-child {
+  margin-top: 16px;
 }
 
 .app-empty {

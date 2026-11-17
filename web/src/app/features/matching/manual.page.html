@@ -15,7 +15,12 @@
     <h2 id="abonos">Abonos libres</h2>
     @if (credits(); as page) {
       @if (page.credits.length > 0) {
-        <div class="inbox__table" tabindex="0" role="region" aria-label="Tabla de abonos libres">
+        <div
+          class="inbox__table app-table"
+          tabindex="0"
+          role="region"
+          aria-label="Tabla de abonos libres"
+        >
           <table mat-table [dataSource]="page.credits">
             <ng-container matColumnDef="pick">
               <th mat-header-cell *matHeaderCellDef scope="col">
@@ -76,7 +81,12 @@
     </form>
     @if (found(); as receivables) {
       @if (receivables.length > 0) {
-        <div class="inbox__table" tabindex="0" role="region" aria-label="Tabla de cobros con saldo">
+        <div
+          class="inbox__table app-table"
+          tabindex="0"
+          role="region"
+          aria-label="Tabla de cobros con saldo"
+        >
           <table mat-table [dataSource]="receivables">
             <ng-container matColumnDef="document">
               <th mat-header-cell *matHeaderCellDef scope="col">Documento</th>

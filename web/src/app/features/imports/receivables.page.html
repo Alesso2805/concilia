@@ -21,11 +21,11 @@
       <ng-template matTabContent>
         @if (pageFor(tab.cancelled); as page) {
           @if (page.receivables.length > 0) {
-            <div class="imports__table">
+            <div class="app-table">
               <table mat-table [dataSource]="page.receivables">
                 <ng-container matColumnDef="document">
                   <th mat-header-cell *matHeaderCellDef scope="col">Documento</th>
-                  <td mat-cell *matCellDef="let item">{{ item.doc_number }}</td>
+                  <td mat-cell *matCellDef="let item" class="app-amount">{{ item.doc_number }}</td>
                 </ng-container>
                 <ng-container matColumnDef="customer">
                   <th mat-header-cell *matHeaderCellDef scope="col">Cliente</th>
@@ -33,15 +33,21 @@
                 </ng-container>
                 <ng-container matColumnDef="taxId">
                   <th mat-header-cell *matHeaderCellDef scope="col">RUC o DNI</th>
-                  <td mat-cell *matCellDef="let item">{{ item.customer_tax_id ?? '—' }}</td>
+                  <td mat-cell *matCellDef="let item" class="app-amount">
+                    {{ item.customer_tax_id ?? '—' }}
+                  </td>
                 </ng-container>
                 <ng-container matColumnDef="issued">
                   <th mat-header-cell *matHeaderCellDef scope="col">Emisión</th>
-                  <td mat-cell *matCellDef="let item">{{ item.issued_on | date: 'dd/MM/yyyy' }}</td>
+                  <td mat-cell *matCellDef="let item" class="app-amount">
+                    {{ item.issued_on | date: 'dd/MM/yyyy' }}
+                  </td>
                 </ng-container>
                 <ng-container matColumnDef="due">
                   <th mat-header-cell *matHeaderCellDef scope="col">Vencimiento</th>
-                  <td mat-cell *matCellDef="let item">{{ item.due_on | date: 'dd/MM/yyyy' }}</td>
+                  <td mat-cell *matCellDef="let item" class="app-amount">
+                    {{ item.due_on | date: 'dd/MM/yyyy' }}
+                  </td>
                 </ng-container>
                 <ng-container matColumnDef="amount">
                   <th mat-header-cell *matHeaderCellDef scope="col" class="imports__amount">

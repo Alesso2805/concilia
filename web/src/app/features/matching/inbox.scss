@@ -65,6 +65,7 @@
 }
 
 .inbox__filters {
+  margin-top: 16px;
   padding: 12px 16px;
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 10px;
@@ -94,6 +95,7 @@
 
 .inbox__date {
   color: var(--mat-sys-on-surface-variant);
+  font-size: 13px;
   white-space: nowrap;
 }
 
@@ -101,9 +103,14 @@
   font-weight: 500;
 }
 
-.inbox__stack {
+.inbox__docs {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+}
+
+.inbox__docs .inbox__doc:not(:last-child)::after {
+  content: ' ·';
 }
 
 .inbox__rule {
@@ -141,14 +148,11 @@
 
 .inbox__table {
   margin-top: 16px;
-  overflow-x: auto;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 10px;
-  background: var(--app-panel);
 }
 
 .inbox__amount {
   font-family: var(--app-font-mono);
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
   text-align: end;
   white-space: nowrap;
@@ -156,6 +160,7 @@
 
 th.inbox__amount {
   font-family: inherit;
+  font-size: inherit;
 }
 
 .inbox__actions {

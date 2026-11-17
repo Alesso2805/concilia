@@ -57,7 +57,7 @@
           <ng-template matTabContent>
             @if (rowsFor(tab.status); as page) {
               @if (page.rows.length > 0) {
-                <div class="imports__table">
+                <div class="app-table">
                   <table mat-table [dataSource]="page.rows">
                     <ng-container matColumnDef="row">
                       <th mat-header-cell *matHeaderCellDef scope="col">Fila</th>

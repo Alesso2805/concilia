@@ -8,6 +8,7 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -84,6 +85,7 @@ type Loaded = { tab: 'free'; view: CreditPageView } | { tab: MatchTab; view: Mat
 @Component({
   selector: 'app-inbox-page',
   imports: [
+    NgTemplateOutlet,
     ReactiveFormsModule,
     MatButtonModule,
     MatFormFieldModule,
@@ -160,7 +162,7 @@ export class InboxPage implements OnInit {
   );
   protected readonly batch = computed(() => {
     const roles = this.session.roles();
-    if (this.closed() || this.running()) {
+    if (this.closed() || this.running() || this.counts()?.[this.tab()] === 0) {
       return null;
     }
     if (this.tab() === 'proposed' && roles.has('analyst')) {

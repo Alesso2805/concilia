@@ -1,10 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { signal } from '@angular/core';
+import { signal, WritableSignal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 
+import { CountsView } from '../../api/models/counts-view';
 import { MatchRowView } from '../../api/models/match-row-view';
 import { JobTracker } from '../../core/jobs/job-tracker';
 import { provideLocale } from '../../core/locale';
@@ -227,6 +228,27 @@ describe('InboxPage', () => {
 
     const reviewer = await render(['reviewer']);
     expect(button(reviewer, 'Confirmar todas las de puntaje 100')).toBeUndefined();
+  });
+
+  it('hides the batch bar when the tab has nothing to decide', async () => {
+    const element = await render(['analyst']);
+    const page = fixture.componentInstance as unknown as {
+      counts: WritableSignal<CountsView | null>;
+    };
+
+    page.counts.set({ free: 2, proposed: 0, confirmed: 0, approved: 0 });
+    await settle(fixture);
+
+    expect(button(element, 'Confirmar todas las de puntaje 100')).toBeUndefined();
+  });
+
+  it('lists the documents of each match and a dash when nothing differs', async () => {
+    const element = await render(['analyst']);
+    const row = element.querySelector('tr.mat-mdc-row')!;
+
+    expect(row.textContent).toContain('F001-123');
+    expect(row.textContent).toContain('Sin diferencia');
+    expect(row.textContent).not.toContain('S/ 0.00');
   });
 
   it('lets reviewers close an open month', async () => {
