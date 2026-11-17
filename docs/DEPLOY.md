@@ -34,6 +34,7 @@ chmod 600 .env
 Fill in `.env`:
 - generate every password and secret with `openssl rand -hex 32`;
 - set `SITE_ADDRESS` to the domain and `ACME_EMAIL` to the address that receives certificate notices;
+- keep `TLS_MODE=public` (Let's Encrypt, with ZeroSSL as fallback), except on Google Cloud ([below](#on-google-clouds-free-tier));
 - set `CONCILIA_IMAGES` to `ghcr.io/<owner>` in lowercase.
 
 **The first deploy.** It needs one published version. The `Deploy` workflow publishes one after every push to `main` that passes CI, and its run shows the commit. Then:
@@ -68,6 +69,12 @@ gcloud compute instances create concilia --project=$P --zone=us-east1-b \
 - **Disk:** use `pd-standard`; a balanced or SSD disk is not free.
 - **Host keys:** `gcloud compute instances get-guest-attributes concilia --zone=us-east1-b --query-path=hostkeys/` prints the server's SSH host keys over Google's API. Compare them with `ssh-keyscan` before trusting the address, and use them for `DEPLOY_KNOWN_HOSTS`.
 - **Budget:** add a small alert with `gcloud billing budgets create`, so any charge outside the free tier is noticed within days.
+- **Certificate:** use Google Trust Services, Google's free ACME authority. On 2026-11-16, Let's Encrypt's validation servers (`23.178.112.0/24`) reached a VM in `us-east1`, but the VM's replies never got back to them. Caddy's fallback, ZeroSSL, validated the challenge and then never issued the certificate. To set it up:
+  ```sh
+  gcloud services enable publicca.googleapis.com --project=$P
+  gcloud publicca external-account-keys create --project=$P 2>/dev/null --format='value(keyId,b64MacKey)'
+  ```
+  Then set `TLS_MODE=gts`, `ACME_EAB_KEY_ID` and `ACME_EAB_MAC_KEY` in `.env`. The key is single-use and expires after 7 days; once Caddy has registered with it, renewals need no new key. gcloud also prints the key on stderr, hence `2>/dev/null`.
 
 Then follow the one-time setup above, with the swap.
 

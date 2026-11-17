@@ -26,6 +26,13 @@ Without the `DEPLOY_*` secrets, it only publishes the images.
 
 **The client's IP.** Caddy has a fixed address on the Compose network (`10.89.47.0/24`, outside Docker's automatic pools) and overwrites `X-Forwarded-For` with the remote address. Uvicorn trusts forwarded addresses only from that address (`--proxy-headers`, `FORWARDED_ALLOW_IPS`). A test runs Uvicorn's middleware with that configuration, and another keeps compose and the Caddyfile consistent.
 
+**Certificates.** `TLS_MODE` picks one of three Caddy snippets in `infra/caddy/tls/`:
+- `internal`: local development, with Caddy's own authority;
+- `public`: the default in production, Let's Encrypt with ZeroSSL as fallback;
+- `gts`: Google Trust Services, with an external account key from Google Cloud.
+
+The public instance uses `gts` because Let's Encrypt could not validate from `us-east1`. Its validators' connections arrived, but the server's replies never reached them, and ZeroSSL stalled after validating. Google's authority validates from Google's own network, and it costs nothing.
+
 **Backups.** A `postgres` container runs `pg_dump --format=custom` once a day as `concilia_backup`, a read-only role with `BYPASSRLS`. It keeps 14 days in a volume. Copying them off the server is an operator task described in [DEPLOY.md](../DEPLOY.md).
 
 **Monitoring.** `/api/health` now also queries the database and answers 503 when it cannot. A free external monitor polls it.

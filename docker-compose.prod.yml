@@ -42,7 +42,10 @@ services:
     pull_policy: always
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:?}
-      TLS_ISSUER: ${ACME_EMAIL:?}
+      TLS_MODE: ${TLS_MODE:-public}
+      ACME_EMAIL: ${ACME_EMAIL:?}
+      ACME_EAB_KEY_ID: ${ACME_EAB_KEY_ID:-}
+      ACME_EAB_MAC_KEY: ${ACME_EAB_MAC_KEY:-}
       HSTS: max-age=31536000
 
   backup:

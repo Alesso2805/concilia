@@ -21,6 +21,18 @@ def test_caddy_overwrites_the_forwarded_address_and_limits_request_size() -> Non
     assert "max_size 6MB" in caddyfile
 
 
+def test_every_tls_mode_in_compose_has_a_caddy_snippet() -> None:
+    snippets = {path.stem for path in (ROOT / "infra" / "caddy" / "tls").glob("*.caddy")}
+    compose_files = "".join(
+        (ROOT / name).read_text(encoding="utf-8")
+        for name in ("docker-compose.yml", "docker-compose.prod.yml")
+    )
+    defaults = set(re.findall(r"\$\{TLS_MODE:-(\w+)\}", compose_files))
+
+    assert defaults == {"internal", "public"}
+    assert snippets == {"internal", "public", "gts"}
+
+
 def test_production_requires_every_password_and_secret() -> None:
     production = (ROOT / "docker-compose.prod.yml").read_text(encoding="utf-8")
     sensitive = re.findall(r"\$\{(\w*(?:PASSWORD|SECRET)\w*)(:[?-])?\}", production)
