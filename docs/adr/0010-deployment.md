@@ -26,17 +26,26 @@ Without the `DEPLOY_*` secrets, it only publishes the images.
 
 **The client's IP.** Caddy has a fixed address on the Compose network (`10.89.47.0/24`, outside Docker's automatic pools) and overwrites `X-Forwarded-For` with the remote address. Uvicorn trusts forwarded addresses only from that address (`--proxy-headers`, `FORWARDED_ALLOW_IPS`). A test runs Uvicorn's middleware with that configuration, and another keeps compose and the Caddyfile consistent.
 
+**Certificates.** `TLS_MODE` picks one of three Caddy snippets in `infra/caddy/tls/`:
+- `internal`: local development, with Caddy's own authority;
+- `public`: the default in production, Let's Encrypt with ZeroSSL as fallback;
+- `gts`: Google Trust Services, with an external account key from Google Cloud.
+
+The public instance uses `gts` because Let's Encrypt could not validate from `us-east1`. Its validators' connections arrived, but the server's replies never reached them, and ZeroSSL stalled after validating. Google's authority validates from Google's own network, and it costs nothing.
+
 **Backups.** A `postgres` container runs `pg_dump --format=custom` once a day as `concilia_backup`, a read-only role with `BYPASSRLS`. It keeps 14 days in a volume. Copying them off the server is an operator task described in [DEPLOY.md](../DEPLOY.md).
 
 **Monitoring.** `/api/health` now also queries the database and answers 503 when it cannot. A free external monitor polls it.
 
-The hosting provider and the domain are the owner's choice, since they are a monthly cost. Any provider with a 2 vCPU / 4 GB Ubuntu server fits.
+The hosting provider and the domain are the owner's choice, since they are a monthly cost. The owner chose Google Cloud's always-free `e2-micro` in `us-east1` (the free region closest to Lima) and a free DuckDNS subdomain, so the instance costs nothing beyond the AI. The stack uses about 310 MB of RAM at rest, so 1 GB with 2 GB of swap runs it. Any provider with a larger Ubuntu server fits as well. Moving to a bigger machine or to a domain of our own changes only the server and two settings, not the code.
 
 ## Consequences
 
 - Production runs the same files as local development and CI, apart from one override, so a working `docker compose up` locally is strong evidence for the deployment.
 - The server never builds anything: deployments are a pull and a restart, and a small server never runs out of memory compiling Angular.
 - One server is one point of failure. A short outage during deployments and server maintenance is acceptable for a portfolio demo.
+- The free machine has about a quarter of a vCPU sustained. Creating a demo and hashing passwords with Argon2id take noticeably longer than on a laptop, and a few visitors at once queue up.
+- DuckDNS is a free service run by volunteers. If it is down, the site is unreachable even though the server is up.
 - Backups on the same disk do not survive losing the server until they are copied elsewhere.
 
 ## Alternatives considered

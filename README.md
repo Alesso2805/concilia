@@ -4,6 +4,8 @@ A bank reconciliation backoffice. It matches the credits on a company's bank sta
 
 It is a portfolio project: a complete, tested system built the way business software is built, not a demo of one library. The product specification ([docs/SPEC.md](docs/SPEC.md)) and the backlog ([docs/BACKLOG.md](docs/BACKLOG.md)) are in Spanish, like the interface. The decision records, architecture rules and this README are in English.
 
+**Live demo:** <https://concilia-demo.duckdns.org/demo>. Each visit creates a separate organization with fictitious data, which is deleted after four hours.
+
 ## What it shows
 
 | Area | In Concilia |

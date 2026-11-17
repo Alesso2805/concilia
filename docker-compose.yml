@@ -70,10 +70,10 @@ services:
       - "443:443"
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
-      TLS_ISSUER: ${TLS_ISSUER:-internal}
+      TLS_MODE: ${TLS_MODE:-internal}
       HSTS: ${HSTS:-max-age=0}
     volumes:
-      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./infra/caddy:/etc/caddy:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:

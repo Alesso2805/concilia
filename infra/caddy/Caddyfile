@@ -3,7 +3,7 @@
 }
 
 {$SITE_ADDRESS:localhost} {
-	tls {$TLS_ISSUER:internal}
+	import tls/{$TLS_MODE:internal}.caddy
 	encode zstd gzip
 
 	request_body {
