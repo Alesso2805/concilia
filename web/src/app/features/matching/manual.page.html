@@ -31,7 +31,9 @@
             </ng-container>
             <ng-container matColumnDef="date">
               <th mat-header-cell *matHeaderCellDef scope="col">Fecha</th>
-              <td mat-cell *matCellDef="let credit">{{ day(credit.booked_on) }}</td>
+              <td mat-cell *matCellDef="let credit" class="inbox__date app-amount">
+                {{ day(credit.booked_on) }}
+              </td>
             </ng-container>
             <ng-container matColumnDef="description">
               <th mat-header-cell *matHeaderCellDef scope="col">Descripción</th>
@@ -78,7 +80,7 @@
           <table mat-table [dataSource]="receivables">
             <ng-container matColumnDef="document">
               <th mat-header-cell *matHeaderCellDef scope="col">Documento</th>
-              <td mat-cell *matCellDef="let item">{{ item.doc_number }}</td>
+              <td mat-cell *matCellDef="let item" class="inbox__doc">{{ item.doc_number }}</td>
             </ng-container>
             <ng-container matColumnDef="customer">
               <th mat-header-cell *matHeaderCellDef scope="col">Cliente</th>
@@ -86,7 +88,9 @@
             </ng-container>
             <ng-container matColumnDef="due">
               <th mat-header-cell *matHeaderCellDef scope="col">Vence</th>
-              <td mat-cell *matCellDef="let item">{{ day(item.due_on) }}</td>
+              <td mat-cell *matCellDef="let item" class="inbox__date app-amount">
+                {{ day(item.due_on) }}
+              </td>
             </ng-container>
             <ng-container matColumnDef="available">
               <th mat-header-cell *matHeaderCellDef scope="col" class="inbox__amount">Saldo</th>

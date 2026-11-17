@@ -37,4 +37,13 @@ describe('charts', () => {
     expect(options.xAxis.data).toEqual(['0 a 7 días']);
     expect(options.series[0].data).toEqual([123.45]);
   });
+
+  it('writes the amount axis in soles with thousands separators', () => {
+    const options = barOptions([], 'Pendientes', CHART_COLORS.light) as {
+      yAxis: { axisLabel: { formatter: (value: number) => string } };
+    };
+
+    expect(options.yAxis.axisLabel.formatter(600_000)).toBe('S/ 600,000');
+    expect(options.yAxis.axisLabel.formatter(0)).toBe('S/ 0');
+  });
 });

@@ -50,7 +50,9 @@
           >
             <mat-icon svgIcon="menu" />
           </button>
-          <span class="shell__brand shell__brand--toolbar"><app-logo />Concilia</span>
+          <span class="shell__brand shell__brand--toolbar">
+            <app-logo /><span class="shell__narrow-hidden">Concilia</span>
+          </span>
         } @else if (current(); as item) {
           <p class="shell__trail">
             <span>{{ item.section }}</span>
@@ -67,7 +69,7 @@
             [matMenuTriggerFor]="roleMenu"
             [disabled]="switching()"
           >
-            Ver como: {{ currentRole() }}
+            <span class="shell__narrow-hidden">Ver como: </span>{{ currentRole() }}
           </button>
           <mat-menu #roleMenu="matMenu">
             @for (role of demoRoles; track role) {

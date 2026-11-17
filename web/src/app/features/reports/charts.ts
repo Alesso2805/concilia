@@ -31,6 +31,8 @@ export function describeRows(rows: readonly ChartRow[]): string {
     .join('; ');
 }
 
+const SOLES = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
+
 export interface ChartColors {
   text: string;
   bar: string;
@@ -57,6 +59,7 @@ export function barOptions(
       label: { description: `${title}. ${describeRows(rows)}.` },
       decal: { show: true },
     },
+    textStyle: { fontFamily: 'Inter, sans-serif' },
     grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true },
     tooltip: {
       trigger: 'axis',
@@ -67,11 +70,11 @@ export function barOptions(
     xAxis: {
       type: 'category',
       data: rows.map((row) => row.label),
-      axisLabel: { color: colors.text, interval: 0 },
+      axisLabel: { color: colors.text, interval: 0, width: 80, overflow: 'break' },
     },
     yAxis: {
       type: 'value',
-      axisLabel: { color: colors.text, formatter: (value: number) => `S/ ${value}` },
+      axisLabel: { color: colors.text, formatter: (value: number) => `S/ ${SOLES.format(value)}` },
     },
     series: [{ type: 'bar', name: 'Monto', data: rows.map((row) => row.cents / 100) }],
   };

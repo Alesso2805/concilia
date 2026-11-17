@@ -86,4 +86,8 @@ test('an analyst reconciles a partial payment by hand', async ({ page }) => {
 
   await expect(page.getByRole('tab', { name: 'Confirmadas 1' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Libres 0' })).toBeVisible();
+
+  await page.goto('/bandeja/manual');
+  await expect(page).toHaveURL(/\/bandeja$/);
+  await expect(page.getByRole('heading', { name: 'Bandeja de conciliación' })).toBeVisible();
 });

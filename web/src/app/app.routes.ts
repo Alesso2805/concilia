@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 
 import { ErrorPage, ForbiddenPage, NotFoundPage } from './core/pages/status-pages';
 import { organizationGuard, roleGuard } from './core/session/guards';
+import { monthChosenGuard } from './features/matching/manual.guard';
 
 export const ERROR_PATH = '/error';
 
@@ -42,6 +43,7 @@ export const routes: Routes = [
       {
         path: 'bandeja/manual',
         canMatch: [analystOnly],
+        canActivate: [monthChosenGuard],
         loadComponent: () => import('./features/matching/manual.page').then((m) => m.ManualPage),
         title: 'Conciliar a mano · Concilia',
       },
