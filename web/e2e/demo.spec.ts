@@ -22,12 +22,12 @@ test('a visitor enters a demo, the reviewer closes a month, reads the panel and 
   await expect(page.getByRole('heading', { name: 'Recorrido: paso 2 de 7' })).toBeVisible();
   await expectAccessible(page);
   await page.getByRole('button', { name: 'Ocultar el recorrido' }).click();
-  await expect(page.getByRole('tab', { name: 'Libres (118)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Libres 118' })).toBeVisible();
   await page.getByText('Mes', { exact: true }).click();
   await page.getByRole('option', { name: 'octubre de 2026 (cerrado)' }).click();
   await expect(page.getByText('Este mes está cerrado: solo se puede consultar.')).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Aprobadas (103)' })).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Propuestas (0)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Aprobadas 103' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Propuestas 0' })).toBeVisible();
   await expectAccessible(page);
 
   const navigation = page.getByRole('navigation', { name: 'Principal' });
@@ -111,7 +111,7 @@ test('the analyst asks the AI, confirms a proposal and the reviewer approves it'
   page,
 }) => {
   await page.goto('/demo');
-  await page.getByRole('tab', { name: 'Libres (118)' }).click();
+  await page.getByRole('tab', { name: 'Libres 118' }).click();
   await page
     .getByRole('button', { name: /^Pedir ayuda a la IA para / })
     .first()
@@ -139,12 +139,12 @@ test('the analyst asks the AI, confirms a proposal and the reviewer approves it'
   await expect(dialog.getByRole('button', { name: 'Confirmar' })).toBeVisible();
   await expectAccessible(page);
   await dialog.getByRole('button', { name: 'Confirmar' }).click();
-  await expect(page.getByRole('tab', { name: 'Confirmadas (1)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Confirmadas 1' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Ver como: Análisis' }).click();
   await page.getByRole('menuitemradio', { name: 'Revisión' }).click();
   await expect(page.getByRole('button', { name: 'Ver como: Revisión' })).toBeVisible();
-  await page.getByRole('tab', { name: 'Confirmadas (1)' }).click();
+  await page.getByRole('tab', { name: 'Confirmadas 1' }).click();
   await page
     .getByRole('button', { name: /^Ver detalle de / })
     .first()
@@ -152,5 +152,5 @@ test('the analyst asks the AI, confirms a proposal and the reviewer approves it'
   await expect(dialog.getByText('Confirmó')).toBeVisible();
   await expectAccessible(page);
   await dialog.getByRole('button', { name: 'Aprobar' }).click();
-  await expect(page.getByRole('tab', { name: 'Aprobadas (1)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Aprobadas 1' })).toBeVisible();
 });

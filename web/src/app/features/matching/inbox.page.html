@@ -1,4 +1,16 @@
-<h1 class="inbox__title">Bandeja de conciliación</h1>
+<div class="inbox__head">
+  <h1 class="inbox__title">Bandeja de conciliación</h1>
+  @if (month() && accountLabel(); as account) {
+    <p class="inbox__context">
+      <span>{{ account }}</span>
+      <span aria-hidden="true">·</span>
+      <span>{{ monthLabel(month()!.period) }}</span>
+      <span class="inbox__state" [class.inbox__state--closed]="closed()">
+        {{ closed() ? 'Mes cerrado' : 'Mes abierto' }}
+      </span>
+    </p>
+  }
+</div>
 
 @if (accounts(); as accounts) {
   @if (accounts.length === 0) {
@@ -6,8 +18,8 @@
       Todavía no hay cuentas bancarias. Pide a quien administra tu organización que registre una.
     </p>
   } @else {
-    <div class="inbox__bar">
-      <mat-form-field class="inbox__field" appearance="outline">
+    <div class="inbox__bar app-dense-fields">
+      <mat-form-field class="inbox__field" appearance="outline" subscriptSizing="dynamic">
         <mat-label>Cuenta</mat-label>
         <mat-select [value]="accountId()" (selectionChange)="selectAccount($event.value)">
           @for (account of accounts; track account.id) {
@@ -18,7 +30,7 @@
         </mat-select>
       </mat-form-field>
       @if (periods().length > 0) {
-        <mat-form-field class="inbox__field" appearance="outline">
+        <mat-form-field class="inbox__field" appearance="outline" subscriptSizing="dynamic">
           <mat-label>Mes</mat-label>
           <mat-select [value]="month()?.period" (selectionChange)="selectPeriod($event.value)">
             @for (period of periods(); track period.period) {
@@ -74,9 +86,13 @@
     @if (periods().length === 0) {
       <p class="inbox__muted">Esta cuenta todavía no tiene abonos importados.</p>
     } @else if (month()) {
-      <form class="inbox__bar" [formGroup]="filterForm" (ngSubmit)="applyFilters()">
+      <form
+        class="inbox__bar inbox__filters app-dense-fields"
+        [formGroup]="filterForm"
+        (ngSubmit)="applyFilters()"
+      >
         @if (tab() !== 'free') {
-          <mat-form-field class="inbox__field" appearance="outline">
+          <mat-form-field class="inbox__field" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Regla</mat-label>
             <mat-select formControlName="rule">
               <mat-option [value]="null">Todas</mat-option>
@@ -85,16 +101,20 @@
               }
             </mat-select>
           </mat-form-field>
-          <mat-form-field class="inbox__field--small" appearance="outline">
+          <mat-form-field
+            class="inbox__field--small"
+            appearance="outline"
+            subscriptSizing="dynamic"
+          >
             <mat-label>Puntaje mínimo</mat-label>
             <input matInput formControlName="minScore" inputmode="numeric" />
           </mat-form-field>
         }
-        <mat-form-field class="inbox__field--small" appearance="outline">
+        <mat-form-field class="inbox__field--small" appearance="outline" subscriptSizing="dynamic">
           <mat-label>Monto desde (S/)</mat-label>
           <input matInput formControlName="minAmount" inputmode="decimal" />
         </mat-form-field>
-        <mat-form-field class="inbox__field--small" appearance="outline">
+        <mat-form-field class="inbox__field--small" appearance="outline" subscriptSizing="dynamic">
           <mat-label>Monto hasta (S/)</mat-label>
           <input matInput formControlName="maxAmount" inputmode="decimal" />
         </mat-form-field>
@@ -103,7 +123,8 @@
       </form>
 
       @if (batch(); as batch) {
-        <div class="inbox__bar">
+        <div class="inbox__batch">
+          <span>{{ batch.hint }}</span>
           <button
             mat-stroked-button
             type="button"
@@ -116,12 +137,19 @@
       }
 
       <mat-tab-group
+        class="inbox__tabs"
         [selectedIndex]="tabIndex()"
         (selectedIndexChange)="selectTab($event)"
         mat-stretch-tabs="false"
       >
         @for (item of tabs; track item.tab) {
-          <mat-tab [label]="tabLabel(item.tab, item.label)">
+          <mat-tab>
+            <ng-template mat-tab-label>
+              {{ item.label }}
+              @if (counts(); as counts) {
+                <span class="inbox__count app-amount">{{ counts[item.tab] }}</span>
+              }
+            </ng-template>
             <ng-template matTabContent>
               @if (item.tab === 'free') {
                 @if (creditPage(); as page) {
@@ -130,15 +158,19 @@
                       <table mat-table [dataSource]="page.credits">
                         <ng-container matColumnDef="date">
                           <th mat-header-cell *matHeaderCellDef scope="col">Fecha</th>
-                          <td mat-cell *matCellDef="let credit">{{ day(credit.booked_on) }}</td>
+                          <td mat-cell *matCellDef="let credit" class="inbox__date app-amount">
+                            {{ day(credit.booked_on) }}
+                          </td>
                         </ng-container>
                         <ng-container matColumnDef="description">
                           <th mat-header-cell *matHeaderCellDef scope="col">Descripción</th>
-                          <td mat-cell *matCellDef="let credit">{{ credit.description }}</td>
+                          <td mat-cell *matCellDef="let credit" class="inbox__strong">
+                            {{ credit.description }}
+                          </td>
                         </ng-container>
                         <ng-container matColumnDef="operation">
                           <th mat-header-cell *matHeaderCellDef scope="col">Operación</th>
-                          <td mat-cell *matCellDef="let credit">
+                          <td mat-cell *matCellDef="let credit" class="app-amount">
                             {{ credit.operation_number ?? '—' }}
                           </td>
                         </ng-container>
@@ -154,7 +186,7 @@
                           <th mat-header-cell *matHeaderCellDef scope="col">
                             <span class="cdk-visually-hidden">Ayuda de la IA</span>
                           </th>
-                          <td mat-cell *matCellDef="let credit">
+                          <td mat-cell *matCellDef="let credit" class="inbox__actions">
                             <button
                               mat-button
                               type="button"
@@ -190,29 +222,39 @@
                       <table mat-table [dataSource]="page.matches">
                         <ng-container matColumnDef="date">
                           <th mat-header-cell *matHeaderCellDef scope="col">Fecha</th>
-                          <td mat-cell *matCellDef="let match">{{ day(match.booked_on) }}</td>
+                          <td mat-cell *matCellDef="let match" class="inbox__date app-amount">
+                            {{ day(match.booked_on) }}
+                          </td>
                         </ng-container>
                         <ng-container matColumnDef="description">
                           <th mat-header-cell *matHeaderCellDef scope="col">Abono</th>
-                          <td mat-cell *matCellDef="let match">{{ match.description }}</td>
+                          <td mat-cell *matCellDef="let match" class="inbox__strong">
+                            {{ match.description }}
+                          </td>
                         </ng-container>
                         <ng-container matColumnDef="documents">
                           <th mat-header-cell *matHeaderCellDef scope="col">Cobros</th>
                           <td mat-cell *matCellDef="let match">
-                            {{ match.documents.join(', ') }}
-                            <span class="inbox__muted">· {{ match.customers.join(', ') }}</span>
+                            <span class="inbox__stack">
+                              <span class="app-amount">{{ match.documents.join(' · ') }}</span>
+                              <span class="inbox__muted">{{ match.customers.join(', ') }}</span>
+                            </span>
                           </td>
                         </ng-container>
                         <ng-container matColumnDef="rule">
                           <th mat-header-cell *matHeaderCellDef scope="col">Regla</th>
-                          <td mat-cell *matCellDef="let match">{{ ruleOf(match) }}</td>
+                          <td mat-cell *matCellDef="let match">
+                            <span class="inbox__rule">{{ ruleOf(match) }}</span>
+                          </td>
                         </ng-container>
                         <ng-container matColumnDef="score">
-                          <th mat-header-cell *matHeaderCellDef scope="col" class="inbox__amount">
-                            Puntaje
-                          </th>
-                          <td mat-cell *matCellDef="let match" class="inbox__amount">
-                            {{ match.score ?? '—' }}
+                          <th mat-header-cell *matHeaderCellDef scope="col">Puntaje</th>
+                          <td mat-cell *matCellDef="let match">
+                            @if (match.score !== null) {
+                              <app-score-meter [score]="match.score" />
+                            } @else {
+                              <span class="inbox__muted">—</span>
+                            }
                           </td>
                         </ng-container>
                         <ng-container matColumnDef="amount">
@@ -227,7 +269,13 @@
                           <th mat-header-cell *matHeaderCellDef scope="col" class="inbox__amount">
                             Diferencia
                           </th>
-                          <td mat-cell *matCellDef="let match" class="inbox__amount">
+                          <td
+                            mat-cell
+                            *matCellDef="let match"
+                            class="inbox__amount"
+                            [class.inbox__difference]="match.difference_cents !== 0"
+                            [class.inbox__zero]="match.difference_cents === 0"
+                          >
                             {{ pen(match.difference_cents) }}
                           </td>
                         </ng-container>
@@ -235,7 +283,7 @@
                           <th mat-header-cell *matHeaderCellDef scope="col">
                             <span class="cdk-visually-hidden">Acciones</span>
                           </th>
-                          <td mat-cell *matCellDef="let match">
+                          <td mat-cell *matCellDef="let match" class="inbox__actions">
                             <button
                               mat-button
                               type="button"

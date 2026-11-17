@@ -40,8 +40,9 @@ import { AiService } from '../ai/ai.service';
 import { SuggestionDialog, SuggestionDialogData } from '../ai/suggestion.dialog';
 import { PeriodsService } from '../periods/periods.service';
 import { ReopenPeriodDialog } from '../periods/reopen-period.dialog';
-import { dayLabel, monthLabel, RULE_LABELS, TABS } from './labels';
+import { dayLabel, monthLabel, RULE_LABELS, RULE_NAMES, TABS } from './labels';
 import { MatchDetailDialog } from './match-detail.dialog';
+import { ScoreMeter } from './score-meter.component';
 import {
   Cursor,
   InboxFilters,
@@ -84,6 +85,7 @@ type Loaded = { tab: 'free'; view: CreditPageView } | { tab: MatchTab; view: Mat
     MatTableModule,
     MatTabsModule,
     RouterLink,
+    ScoreMeter,
   ],
   providers: [{ provide: MatPaginatorIntl, useClass: KeysetPaginatorIntl }],
   templateUrl: './inbox.page.html',
@@ -152,12 +154,24 @@ export class InboxPage implements OnInit {
       return null;
     }
     if (this.tab() === 'proposed' && roles.has('analyst')) {
-      return { action: 'confirm' as const, label: 'Confirmar todas las de puntaje 100' };
+      return {
+        action: 'confirm' as const,
+        label: 'Confirmar todas las de puntaje 100',
+        hint: 'Las propuestas con puntaje 100 se pueden confirmar en un solo paso.',
+      };
     }
     if (this.tab() === 'confirmed' && roles.has('reviewer')) {
-      return { action: 'approve' as const, label: 'Aprobar todas las de puntaje 100' };
+      return {
+        action: 'approve' as const,
+        label: 'Aprobar todas las de puntaje 100',
+        hint: 'Las de puntaje 100 se aprueban en un paso; las que creaste o confirmaste quedan para otra persona.',
+      };
     }
     return null;
+  });
+  protected readonly accountLabel = computed(() => {
+    const account = this.accounts()?.find((item) => item.id === this.accountId());
+    return account ? `${account.bank} · ${account.alias} ···${account.number_last4}` : null;
   });
   protected readonly batching = signal(false);
   protected readonly aiUsage = signal<UsageView | null>(null);
@@ -206,11 +220,6 @@ export class InboxPage implements OnInit {
     }
   }
 
-  protected tabLabel(tab: InboxTab, label: string): string {
-    const counts = this.counts();
-    return counts ? `${label} (${counts[tab]})` : label;
-  }
-
   protected periodLabel(period: PeriodView): string {
     return `${monthLabel(period.period)}${period.closed ? ' (cerrado)' : ''}`;
   }
@@ -226,7 +235,7 @@ export class InboxPage implements OnInit {
   }
 
   protected ruleOf(match: MatchRowView): string {
-    return match.rule ?? (match.source === 'ai' ? 'IA' : 'Manual');
+    return match.rule ? RULE_NAMES[match.rule] : match.source === 'ai' ? 'IA' : 'Manual';
   }
 
   protected async selectAccount(accountId: string, period?: string): Promise<void> {
@@ -306,6 +315,7 @@ export class InboxPage implements OnInit {
       .open<MatchDetailDialog, string, boolean>(MatchDetailDialog, {
         data: match.id,
         autoFocus: 'dialog',
+        panelClass: 'app-wide-dialog',
       })
       .afterClosed();
     if (await firstValueFrom(closed)) {

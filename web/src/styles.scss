@@ -107,3 +107,20 @@ body {
   font-family: var(--app-font-mono);
   font-variant-numeric: tabular-nums;
 }
+
+.app-wide-dialog {
+  @include mat.dialog-overrides(
+    (
+      container-max-width: min(880px, calc(100vw - 32px)),
+    )
+  );
+}
+
+.app-dense-fields {
+  @include mat.form-field-overrides(
+    (
+      container-height: 44px,
+      container-vertical-padding: 10px,
+    )
+  );
+}

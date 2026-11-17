@@ -136,10 +136,22 @@ describe('InboxPage', () => {
       { rule: null, minScore: null, minAmountCents: null, maxAmountCents: null },
       {},
     );
-    expect(text(fixture)).toContain('Propuestas (1)');
-    expect(text(fixture)).toContain('Libres (2)');
+    const tabs = [...(fixture.nativeElement as HTMLElement).querySelectorAll('[role="tab"]')];
+    expect(tabs.map((tab) => tab.textContent?.replace(/\s+/g, ' ').trim())).toEqual([
+      'Libres 2',
+      'Propuestas 1',
+      'Confirmadas 0',
+      'Aprobadas 0',
+    ]);
     expect(text(fixture)).toContain('PAGO FACT F001-123');
     expect(text(fixture)).toContain('S/ 1,180.00');
+    expect(text(fixture)).toContain('R1 · Exacta');
+  });
+
+  it('names the account and the month and says whether the month is open', async () => {
+    await render(['analyst']);
+
+    expect(text(fixture)).toContain('febrero de 2027 Mes abierto');
   });
 
   it('runs the engine, follows its job and reports the proposals', async () => {
@@ -191,7 +203,11 @@ describe('InboxPage', () => {
 
     button(element, 'Ver detalle').click();
 
-    expect(open).toHaveBeenCalledWith(MatchDetailDialog, { data: 'm1', autoFocus: 'dialog' });
+    expect(open).toHaveBeenCalledWith(MatchDetailDialog, {
+      data: 'm1',
+      autoFocus: 'dialog',
+      panelClass: 'app-wide-dialog',
+    });
   });
 
   it('confirms the score 100 proposals in batch for analysts only', async () => {

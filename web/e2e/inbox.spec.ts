@@ -84,12 +84,12 @@ test('an analyst runs the engine and reviews a proposal in the inbox', async ({ 
   ).toBeVisible();
   await page.getByText('Cuenta', { exact: true }).click();
   await page.getByRole('option', { name: new RegExp(`Bandeja ${run}`) }).click();
-  await expect(page.getByRole('tab', { name: 'Libres (2)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Libres 2' })).toBeVisible();
   await expectAccessible(page);
 
   await page.getByRole('button', { name: 'Correr el motor' }).click();
   await expect(page.getByText('El motor propuso 1 coincidencia.')).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Propuestas (1)' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Propuestas 1' })).toBeVisible();
   await expect(page.getByRole('table')).toContainText(`PAGO FACT ${document}`);
   await expect(page.getByRole('table')).toContainText('S/ 1,180.00');
   await expectAccessible(page);
@@ -101,6 +101,6 @@ test('an analyst runs the engine and reviews a proposal in the inbox', async ({ 
   await expectAccessible(page);
   await dialog.getByRole('button', { name: 'Cerrar' }).click();
 
-  await page.getByRole('tab', { name: 'Libres (1)' }).click();
+  await page.getByRole('tab', { name: 'Libres 1' }).click();
   await expect(page.getByRole('table')).toContainText('DEPOSITO SIN REFERENCIA');
 });
