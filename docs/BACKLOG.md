@@ -1,6 +1,6 @@
 # Concilia — Product backlog
 
-24 historias en 7 épicas, 82 puntos. La columna "Depende de" se cumple en el plan: cada historia va en un sprint posterior a sus dependencias, o después de ellas dentro del mismo sprint. Cada historia crea con su migración las tablas que usa.
+25 historias en 7 épicas, 85 puntos. La columna "Depende de" se cumple en el plan: cada historia va en un sprint posterior a sus dependencias, o después de ellas dentro del mismo sprint. Cada historia crea con su migración las tablas que usa.
 
 | ID | Épica | Historia | Criterios de aceptación | Depende de | Pts | Sprint |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -28,4 +28,5 @@
 | CN-22 | E6 Demo y portafolio | Como visitante quiero probar Concilia sin registrarme | Botón "Probar la demo" que crea una organización de demo con el generador determinista y fechas fijas por `dataset_version` (dos meses importados, el primero con propuestas del motor; tres usuarios por rol; perfiles); selector de rol con `POST /api/app/demo/switch-role` y sus tests; extracto y cobros de un tercer mes descargables; casos de cada regla, ambiguos, repetidos, detracciones y pagos parciales; borrado a las `DEMO_TTL_HOURS` horas con `app_cleanup`; límites por IP y globales; `docker compose up` arranca con una demo local sin vencimiento y `make demo` | CN-10, CN-12 | 3 | 5 |
 | CN-23 | E6 Demo y portafolio | Como visitante quiero entender el producto en 3 minutos | Recorrido guiado por pasos (importar el tercer mes, correr el motor, confirmar, cambiar a revisor y aprobar, IA, cerrar, exportar); aviso permanente de datos ficticios | CN-22, CN-21 | 2 | 9 |
 | CN-24 | E6 Demo y portafolio | Como desarrollador quiero un proyecto listo para mostrar | Playwright del flujo completo con dos usuarios y axe sin violaciones graves en todas las pantallas; README en inglés con diagrama de arquitectura, decisiones y cómo correrlo; video de 3 minutos; métricas del motor sobre el dataset de demo | CN-17, CN-18, CN-19, CN-23 | 3 | 9 |
+| CN-25 | E6 Demo y portafolio | Como visitante quiero una interfaz con identidad propia, en claro y en oscuro | ADR-0011 con el diseño "libro mayor" elegido entre tres opciones; tema Material 3 con paletas generadas (verde para lo que cuadra, ámbar para diferencias) en claro y oscuro; Inter y JetBrains Mono servidas por la app; menú lateral con logo, organización y secciones, y ruta en la barra superior; bandeja con contadores, filtros agrupados, montos en monoespaciada, medidor de puntaje y diferencias con su motivo; el detalle sigue en un diálogo; entrada con el mensaje del producto y la demo; axe sin violaciones graves en todas las pantallas en claro y en oscuro; sin cambios de comportamiento | CN-24 | 3 | Final |
 
