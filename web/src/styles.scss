@@ -23,6 +23,8 @@ html {
     )
   );
 
+  --mat-sys-headline-small: 700 1.5rem / 2rem Inter;
+  --mat-sys-headline-small-weight: 700;
   --app-font-mono: 'JetBrains Mono', ui-monospace, monospace;
   --app-panel: light-dark(
     var(--mat-sys-surface-container-lowest),

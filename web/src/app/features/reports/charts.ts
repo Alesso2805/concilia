@@ -1,6 +1,7 @@
 import type { EChartsCoreOption } from 'echarts/core';
 
 import { formatPen } from '../../core/format/amounts';
+import { ColorScheme } from '../../core/theme/theme.service';
 
 export interface ChartRow {
   label: string;
@@ -30,10 +31,24 @@ export function describeRows(rows: readonly ChartRow[]): string {
     .join('; ');
 }
 
+export interface ChartColors {
+  text: string;
+  bar: string;
+}
+
+/**
+ * ECharts draws SVG attributes, which cannot read the theme's CSS variables, so these repeat
+ * `--mat-sys-on-surface` and `--mat-sys-primary` from `_theme-colors.scss` (ADR-0011).
+ */
+export const CHART_COLORS: Record<ColorScheme, ChartColors> = {
+  light: { text: '#191d16', bar: '#1c6b50' },
+  dark: { text: '#e0e4d9', bar: '#8bd6b4' },
+};
+
 export function barOptions(
   rows: readonly ChartRow[],
   title: string,
-  textColor: string,
+  colors: ChartColors,
 ): EChartsCoreOption {
   return {
     animation: false,
@@ -48,14 +63,15 @@ export function barOptions(
       axisPointer: { type: 'shadow' },
       valueFormatter: (value: number) => formatPen(Math.round(value * 100)),
     },
+    color: [colors.bar],
     xAxis: {
       type: 'category',
       data: rows.map((row) => row.label),
-      axisLabel: { color: textColor, interval: 0 },
+      axisLabel: { color: colors.text, interval: 0 },
     },
     yAxis: {
       type: 'value',
-      axisLabel: { color: textColor, formatter: (value: number) => `S/ ${value}` },
+      axisLabel: { color: colors.text, formatter: (value: number) => `S/ ${value}` },
     },
     series: [{ type: 'bar', name: 'Monto', data: rows.map((row) => row.cents / 100) }],
   };

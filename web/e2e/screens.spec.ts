@@ -16,10 +16,15 @@ const SCREENS = [
   { path: '/configuracion', heading: /Configuración/ },
 ];
 
-for (const screen of SCREENS) {
-  test(`${screen.path} has no serious accessibility violations`, async ({ page }) => {
-    await openApp(page, screen.path);
-    await expect(page.getByRole('heading', { level: 1, name: screen.heading })).toBeVisible();
-    await expectAccessible(page);
-  });
+for (const scheme of ['light', 'dark'] as const) {
+  for (const screen of SCREENS) {
+    test(`${screen.path} has no serious accessibility violations in ${scheme}`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await openApp(page, screen.path);
+      await expect(page.getByRole('heading', { level: 1, name: screen.heading })).toBeVisible();
+      await expectAccessible(page);
+    });
+  }
 }
